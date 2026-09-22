@@ -1,0 +1,23 @@
+# Python bytecode and tooling
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+
+# Local environments
+.venv/
+.venv-llm/
+venv/
+
+# Secrets and local configuration
+.env
+.env.*
+!.env.example
+
+# Streamlit local settings
+.streamlit/secrets.toml
+
+# OS/editor files
+.DS_Store
+.vscode/
+.idea/
