@@ -131,6 +131,6 @@ def render_demo1() -> None:
                     else:
                         st.caption(f"Required facts found: {', '.join(result['facts']) or 'none'}")
                         st.info(result["response"] or "No visible response returned.")
-                    with st.expander("Inspect constructed context"):
+                    with st.expander("Constructed Context to LLM"):
                         st.caption(f"{result['context']['provenance']} · IDs: {', '.join(result['context']['source_ids']) or 'none'} · Estimated: {result['context']['estimated_tokens']} tokens")
                         st.code(result["context"]["context"], language="text")
