@@ -85,8 +85,18 @@ def render_demo1() -> None:
         output_price = st.number_input("Output $ / 1M", 0.0, 4.50, format="%.4f", key="demo1_out_price")
     strategies = st.multiselect("Strategies", ["S0 · Baseline", "S1 · Full history", "S2 · Recent window", "S3 · Summary + recent", "S4 · Keyword retrieval"], default=["S0 · Baseline", "S2 · Recent window", "S4 · Keyword retrieval"], key="demo1_strategies")
     with st.expander("Inspect benchmark dataset and expected facts"):
-        st.write("\n".join(_text(item) for item in HISTORY))
-        st.json(EXPECTED_FACTS)
+        st.markdown("**Conversation history**")
+        st.dataframe(
+            [{"ID": item[0], "Role": item[1], "Message": item[2]} for item in HISTORY],
+            use_container_width=True,
+            hide_index=True,
+        )
+        st.markdown("**Expected facts**")
+        st.dataframe(
+            [{"Requirement": name.title(), "Expected terms": ", ".join(words)} for name, words in EXPECTED_FACTS.items()],
+            use_container_width=True,
+            hide_index=True,
+        )
     if "demo1_results" not in st.session_state:
         st.session_state.demo1_results = []
     if st.button("Run benchmark", type="primary", disabled=not strategies, key="demo1_run"):
