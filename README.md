@@ -1,6 +1,6 @@
-# LLM Playground
+# Context Engineering Lab — Week 2
 
-A Streamlit application for experimenting with OpenAI API requests, structured outputs, token usage, and latency.
+A Streamlit multi-run goal builder. It uses explicit context construction and persistent JSON state to take a goal through six separate LLM calls: understand, plan, design, refine, validate, and finalize.
 
 ## Run locally
 
@@ -8,7 +8,7 @@ A Streamlit application for experimenting with OpenAI API requests, structured o
 2. Install the required dependencies:
 
    ```bash
-   pip install streamlit openai pydantic
+   pip install -r requirements.txt
    ```
 
 3. Set your API key:
@@ -23,4 +23,12 @@ A Streamlit application for experimenting with OpenAI API requests, structured o
    streamlit run app.py
    ```
 
-`app.py` is the current version; the other `app_*.py` files are earlier iterations retained for reference.
+State is saved after every successful call in `runs/`. You can pause, add an approved requirement or feedback, restart Streamlit, and resume the saved run from the sidebar. The UI shows the exact context sent for each call, provenance, artifacts, token usage, latency, and cumulative estimated cost.
+
+Run the deterministic checks with:
+
+```bash
+pytest
+```
+
+`app_*.py` files are retained as Week 1 API exercises.
