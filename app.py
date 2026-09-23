@@ -16,8 +16,11 @@ st.markdown(
 )
 st.title("🧭 Agent Engineering Peer Learning")
 
-week1, week2 = st.tabs(["Week 1", "Week 2"])
-with week1:
+with st.sidebar:
+    st.header("Lab navigation")
+    selected_week = st.radio("Choose a week", ["Week 1", "Week 2"], label_visibility="collapsed")
+
+if selected_week == "Week 1":
     render_week1()
-with week2:
+else:
     render_week2()
