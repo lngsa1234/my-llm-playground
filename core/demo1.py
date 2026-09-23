@@ -88,8 +88,7 @@ def render_demo1() -> None:
         st.markdown("**Conversation history**")
         for message_id, role, content in HISTORY:
             with st.chat_message(role):
-                st.caption(message_id)
-                st.write(content)
+                st.markdown(f"**{message_id} · {role.title()}:** {content}")
         st.markdown("**Expected facts**")
         st.dataframe(
             [{"Requirement": name.title(), "Expected terms": ", ".join(words)} for name, words in EXPECTED_FACTS.items()],
