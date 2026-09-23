@@ -77,9 +77,13 @@ def render_demo1() -> None:
     st.caption("Run independent calls against the same synthetic file-processing API history.")
     left, right = st.columns([0.9, 1.1], gap="large")
     with left:
-        model = st.text_input("Model", "gpt-5.4-mini", key="demo1_model")
-        max_output = st.number_input("Max output tokens", 200, 3000, 700, 100, key="demo1_max_output")
-        output_price = st.number_input("Output $ / 1M", 0.0, 4.50, format="%.4f", key="demo1_out_price")
+        model_column, token_column, price_column = st.columns(3)
+        with model_column:
+            model = st.text_input("Model", "gpt-5.4-mini", key="demo1_model")
+        with token_column:
+            max_output = st.number_input("Max output tokens", 200, 3000, 700, 100, key="demo1_max_output")
+        with price_column:
+            output_price = st.number_input("Output $ / 1M", 0.0, 4.50, format="%.4f", key="demo1_out_price")
         st.markdown("**Strategies**")
         strategy_options = ["S0 · Baseline", "S1 · Full history", "S2 · Recent window", "S3 · Summary + recent", "S4 · Keyword retrieval"]
         strategies = [
