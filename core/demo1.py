@@ -1,12 +1,14 @@
 """Demo 1: a reproducible context-strategy benchmark."""
 
 import os
+import re
 import time
 
 import streamlit as st
 from openai import OpenAI
 
 from core.context_builder import estimate_tokens
+from core.longbench_subset import download_subset, load_cached_cases
 
 INSTRUCTION = "Summarize the current requirements for the file-processing API. Identify the active timeout, supported file types, authentication requirements, and unresolved issues."
 EXPECTED_FACTS = {
@@ -47,18 +49,81 @@ TASK_EXPECTED_FACTS = {
     "authentication": ["bearer"],
     "unresolved": ["restore", "audit"],
 }
+SECURITY_HISTORY = [
+    ("s01", "user", "Draft access policy: all staff use password plus SMS verification."),
+    ("s02", "assistant", "Initial policy records SMS as the second factor."),
+    ("s03", "user", "Administrators must use SSO and hardware security keys."),
+    ("s04", "user", "Customer data must be encrypted at rest using AES-256 and in transit with TLS 1.3."),
+    ("s05", "user", "Change request: SMS is no longer allowed. All staff must use an authenticator app for MFA."),
+    ("s06", "assistant", "Active MFA requirement updated to an authenticator app."),
+    ("s07", "user", "We have not decided the session duration or break-glass access process."),
+    ("s08", "user", "The security team is ordering new stickers for laptops."),
+]
+SECURITY_INSTRUCTION = "Summarize the active access-security policy. Identify staff MFA, administrator controls, encryption requirements, and unresolved decisions."
+SECURITY_EXPECTED_FACTS = {
+    "staff mfa": ["authenticator"],
+    "administrator controls": ["sso", "hardware"],
+    "encryption": ["aes-256", "tls 1.3"],
+    "unresolved": ["session", "break-glass"],
+}
+SUPPORT_HISTORY = [
+    ("r01", "user", "Knowledge base: reset a password from Settings > Security > Reset password; reset links expire after 15 minutes."),
+    ("r02", "assistant", "Password-reset article indexed."),
+    ("r03", "user", "Knowledge base: billing invoices are downloaded from Billing > Invoices and are available to account owners only."),
+    ("r04", "user", "Knowledge base: CSV exports support UTF-8 files up to 100 MB and complete asynchronously."),
+    ("r05", "user", "A customer asks why their 120 MB export failed and whether they can retry immediately."),
+    ("r06", "assistant", "The support reply should cite the export size limit and available next step."),
+    ("r07", "user", "The support team picnic menu includes vegetarian sandwiches."),
+]
+SUPPORT_INSTRUCTION = "Answer the customer’s export question using the knowledge-base context. State the file-size limit, supported encoding, processing behavior, and a safe next step."
+SUPPORT_EXPECTED_FACTS = {
+    "limit": ["100", "mb"],
+    "encoding": ["utf-8"],
+    "processing": ["asynchronously"],
+    "next step": ["smaller"],
+}
 DATASETS = {
     "File-processing API": {
         "instruction": INSTRUCTION, "history": HISTORY, "expected_facts": EXPECTED_FACTS,
         "evidence_ids": ["h01", "h03", "h07", "h09"],
         "summary": "Earlier authoritative facts: supported types are PDF, CSV, PNG; maximum size is 25 MB; API-key authentication is required; the timeout was revised from 30 to 60 seconds.",
+        "memory": "Requirements: PDF, CSV, PNG; 25 MB maximum; API-key authentication. Decision: active processing timeout is 60 seconds (supersedes 30 seconds). Open questions: retention period; virus-scanning behavior.",
     },
     "Task-management API": {
         "instruction": TASK_INSTRUCTION, "history": TASK_HISTORY, "expected_facts": TASK_EXPECTED_FACTS,
         "evidence_ids": ["t01", "t03", "t04", "t06", "t07"],
         "summary": "Earlier authoritative facts: tasks can be created, retrieved, and updated; IDs are globally unique; statuses are todo, in_progress, and done; deletion was changed to soft deletion; bearer-token authentication is required.",
+        "memory": "Requirements: create, retrieve, update tasks; globally unique IDs; statuses todo/in_progress/done; bearer-token authentication. Decision: soft deletion supersedes permanent deletion. Open questions: restoration; audit-log retention.",
+    },
+    "Security policy updates": {
+        "instruction": SECURITY_INSTRUCTION, "history": SECURITY_HISTORY, "expected_facts": SECURITY_EXPECTED_FACTS,
+        "evidence_ids": ["s03", "s04", "s05", "s07"],
+        "summary": "Earlier authoritative facts: SMS MFA was superseded by authenticator-app MFA for staff; administrators require SSO and hardware keys; data encryption uses AES-256 at rest and TLS 1.3 in transit.",
+        "memory": "Requirements: staff use authenticator-app MFA; administrators use SSO plus hardware keys; AES-256 at rest; TLS 1.3 in transit. Superseded decision: SMS MFA. Open questions: session duration; break-glass access.",
+    },
+    "Support knowledge retrieval": {
+        "instruction": SUPPORT_INSTRUCTION, "history": SUPPORT_HISTORY, "expected_facts": SUPPORT_EXPECTED_FACTS,
+        "evidence_ids": ["r04", "r05"],
+        "summary": "Earlier authoritative facts: CSV exports accept UTF-8 files up to 100 MB and process asynchronously; a customer’s 120 MB export failed.",
+        "memory": "Knowledge: CSV exports require UTF-8, allow up to 100 MB, and process asynchronously. Current case: a 120 MB export failed; recommend reducing the file size before retrying.",
     },
 }
+
+
+def _longbench_case_dataset(case: dict) -> dict:
+    passages = [part.strip() for part in re.split(r"(?=Passage \d+:)", case["context"]) if part.strip()]
+    history = [(f"p{index}", "assistant", passage) for index, passage in enumerate(passages, start=1)]
+    answer = case["answers"][0]
+    return {
+        "instruction": case["input"],
+        "history": history,
+        "expected_facts": {"reference answer": [answer.lower()]},
+        "evidence_ids": [],
+        "summary": "No precomputed summary is included for this official LongBench record.",
+        "memory": "No structured memory is included for this official LongBench record.",
+        "official": True,
+        "reference_answer": answer,
+    }
 
 
 def _text(item: tuple[str, str, str]) -> str:
@@ -71,7 +136,7 @@ def _retrieve(instruction: str, history: list[tuple[str, str, str]], limit: int 
     return ranked[:limit]
 
 
-def build_benchmark_context(strategy: str, instruction: str, history: list[tuple[str, str, str]] = HISTORY, summary: str = "", budget: int = 1800) -> dict:
+def build_benchmark_context(strategy: str, instruction: str, history: list[tuple[str, str, str]] = HISTORY, summary: str = "", memory: str = "", budget: int = 1800) -> dict:
     if strategy == "S0 · Baseline":
         selected = []
         source = "Instruction only"
@@ -84,6 +149,9 @@ def build_benchmark_context(strategy: str, instruction: str, history: list[tuple
     elif strategy == "S3 · Summary + recent":
         selected = [("summary", "system", summary)] + history[-4:]
         source = "Curated older-history summary plus last 4 turns"
+    elif strategy == "S5 · Structured memory":
+        selected = [("memory", "system", memory or summary)] + history[-2:]
+        source = "Structured memory record plus last 2 turns"
     else:
         selected = _retrieve(instruction, history)
         source = "Top 5 keyword-retrieved turns"
@@ -114,16 +182,32 @@ def render_demo1() -> None:
             input_price = st.number_input("Input $ / 1M", 0.0, 0.75, format="%.4f", key="demo1_in_price")
         with output_price_column:
             output_price = st.number_input("Output $ / 1M", 0.0, 4.50, format="%.4f", key="demo1_out_price")
-        dataset_name = st.selectbox("Dataset", list(DATASETS), key="demo1_dataset")
-        dataset = DATASETS[dataset_name]
+        official_name = "Official LongBench · HotpotQA subset"
+        dataset_name = st.selectbox("Dataset", list(DATASETS) + [official_name], key="demo1_dataset")
+        if dataset_name == official_name:
+            cases = load_cached_cases()
+            if cases is None:
+                st.info("This option downloads the official LongBench archive once (about 109 MB), then caches only three HotpotQA cases locally.")
+                if st.button("Download official LongBench subset", key="demo1_download_longbench"):
+                    try:
+                        with st.spinner("Downloading and preparing the official subset…"):
+                            download_subset()
+                        st.rerun()
+                    except Exception as exc:
+                        st.error(f"LongBench download failed: {exc}")
+                return
+            case_labels = [f"Case {index}: {case['input'][:58]}…" for index, case in enumerate(cases, start=1)]
+            chosen_case = st.selectbox("Official LongBench case", range(len(cases)), format_func=lambda index: case_labels[index], key="demo1_longbench_case")
+            dataset = _longbench_case_dataset(cases[chosen_case])
+        else:
+            dataset = DATASETS[dataset_name]
         current_history = dataset["history"]
         st.markdown("**Strategies**")
-        strategy_options = ["S0 · Baseline", "S1 · Full history", "S2 · Recent window", "S3 · Summary + recent", "S4 · Keyword retrieval"]
+        strategy_options = ["S0 · Baseline", "S1 · Full history", "S2 · Recent window", "S3 · Summary + recent", "S4 · Keyword retrieval", "S5 · Structured memory"]
         strategies = [
             strategy for index, strategy in enumerate(strategy_options)
             if st.checkbox(strategy, value=strategy in {"S0 · Baseline", "S2 · Recent window", "S4 · Keyword retrieval"}, key=f"demo1_{index}")
         ]
-        repetitions = st.number_input("Repetitions per strategy", min_value=1, max_value=5, value=1, step=1, key="demo1_repetitions")
         with st.expander("Benchmark Dataset and Expected Facts"):
             st.markdown("**Conversation history**")
             for message_id, role, content in current_history:
@@ -134,53 +218,46 @@ def render_demo1() -> None:
                 [{"Requirement": name.title(), "Expected terms": ", ".join(words)} for name, words in dataset["expected_facts"].items()],
                 use_container_width=True, hide_index=True,
             )
+            if dataset.get("official"):
+                st.caption(f"Official LongBench reference answer: {dataset['reference_answer']}")
     if "demo1_results" not in st.session_state:
         st.session_state.demo1_results = []
     with right:
         instruction = st.text_area("Benchmark instruction", dataset["instruction"], key=f"demo1_instruction_{dataset_name}", height=95)
-        planned_contexts = [build_benchmark_context(strategy, instruction, current_history, dataset["summary"]) for strategy in strategies]
-        planned_calls = len(strategies) * int(repetitions)
-        estimated_input = sum(item["estimated_tokens"] for item in planned_contexts) * int(repetitions)
-        estimated_cost = (estimated_input * input_price + planned_calls * int(max_output) * output_price) / 1_000_000
-        st.caption("Run planner")
-        calls_metric, input_metric, cost_metric = st.columns(3)
-        calls_metric.metric("LLM calls", planned_calls)
-        input_metric.metric("Est. input tokens", estimated_input)
-        cost_metric.metric("Est. max cost", f"${estimated_cost:.4f}")
         if st.button("Run benchmark", type="primary", disabled=not strategies, key="demo1_run", use_container_width=True):
             if not os.getenv("OPENAI_API_KEY"):
                 st.error("OPENAI_API_KEY is not configured.")
             else:
                 results = []
                 for strategy in strategies:
-                    built = build_benchmark_context(strategy, instruction, current_history, dataset["summary"])
-                    for run_number in range(1, int(repetitions) + 1):
-                        evidence = set(built["source_ids"]) & set(dataset["evidence_ids"])
-                        evidence_recall = len(evidence) / len(dataset["evidence_ids"])
-                        try:
-                            with st.spinner(f"Running {strategy} ({run_number}/{repetitions})…"):
-                                started = time.perf_counter()
-                                response = OpenAI().responses.create(model=model, instructions="Answer only from supplied context. Clearly identify missing information.", input=built["context"], max_output_tokens=int(max_output))
-                            correct, total, facts = _score(response.output_text, dataset["expected_facts"])
-                            cost = (response.usage.input_tokens * input_price + response.usage.output_tokens * output_price) / 1_000_000
-                            results.append({"dataset": dataset_name, "strategy": strategy, "run": run_number, "response": response.output_text, "context": built, "input_tokens": response.usage.input_tokens, "output_tokens": response.usage.output_tokens, "latency": time.perf_counter() - started, "accuracy": correct / total, "facts": facts, "evidence_recall": evidence_recall, "cost": cost})
-                        except Exception as exc:
-                            results.append({"dataset": dataset_name, "strategy": strategy, "run": run_number, "error": str(exc), "context": built, "evidence_recall": evidence_recall})
+                    built = build_benchmark_context(strategy, instruction, current_history, dataset["summary"], dataset["memory"])
+                    evidence = set(built["source_ids"]) & set(dataset["evidence_ids"])
+                    evidence_recall = len(evidence) / len(dataset["evidence_ids"]) if dataset["evidence_ids"] else None
+                    try:
+                        with st.spinner(f"Running {strategy}…"):
+                            started = time.perf_counter()
+                            response = OpenAI().responses.create(model=model, instructions="Answer only from supplied context. Clearly identify missing information.", input=built["context"], max_output_tokens=int(max_output))
+                        correct, total, facts = _score(response.output_text, dataset["expected_facts"])
+                        cost = (response.usage.input_tokens * input_price + response.usage.output_tokens * output_price) / 1_000_000
+                        results.append({"dataset": dataset_name, "strategy": strategy, "response": response.output_text, "context": built, "input_tokens": response.usage.input_tokens, "output_tokens": response.usage.output_tokens, "latency": time.perf_counter() - started, "accuracy": correct / total, "facts": facts, "evidence_recall": evidence_recall, "cost": cost})
+                    except Exception as exc:
+                        results.append({"dataset": dataset_name, "strategy": strategy, "error": str(exc), "context": built, "evidence_recall": evidence_recall})
                 st.session_state.demo1_results = results
         results = [result for result in st.session_state.demo1_results if result.get("dataset") == dataset_name]
         st.subheader("Benchmark results")
         if not results:
             st.info("Select one or more strategies, then run the benchmark.")
         else:
-            table = [{"Strategy": r["strategy"], "Run": r.get("run", 1), "Fact coverage": f"{r.get('accuracy', 0):.0%}", "Evidence recall": f"{r.get('evidence_recall', 0):.0%}", "Input": r.get("input_tokens", "—"), "Output": r.get("output_tokens", "—"), "Latency": f"{r.get('latency', 0):.2f}s", "Cost": f"${r.get('cost', 0):.5f}"} for r in results]
+            table = [{"Strategy": r["strategy"], "Fact coverage": f"{r.get('accuracy', 0):.0%}", "Evidence recall": f"{r['evidence_recall']:.0%}" if r.get("evidence_recall") is not None else "N/A", "Input": r.get("input_tokens", "—"), "Output": r.get("output_tokens", "—"), "Latency": f"{r.get('latency', 0):.2f}s", "Cost": f"${r.get('cost', 0):.5f}"} for r in results]
             st.dataframe(table, use_container_width=True, hide_index=True)
-            tabs = st.tabs([f"{r['strategy']} · Run {r.get('run', 1)}" for r in results])
+            tabs = st.tabs([r["strategy"] for r in results])
             for tab, result in zip(tabs, results):
                 with tab:
                     if "error" in result:
                         st.error(result["error"])
                     else:
-                        st.caption(f"Reference facts found: {', '.join(result['facts']) or 'none'} · Evidence recall: {result['evidence_recall']:.0%}")
+                        evidence_label = f"{result['evidence_recall']:.0%}" if result["evidence_recall"] is not None else "N/A for this official record"
+                        st.caption(f"Reference facts found: {', '.join(result['facts']) or 'none'} · Evidence recall: {evidence_label}")
                         st.info(result["response"] or "No visible response returned.")
                     with st.expander("Constructed Context to LLM"):
                         st.caption(f"{result['context']['provenance']} · IDs: {', '.join(result['context']['source_ids']) or 'none'} · Estimated: {result['context']['estimated_tokens']} tokens")
