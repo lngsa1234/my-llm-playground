@@ -304,7 +304,13 @@ def render_demo1() -> None:
                     try:
                         with st.spinner(f"Running {strategy}…"):
                             started = time.perf_counter()
-                            response = OpenAI().responses.create(model=model, instructions="Answer only from supplied context. Clearly identify missing information.", input=built["context"], max_output_tokens=int(max_output))
+                            response_instruction = (
+                                "Answer only from the supplied context. Return only the short final answer; do not include reasoning, explanation, or citations. "
+                                "If the answer is absent, return exactly: Insufficient information."
+                                if dataset.get("official")
+                                else "Answer only from supplied context. Clearly identify missing information."
+                            )
+                            response = OpenAI().responses.create(model=model, instructions=response_instruction, input=built["context"], max_output_tokens=int(max_output))
                         if dataset.get("official"):
                             accuracy, facts = _longbench_f1(response.output_text, dataset["reference_answers"])
                         else:
