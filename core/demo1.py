@@ -103,15 +103,6 @@ def render_demo1() -> None:
     st.caption("Run independent calls against one selected synthetic API dataset.")
     left, right = st.columns([0.9, 1.1], gap="large")
     with left:
-        dataset_name = st.selectbox("Dataset", list(DATASETS), key="demo1_dataset")
-        dataset = DATASETS[dataset_name]
-        current_history = dataset["history"]
-        st.markdown("**Strategies**")
-        strategy_options = ["S0 · Baseline", "S1 · Full history", "S2 · Recent window", "S3 · Summary + recent", "S4 · Keyword retrieval"]
-        strategies = [
-            strategy for index, strategy in enumerate(strategy_options)
-            if st.checkbox(strategy, value=strategy in {"S0 · Baseline", "S2 · Recent window", "S4 · Keyword retrieval"}, key=f"demo1_{index}")
-        ]
         model_column, token_column, input_price_column, output_price_column = st.columns(4)
         with model_column:
             model = st.text_input("Model", "gpt-5.4-mini", key="demo1_model")
@@ -121,6 +112,15 @@ def render_demo1() -> None:
             input_price = st.number_input("Input $ / 1M", 0.0, 0.75, format="%.4f", key="demo1_in_price")
         with output_price_column:
             output_price = st.number_input("Output $ / 1M", 0.0, 4.50, format="%.4f", key="demo1_out_price")
+        dataset_name = st.selectbox("Dataset", list(DATASETS), key="demo1_dataset")
+        dataset = DATASETS[dataset_name]
+        current_history = dataset["history"]
+        st.markdown("**Strategies**")
+        strategy_options = ["S0 · Baseline", "S1 · Full history", "S2 · Recent window", "S3 · Summary + recent", "S4 · Keyword retrieval"]
+        strategies = [
+            strategy for index, strategy in enumerate(strategy_options)
+            if st.checkbox(strategy, value=strategy in {"S0 · Baseline", "S2 · Recent window", "S4 · Keyword retrieval"}, key=f"demo1_{index}")
+        ]
         with st.expander("Benchmark Dataset and Expected Facts"):
             st.markdown("**Conversation history**")
             for message_id, role, content in current_history:
