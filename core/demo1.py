@@ -239,8 +239,10 @@ def render_demo1() -> None:
             case_labels = [f"Question {index}: {case['input'][:58]}…" for index, case in enumerate(cases, start=1)]
             chosen_case = st.selectbox("HotpotQA question", range(len(cases)), format_func=lambda index: case_labels[index], key="demo1_longbench_case")
             dataset = _longbench_case_dataset(cases[chosen_case])
+            case_key = f"{dataset_name}_{chosen_case}"
         else:
             dataset = DATASETS[dataset_name]
+            case_key = dataset_name
         current_history = dataset["history"]
         st.markdown("**Strategies**")
         strategy_options = ["S0 · Baseline", "S1 · Full history", "S2 · Recent window", "S3 · Summary + recent", "S4 · Keyword retrieval"]
@@ -268,7 +270,7 @@ def render_demo1() -> None:
     if "demo1_results" not in st.session_state:
         st.session_state.demo1_results = []
     with right:
-        instruction = st.text_area("Benchmark instruction", dataset["instruction"], key=f"demo1_instruction_{dataset_name}", height=95)
+        instruction = st.text_area("Benchmark instruction", dataset["instruction"], key=f"demo1_instruction_{case_key}", height=95)
         if st.button("Run benchmark", type="primary", disabled=not strategies, key="demo1_run", use_container_width=True):
             if not os.getenv("OPENAI_API_KEY"):
                 st.error("OPENAI_API_KEY is not configured.")
@@ -299,11 +301,11 @@ def render_demo1() -> None:
                         cost = (response.usage.input_tokens * input_price + response.usage.output_tokens * output_price) / 1_000_000
                         if strategy == "S3 · Summary + recent" and summary_metrics:
                             cost += (summary_metrics["input_tokens"] * input_price + summary_metrics["output_tokens"] * output_price) / 1_000_000
-                        results.append({"dataset": dataset_name, "strategy": strategy, "response": response.output_text, "context": built, "input_tokens": response.usage.input_tokens, "output_tokens": response.usage.output_tokens, "latency": time.perf_counter() - started, "accuracy": accuracy, "facts": facts, "evidence_recall": evidence_recall, "cost": cost, "summary_metrics": summary_metrics if strategy == "S3 · Summary + recent" else None})
+                        results.append({"dataset": dataset_name, "case_key": case_key, "strategy": strategy, "response": response.output_text, "context": built, "input_tokens": response.usage.input_tokens, "output_tokens": response.usage.output_tokens, "latency": time.perf_counter() - started, "accuracy": accuracy, "facts": facts, "evidence_recall": evidence_recall, "cost": cost, "summary_metrics": summary_metrics if strategy == "S3 · Summary + recent" else None})
                     except Exception as exc:
-                        results.append({"dataset": dataset_name, "strategy": strategy, "error": str(exc), "context": built, "evidence_recall": evidence_recall})
+                        results.append({"dataset": dataset_name, "case_key": case_key, "strategy": strategy, "error": str(exc), "context": built, "evidence_recall": evidence_recall})
                 st.session_state.demo1_results = results
-        results = [result for result in st.session_state.demo1_results if result.get("dataset") == dataset_name]
+        results = [result for result in st.session_state.demo1_results if result.get("dataset") == dataset_name and result.get("case_key") == case_key]
         st.subheader("Benchmark results")
         if not results:
             st.info("Select one or more strategies, then run the benchmark.")
