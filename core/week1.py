@@ -3,6 +3,7 @@
 import os
 import time
 import keyword
+import json
 
 import streamlit as st
 from openai import OpenAI
@@ -83,10 +84,10 @@ def render_week1() -> None:
             c.metric("Latency", f"{result['latency']:.2f}s")
             d.metric("Cost", f"${result['cost']:.5f}")
             st.caption(f"Total tokens: {result['total']} · Status: {result['status']}")
-        st.subheader("Response")
+        st.subheader("Generated Response")
         if result is None:
             st.info("Your API response will appear here.")
         elif result["format"] == "Structured Output":
-            st.json(result["answer"])
+            st.code(json.dumps(result["answer"], indent=2), language="json")
         else:
-            st.markdown(result["answer"] or "_No visible text returned._")
+            st.info(result["answer"] or "No visible text returned.")
