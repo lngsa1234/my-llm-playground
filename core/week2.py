@@ -4,6 +4,7 @@ import os
 import streamlit as st
 
 from core.context_builder import build_goal_context
+from core.demo1 import render_demo1
 from core.evaluator import validate_final_output, validate_response
 from core.llm_client import execute_goal_call
 from core.state_manager import WORKFLOW, add_feedback, list_states, load_state, new_goal_state, save_state, utc_now
@@ -20,9 +21,7 @@ def render_week2() -> None:
         ]
     )
     with demo1:
-        st.subheader("Context Strategy Benchmark")
-        st.caption("Compare baseline, history, summary, and retrieval context strategies.")
-        st.info("Demo 1 benchmark UI will be added here.")
+        render_demo1()
     with demo2:
         render_demo2()
     with demo3:
