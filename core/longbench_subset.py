@@ -8,7 +8,7 @@ from pathlib import Path
 from urllib.request import urlretrieve
 
 ARCHIVE_URL = "https://huggingface.co/datasets/THUDM/LongBench/resolve/main/data.zip"
-CACHE_PATH = Path("data/longbench_hotpotqa_subset.json")
+CACHE_PATH = Path("data/longbench_hotpotqa_10_cases.json")
 MEMBER = "data/hotpotqa.jsonl"
 
 
@@ -18,7 +18,7 @@ def load_cached_cases() -> list[dict] | None:
     return json.loads(CACHE_PATH.read_text(encoding="utf-8"))["cases"]
 
 
-def download_subset(case_count: int = 3) -> list[dict]:
+def download_subset(case_count: int = 10) -> list[dict]:
     """Download the official archive once, then persist only the first few HotpotQA cases."""
     CACHE_PATH.parent.mkdir(parents=True, exist_ok=True)
     archive_path = CACHE_PATH.parent / "_longbench_official.zip"

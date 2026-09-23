@@ -83,25 +83,25 @@ SUPPORT_EXPECTED_FACTS = {
     "next step": ["smaller"],
 }
 DATASETS = {
-    "File-processing API": {
+    "Quick scenario · File-processing API": {
         "instruction": INSTRUCTION, "history": HISTORY, "expected_facts": EXPECTED_FACTS,
         "evidence_ids": ["h01", "h03", "h07", "h09"],
         "summary": "Earlier authoritative facts: supported types are PDF, CSV, PNG; maximum size is 25 MB; API-key authentication is required; the timeout was revised from 30 to 60 seconds.",
         "memory": "Requirements: PDF, CSV, PNG; 25 MB maximum; API-key authentication. Decision: active processing timeout is 60 seconds (supersedes 30 seconds). Open questions: retention period; virus-scanning behavior.",
     },
-    "Task-management API": {
+    "Quick scenario · Task-management API": {
         "instruction": TASK_INSTRUCTION, "history": TASK_HISTORY, "expected_facts": TASK_EXPECTED_FACTS,
         "evidence_ids": ["t01", "t03", "t04", "t06", "t07"],
         "summary": "Earlier authoritative facts: tasks can be created, retrieved, and updated; IDs are globally unique; statuses are todo, in_progress, and done; deletion was changed to soft deletion; bearer-token authentication is required.",
         "memory": "Requirements: create, retrieve, update tasks; globally unique IDs; statuses todo/in_progress/done; bearer-token authentication. Decision: soft deletion supersedes permanent deletion. Open questions: restoration; audit-log retention.",
     },
-    "Security policy updates": {
+    "Quick scenario · Security policy updates": {
         "instruction": SECURITY_INSTRUCTION, "history": SECURITY_HISTORY, "expected_facts": SECURITY_EXPECTED_FACTS,
         "evidence_ids": ["s03", "s04", "s05", "s07"],
         "summary": "Earlier authoritative facts: SMS MFA was superseded by authenticator-app MFA for staff; administrators require SSO and hardware keys; data encryption uses AES-256 at rest and TLS 1.3 in transit.",
         "memory": "Requirements: staff use authenticator-app MFA; administrators use SSO plus hardware keys; AES-256 at rest; TLS 1.3 in transit. Superseded decision: SMS MFA. Open questions: session duration; break-glass access.",
     },
-    "Support knowledge retrieval": {
+    "Quick scenario · Support knowledge retrieval": {
         "instruction": SUPPORT_INSTRUCTION, "history": SUPPORT_HISTORY, "expected_facts": SUPPORT_EXPECTED_FACTS,
         "evidence_ids": ["r04", "r05"],
         "summary": "Earlier authoritative facts: CSV exports accept UTF-8 files up to 100 MB and process asynchronously; a customer’s 120 MB export failed.",
@@ -187,7 +187,7 @@ def render_demo1() -> None:
         if dataset_name == official_name:
             cases = load_cached_cases()
             if cases is None:
-                st.info("This option downloads the official LongBench archive once (about 109 MB), then caches only three HotpotQA cases locally.")
+                st.info("This option downloads the official LongBench archive once (about 109 MB), then caches only ten HotpotQA cases locally.")
                 if st.button("Download official LongBench subset", key="demo1_download_longbench"):
                     try:
                         with st.spinner("Downloading and preparing the official subset…"):
