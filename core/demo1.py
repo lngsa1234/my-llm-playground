@@ -93,7 +93,7 @@ def render_demo1() -> None:
                 id_column.caption(f"[{message_id}]")
                 with message_column:
                     with st.chat_message(role):
-                        st.write(content)
+                        st.write(f"{role.title()}: {content}")
             st.markdown("**Expected facts**")
             st.dataframe(
                 [{"Requirement": name.title(), "Expected terms": ", ".join(words)} for name, words in EXPECTED_FACTS.items()],
