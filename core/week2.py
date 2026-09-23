@@ -26,11 +26,10 @@ def render_week2() -> None:
         render_demo2()
     with demo3:
         st.subheader("Context Builder Evaluation")
-        st.caption("Evaluate multi-run context strategies for quality, retention, cost, and latency.")
-        st.info("Demo 3 evaluation UI will be added here.")
+        st.info("Coming soon!")
 
 
-def render_demo2() -> None:
+def _render_demo2_builder() -> None:
     st.header("Demo 2 · Multi-Run Goal Builder")
     st.caption("Persistent state, inspectable context, and one LLM call per workflow step.")
     if "goal_id" not in st.session_state:
@@ -134,3 +133,9 @@ def render_demo2() -> None:
         b.metric("Input tokens", total_in)
         c.metric("Output tokens", total_out)
         d.metric("Estimated cost", f"${total_in * input_price / 1_000_000 + total_out * output_price / 1_000_000:.5f}")
+
+
+def render_demo2() -> None:
+    """Render the Demo 2 placeholder until the builder is ready."""
+    st.header("Demo 2 · Multi-Run Goal Builder")
+    st.info("Coming soon!")
