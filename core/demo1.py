@@ -88,25 +88,21 @@ DATASETS = {
         "instruction": INSTRUCTION, "history": HISTORY, "expected_facts": EXPECTED_FACTS,
         "evidence_ids": ["h01", "h03", "h07", "h09"],
         "summary": "Earlier authoritative facts: supported types are PDF, CSV, PNG; maximum size is 25 MB; API-key authentication is required; the timeout was revised from 30 to 60 seconds.",
-        "memory": "Requirements: PDF, CSV, PNG; 25 MB maximum; API-key authentication. Decision: active processing timeout is 60 seconds (supersedes 30 seconds). Open questions: retention period; virus-scanning behavior.",
     },
     "Quick scenario · Task-management API": {
         "instruction": TASK_INSTRUCTION, "history": TASK_HISTORY, "expected_facts": TASK_EXPECTED_FACTS,
         "evidence_ids": ["t01", "t03", "t04", "t06", "t07"],
         "summary": "Earlier authoritative facts: tasks can be created, retrieved, and updated; IDs are globally unique; statuses are todo, in_progress, and done; deletion was changed to soft deletion; bearer-token authentication is required.",
-        "memory": "Requirements: create, retrieve, update tasks; globally unique IDs; statuses todo/in_progress/done; bearer-token authentication. Decision: soft deletion supersedes permanent deletion. Open questions: restoration; audit-log retention.",
     },
     "Quick scenario · Security policy updates": {
         "instruction": SECURITY_INSTRUCTION, "history": SECURITY_HISTORY, "expected_facts": SECURITY_EXPECTED_FACTS,
         "evidence_ids": ["s03", "s04", "s05", "s07"],
         "summary": "Earlier authoritative facts: SMS MFA was superseded by authenticator-app MFA for staff; administrators require SSO and hardware keys; data encryption uses AES-256 at rest and TLS 1.3 in transit.",
-        "memory": "Requirements: staff use authenticator-app MFA; administrators use SSO plus hardware keys; AES-256 at rest; TLS 1.3 in transit. Superseded decision: SMS MFA. Open questions: session duration; break-glass access.",
     },
     "Quick scenario · Support knowledge retrieval": {
         "instruction": SUPPORT_INSTRUCTION, "history": SUPPORT_HISTORY, "expected_facts": SUPPORT_EXPECTED_FACTS,
         "evidence_ids": ["r04", "r05"],
         "summary": "Earlier authoritative facts: CSV exports accept UTF-8 files up to 100 MB and process asynchronously; a customer’s 120 MB export failed.",
-        "memory": "Knowledge: CSV exports require UTF-8, allow up to 100 MB, and process asynchronously. Current case: a 120 MB export failed; recommend reducing the file size before retrying.",
     },
 }
 
@@ -120,8 +116,7 @@ def _longbench_case_dataset(case: dict) -> dict:
         "history": history,
         "expected_facts": {"reference answer": [answer.lower()]},
         "evidence_ids": [],
-        "summary": "No precomputed summary is included for this official LongBench record.",
-        "memory": "No structured memory is included for this official LongBench record.",
+        "summary": "",
         "official": True,
         "reference_answer": answer,
         "reference_answers": case["answers"],
@@ -138,7 +133,7 @@ def _retrieve(instruction: str, history: list[tuple[str, str, str]], limit: int 
     return ranked[:limit]
 
 
-def build_benchmark_context(strategy: str, instruction: str, history: list[tuple[str, str, str]] = HISTORY, summary: str = "", memory: str = "", budget: int = 1800) -> dict:
+def build_benchmark_context(strategy: str, instruction: str, history: list[tuple[str, str, str]] = HISTORY, summary: str = "", budget: int = 1800) -> dict:
     if strategy == "S0 · Baseline":
         selected = []
         source = "Instruction only"
@@ -151,9 +146,6 @@ def build_benchmark_context(strategy: str, instruction: str, history: list[tuple
     elif strategy == "S3 · Summary + recent":
         selected = [("summary", "system", summary)] + history[-4:]
         source = "Curated older-history summary plus last 4 turns"
-    elif strategy == "S5 · Structured memory":
-        selected = [("memory", "system", memory or summary)] + history[-2:]
-        source = "Structured memory record plus last 2 turns"
     else:
         selected = _retrieve(instruction, history)
         source = "Top 5 keyword-retrieved turns"
@@ -164,9 +156,9 @@ def build_benchmark_context(strategy: str, instruction: str, history: list[tuple
         passages.pop(0)
     if not passages and selected:
         # A single LongBench passage can exceed the entire budget. Retain the
-        # summary/memory record when available; otherwise retain a clipped
+        # summary record when available; otherwise retain a clipped
         # excerpt rather than silently sending no context.
-        preferred = selected[0] if strategy in {"S3 · Summary + recent", "S5 · Structured memory"} else selected[-1]
+        preferred = selected[0] if strategy == "S3 · Summary + recent" else selected[-1]
         available_characters = max(200, (budget - estimate_tokens(instruction) - 12) * 4)
         included = [preferred]
         passages = [_text(preferred)[:available_characters] + "\n[Context clipped to budget]"]
@@ -197,6 +189,23 @@ def _longbench_f1(answer: str, references: list[str]) -> tuple[float, list[str]]
         if score > best_score:
             best_score, best_reference = score, reference
     return best_score, [best_reference] if best_reference else []
+
+
+def _generate_query_summary(model: str, question: str, history: list[tuple[str, str, str]], max_output_tokens: int) -> tuple[str, dict]:
+    """Create a query-focused summary when an official document provides none."""
+    document = "\n\n".join(_text(item) for item in history)
+    started = time.perf_counter()
+    response = OpenAI().responses.create(
+        model=model,
+        instructions="Create a concise, factual summary focused on answering the question. Preserve names, dates, comparisons, and uncertainty. Do not answer from outside the supplied document.",
+        input=f"Question:\n{question}\n\nDocument:\n{document}",
+        max_output_tokens=max_output_tokens,
+    )
+    return response.output_text, {
+        "input_tokens": response.usage.input_tokens,
+        "output_tokens": response.usage.output_tokens,
+        "latency": time.perf_counter() - started,
+    }
 
 
 def render_demo1() -> None:
@@ -234,7 +243,7 @@ def render_demo1() -> None:
             dataset = DATASETS[dataset_name]
         current_history = dataset["history"]
         st.markdown("**Strategies**")
-        strategy_options = ["S0 · Baseline", "S1 · Full history", "S2 · Recent window", "S3 · Summary + recent", "S4 · Keyword retrieval", "S5 · Structured memory"]
+        strategy_options = ["S0 · Baseline", "S1 · Full history", "S2 · Recent window", "S3 · Summary + recent", "S4 · Keyword retrieval"]
         strategies = [
             strategy for index, strategy in enumerate(strategy_options)
             if st.checkbox(strategy, value=strategy in {"S0 · Baseline", "S2 · Recent window", "S4 · Keyword retrieval"}, key=f"demo1_{index}")
@@ -265,8 +274,17 @@ def render_demo1() -> None:
                 st.error("OPENAI_API_KEY is not configured.")
             else:
                 results = []
+                summary = dataset["summary"]
+                summary_metrics = None
+                if "S3 · Summary + recent" in strategies and not summary:
+                    try:
+                        with st.spinner("Generating query-focused document summary…"):
+                            summary, summary_metrics = _generate_query_summary(model, instruction, current_history, int(max_output))
+                    except Exception as exc:
+                        st.error(f"Summary generation failed: {exc}")
+                        summary = ""
                 for strategy in strategies:
-                    built = build_benchmark_context(strategy, instruction, current_history, dataset["summary"], dataset["memory"])
+                    built = build_benchmark_context(strategy, instruction, current_history, summary)
                     evidence = set(built["source_ids"]) & set(dataset["evidence_ids"])
                     evidence_recall = len(evidence) / len(dataset["evidence_ids"]) if dataset["evidence_ids"] else None
                     try:
@@ -279,7 +297,9 @@ def render_demo1() -> None:
                             correct, total, facts = _score(response.output_text, dataset["expected_facts"])
                             accuracy = correct / total
                         cost = (response.usage.input_tokens * input_price + response.usage.output_tokens * output_price) / 1_000_000
-                        results.append({"dataset": dataset_name, "strategy": strategy, "response": response.output_text, "context": built, "input_tokens": response.usage.input_tokens, "output_tokens": response.usage.output_tokens, "latency": time.perf_counter() - started, "accuracy": accuracy, "facts": facts, "evidence_recall": evidence_recall, "cost": cost})
+                        if strategy == "S3 · Summary + recent" and summary_metrics:
+                            cost += (summary_metrics["input_tokens"] * input_price + summary_metrics["output_tokens"] * output_price) / 1_000_000
+                        results.append({"dataset": dataset_name, "strategy": strategy, "response": response.output_text, "context": built, "input_tokens": response.usage.input_tokens, "output_tokens": response.usage.output_tokens, "latency": time.perf_counter() - started, "accuracy": accuracy, "facts": facts, "evidence_recall": evidence_recall, "cost": cost, "summary_metrics": summary_metrics if strategy == "S3 · Summary + recent" else None})
                     except Exception as exc:
                         results.append({"dataset": dataset_name, "strategy": strategy, "error": str(exc), "context": built, "evidence_recall": evidence_recall})
                 st.session_state.demo1_results = results
@@ -299,6 +319,9 @@ def render_demo1() -> None:
                     else:
                         evidence_label = f"{result['evidence_recall']:.0%}" if result["evidence_recall"] is not None else "N/A for this official record"
                         st.caption(f"Reference facts found: {', '.join(result['facts']) or 'none'} · Evidence recall: {evidence_label}")
+                        if result.get("summary_metrics"):
+                            metrics = result["summary_metrics"]
+                            st.caption(f"Generated summary: {metrics['input_tokens']} input tokens, {metrics['output_tokens']} output tokens, {metrics['latency']:.2f}s. Its cost is included above.")
                         st.info(result["response"] or "No visible response returned.")
                     with st.expander("Constructed Context to LLM"):
                         st.caption(f"{result['context']['provenance']} · IDs: {', '.join(result['context']['source_ids']) or 'none'} · Estimated: {result['context']['estimated_tokens']} tokens")
