@@ -50,10 +50,12 @@ TASK_EXPECTED_FACTS = {
 DATASETS = {
     "File-processing API": {
         "instruction": INSTRUCTION, "history": HISTORY, "expected_facts": EXPECTED_FACTS,
+        "evidence_ids": ["h01", "h03", "h07", "h09"],
         "summary": "Earlier authoritative facts: supported types are PDF, CSV, PNG; maximum size is 25 MB; API-key authentication is required; the timeout was revised from 30 to 60 seconds.",
     },
     "Task-management API": {
         "instruction": TASK_INSTRUCTION, "history": TASK_HISTORY, "expected_facts": TASK_EXPECTED_FACTS,
+        "evidence_ids": ["t01", "t03", "t04", "t06", "t07"],
         "summary": "Earlier authoritative facts: tasks can be created, retrieved, and updated; IDs are globally unique; statuses are todo, in_progress, and done; deletion was changed to soft deletion; bearer-token authentication is required.",
     },
 }
@@ -121,6 +123,7 @@ def render_demo1() -> None:
             strategy for index, strategy in enumerate(strategy_options)
             if st.checkbox(strategy, value=strategy in {"S0 · Baseline", "S2 · Recent window", "S4 · Keyword retrieval"}, key=f"demo1_{index}")
         ]
+        repetitions = st.number_input("Repetitions per strategy", min_value=1, max_value=5, value=1, step=1, key="demo1_repetitions")
         with st.expander("Benchmark Dataset and Expected Facts"):
             st.markdown("**Conversation history**")
             for message_id, role, content in current_history:
@@ -135,6 +138,15 @@ def render_demo1() -> None:
         st.session_state.demo1_results = []
     with right:
         instruction = st.text_area("Benchmark instruction", dataset["instruction"], key=f"demo1_instruction_{dataset_name}", height=95)
+        planned_contexts = [build_benchmark_context(strategy, instruction, current_history, dataset["summary"]) for strategy in strategies]
+        planned_calls = len(strategies) * int(repetitions)
+        estimated_input = sum(item["estimated_tokens"] for item in planned_contexts) * int(repetitions)
+        estimated_cost = (estimated_input * input_price + planned_calls * int(max_output) * output_price) / 1_000_000
+        st.caption("Run planner")
+        calls_metric, input_metric, cost_metric = st.columns(3)
+        calls_metric.metric("LLM calls", planned_calls)
+        input_metric.metric("Est. input tokens", estimated_input)
+        cost_metric.metric("Est. max cost", f"${estimated_cost:.4f}")
         if st.button("Run benchmark", type="primary", disabled=not strategies, key="demo1_run", use_container_width=True):
             if not os.getenv("OPENAI_API_KEY"):
                 st.error("OPENAI_API_KEY is not configured.")
@@ -142,30 +154,33 @@ def render_demo1() -> None:
                 results = []
                 for strategy in strategies:
                     built = build_benchmark_context(strategy, instruction, current_history, dataset["summary"])
-                    try:
-                        with st.spinner(f"Running {strategy}…"):
-                            started = time.perf_counter()
-                            response = OpenAI().responses.create(model=model, instructions="Answer only from supplied context. Clearly identify missing information.", input=built["context"], max_output_tokens=int(max_output))
-                        correct, total, facts = _score(response.output_text, dataset["expected_facts"])
-                        cost = (response.usage.input_tokens * input_price + response.usage.output_tokens * output_price) / 1_000_000
-                        results.append({"dataset": dataset_name, "strategy": strategy, "response": response.output_text, "context": built, "input_tokens": response.usage.input_tokens, "output_tokens": response.usage.output_tokens, "latency": time.perf_counter() - started, "accuracy": correct / total, "facts": facts, "cost": cost})
-                    except Exception as exc:
-                        results.append({"dataset": dataset_name, "strategy": strategy, "error": str(exc), "context": built})
+                    for run_number in range(1, int(repetitions) + 1):
+                        evidence = set(built["source_ids"]) & set(dataset["evidence_ids"])
+                        evidence_recall = len(evidence) / len(dataset["evidence_ids"])
+                        try:
+                            with st.spinner(f"Running {strategy} ({run_number}/{repetitions})…"):
+                                started = time.perf_counter()
+                                response = OpenAI().responses.create(model=model, instructions="Answer only from supplied context. Clearly identify missing information.", input=built["context"], max_output_tokens=int(max_output))
+                            correct, total, facts = _score(response.output_text, dataset["expected_facts"])
+                            cost = (response.usage.input_tokens * input_price + response.usage.output_tokens * output_price) / 1_000_000
+                            results.append({"dataset": dataset_name, "strategy": strategy, "run": run_number, "response": response.output_text, "context": built, "input_tokens": response.usage.input_tokens, "output_tokens": response.usage.output_tokens, "latency": time.perf_counter() - started, "accuracy": correct / total, "facts": facts, "evidence_recall": evidence_recall, "cost": cost})
+                        except Exception as exc:
+                            results.append({"dataset": dataset_name, "strategy": strategy, "run": run_number, "error": str(exc), "context": built, "evidence_recall": evidence_recall})
                 st.session_state.demo1_results = results
         results = [result for result in st.session_state.demo1_results if result.get("dataset") == dataset_name]
         st.subheader("Benchmark results")
         if not results:
             st.info("Select one or more strategies, then run the benchmark.")
         else:
-            table = [{"Strategy": r["strategy"], "Accuracy": f"{r.get('accuracy', 0):.0%}", "Input": r.get("input_tokens", "—"), "Output": r.get("output_tokens", "—"), "Latency": f"{r.get('latency', 0):.2f}s", "Cost": f"${r.get('cost', 0):.5f}"} for r in results]
+            table = [{"Strategy": r["strategy"], "Run": r.get("run", 1), "Fact coverage": f"{r.get('accuracy', 0):.0%}", "Evidence recall": f"{r.get('evidence_recall', 0):.0%}", "Input": r.get("input_tokens", "—"), "Output": r.get("output_tokens", "—"), "Latency": f"{r.get('latency', 0):.2f}s", "Cost": f"${r.get('cost', 0):.5f}"} for r in results]
             st.dataframe(table, use_container_width=True, hide_index=True)
-            tabs = st.tabs([r["strategy"] for r in results])
+            tabs = st.tabs([f"{r['strategy']} · Run {r.get('run', 1)}" for r in results])
             for tab, result in zip(tabs, results):
                 with tab:
                     if "error" in result:
                         st.error(result["error"])
                     else:
-                        st.caption(f"Required facts found: {', '.join(result['facts']) or 'none'}")
+                        st.caption(f"Reference facts found: {', '.join(result['facts']) or 'none'} · Evidence recall: {result['evidence_recall']:.0%}")
                         st.info(result["response"] or "No visible response returned.")
                     with st.expander("Constructed Context to LLM"):
                         st.caption(f"{result['context']['provenance']} · IDs: {', '.join(result['context']['source_ids']) or 'none'} · Estimated: {result['context']['estimated_tokens']} tokens")
