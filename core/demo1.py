@@ -3,6 +3,7 @@
 import os
 import re
 import time
+from collections import Counter
 
 import streamlit as st
 from openai import OpenAI
@@ -123,6 +124,7 @@ def _longbench_case_dataset(case: dict) -> dict:
         "memory": "No structured memory is included for this official LongBench record.",
         "official": True,
         "reference_answer": answer,
+        "reference_answers": case["answers"],
     }
 
 
@@ -155,17 +157,46 @@ def build_benchmark_context(strategy: str, instruction: str, history: list[tuple
     else:
         selected = _retrieve(instruction, history)
         source = "Top 5 keyword-retrieved turns"
-    passages = [_text(item) for item in selected]
+    included = selected[:]
+    passages = [_text(item) for item in included]
     while passages and estimate_tokens("\n".join(passages) + instruction) > budget:
+        included.pop(0)
         passages.pop(0)
+    if not passages and selected:
+        # A single LongBench passage can exceed the entire budget. Retain the
+        # summary/memory record when available; otherwise retain a clipped
+        # excerpt rather than silently sending no context.
+        preferred = selected[0] if strategy in {"S3 · Summary + recent", "S5 · Structured memory"} else selected[-1]
+        available_characters = max(200, (budget - estimate_tokens(instruction) - 12) * 4)
+        included = [preferred]
+        passages = [_text(preferred)[:available_characters] + "\n[Context clipped to budget]"]
     context = f"Instruction:\n{instruction}\n\nContext:\n" + ("\n".join(passages) or "(No additional context supplied.)")
-    return {"context": context, "provenance": source, "source_ids": [item[0] for item in selected[-len(passages):]], "estimated_tokens": estimate_tokens(context)}
+    return {"context": context, "provenance": source, "source_ids": [item[0] for item in included], "estimated_tokens": estimate_tokens(context)}
 
 
 def _score(answer: str, expected_facts: dict[str, list[str]] = EXPECTED_FACTS) -> tuple[int, int, list[str]]:
     normalized = answer.lower()
     passed = [name for name, words in expected_facts.items() if all(word in normalized for word in words)]
     return len(passed), len(expected_facts), passed
+
+
+def _longbench_f1(answer: str, references: list[str]) -> tuple[float, list[str]]:
+    """A transparent token-overlap score for the HotpotQA classroom subset."""
+    prediction = re.findall(r"\w+", answer.lower())
+    best_score = 0.0
+    best_reference = ""
+    for reference in references:
+        gold = re.findall(r"\w+", reference.lower())
+        overlap = sum((Counter(prediction) & Counter(gold)).values())
+        if not overlap:
+            score = 0.0
+        else:
+            precision = overlap / len(prediction)
+            recall = overlap / len(gold)
+            score = 2 * precision * recall / (precision + recall)
+        if score > best_score:
+            best_score, best_reference = score, reference
+    return best_score, [best_reference] if best_reference else []
 
 
 def render_demo1() -> None:
@@ -242,9 +273,13 @@ def render_demo1() -> None:
                         with st.spinner(f"Running {strategy}…"):
                             started = time.perf_counter()
                             response = OpenAI().responses.create(model=model, instructions="Answer only from supplied context. Clearly identify missing information.", input=built["context"], max_output_tokens=int(max_output))
-                        correct, total, facts = _score(response.output_text, dataset["expected_facts"])
+                        if dataset.get("official"):
+                            accuracy, facts = _longbench_f1(response.output_text, dataset["reference_answers"])
+                        else:
+                            correct, total, facts = _score(response.output_text, dataset["expected_facts"])
+                            accuracy = correct / total
                         cost = (response.usage.input_tokens * input_price + response.usage.output_tokens * output_price) / 1_000_000
-                        results.append({"dataset": dataset_name, "strategy": strategy, "response": response.output_text, "context": built, "input_tokens": response.usage.input_tokens, "output_tokens": response.usage.output_tokens, "latency": time.perf_counter() - started, "accuracy": correct / total, "facts": facts, "evidence_recall": evidence_recall, "cost": cost})
+                        results.append({"dataset": dataset_name, "strategy": strategy, "response": response.output_text, "context": built, "input_tokens": response.usage.input_tokens, "output_tokens": response.usage.output_tokens, "latency": time.perf_counter() - started, "accuracy": accuracy, "facts": facts, "evidence_recall": evidence_recall, "cost": cost})
                     except Exception as exc:
                         results.append({"dataset": dataset_name, "strategy": strategy, "error": str(exc), "context": built, "evidence_recall": evidence_recall})
                 st.session_state.demo1_results = results
@@ -253,7 +288,8 @@ def render_demo1() -> None:
         if not results:
             st.info("Select one or more strategies, then run the benchmark.")
         else:
-            table = [{"Strategy": r["strategy"], "Fact coverage": f"{r.get('accuracy', 0):.0%}", "Evidence recall": f"{r['evidence_recall']:.0%}" if r.get("evidence_recall") is not None else "N/A", "Input": r.get("input_tokens", "—"), "Output": r.get("output_tokens", "—"), "Latency": f"{r.get('latency', 0):.2f}s", "Cost": f"${r.get('cost', 0):.5f}"} for r in results]
+            metric_label = "Answer F1" if dataset.get("official") else "Fact coverage"
+            table = [{"Strategy": r["strategy"], metric_label: f"{r.get('accuracy', 0):.0%}", "Evidence recall": f"{r['evidence_recall']:.0%}" if r.get("evidence_recall") is not None else "N/A", "Input": r.get("input_tokens", "—"), "Output": r.get("output_tokens", "—"), "Latency": f"{r.get('latency', 0):.2f}s", "Cost": f"${r.get('cost', 0):.5f}"} for r in results]
             st.dataframe(table, use_container_width=True, hide_index=True)
             tabs = st.tabs([r["strategy"] for r in results])
             for tab, result in zip(tabs, results):
