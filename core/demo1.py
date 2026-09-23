@@ -86,11 +86,10 @@ def render_demo1() -> None:
     strategies = st.multiselect("Strategies", ["S0 · Baseline", "S1 · Full history", "S2 · Recent window", "S3 · Summary + recent", "S4 · Keyword retrieval"], default=["S0 · Baseline", "S2 · Recent window", "S4 · Keyword retrieval"], key="demo1_strategies")
     with st.expander("Inspect benchmark dataset and expected facts"):
         st.markdown("**Conversation history**")
-        st.dataframe(
-            [{"ID": item[0], "Role": item[1], "Message": item[2]} for item in HISTORY],
-            use_container_width=True,
-            hide_index=True,
-        )
+        for message_id, role, content in HISTORY:
+            with st.chat_message(role):
+                st.caption(message_id)
+                st.write(content)
         st.markdown("**Expected facts**")
         st.dataframe(
             [{"Requirement": name.title(), "Expected terms": ", ".join(words)} for name, words in EXPECTED_FACTS.items()],
