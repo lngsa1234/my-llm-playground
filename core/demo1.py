@@ -89,7 +89,7 @@ def render_demo1() -> None:
         with st.expander("Inspect benchmark dataset and expected facts"):
             st.markdown("**Conversation history**")
             for message_id, role, content in HISTORY:
-                id_column, message_column = st.columns([0.12, 0.88])
+                id_column, message_column = st.columns([0.12, 0.88], gap=None)
                 id_column.caption(f"[{message_id}]")
                 with message_column:
                     with st.chat_message(role):
