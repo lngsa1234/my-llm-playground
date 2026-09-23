@@ -10,7 +10,29 @@ from core.state_manager import WORKFLOW, add_feedback, list_states, load_state, 
 
 
 def render_week2() -> None:
-    st.header("Week 2 · Multi-Run Goal Builder")
+    """Render the three Week 2 lab demos."""
+    st.header("Week 2 · Context Engineering")
+    demo1, demo2, demo3 = st.tabs(
+        [
+            "Demo 1 · Benchmark",
+            "Demo 2 · Multi-Run Builder",
+            "Demo 3 · Context Builder Eval",
+        ]
+    )
+    with demo1:
+        st.subheader("Context Strategy Benchmark")
+        st.caption("Compare baseline, history, summary, and retrieval context strategies.")
+        st.info("Demo 1 benchmark UI will be added here.")
+    with demo2:
+        render_demo2()
+    with demo3:
+        st.subheader("Context Builder Evaluation")
+        st.caption("Evaluate multi-run context strategies for quality, retention, cost, and latency.")
+        st.info("Demo 3 evaluation UI will be added here.")
+
+
+def render_demo2() -> None:
+    st.header("Demo 2 · Multi-Run Goal Builder")
     st.caption("Persistent state, inspectable context, and one LLM call per workflow step.")
     if "goal_id" not in st.session_state:
         st.session_state.goal_id = None
