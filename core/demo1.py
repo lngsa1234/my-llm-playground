@@ -112,7 +112,7 @@ DATASETS = {
 
 def _longbench_case_dataset(case: dict) -> dict:
     passages = [part.strip() for part in re.split(r"(?=Passage \d+:)", case["context"]) if part.strip()]
-    history = [(f"p{index}", "assistant", passage) for index, passage in enumerate(passages, start=1)]
+    history = [(f"p{index}", "document", passage) for index, passage in enumerate(passages, start=1)]
     answer = case["answers"][0]
     return {
         "instruction": case["input"],
@@ -196,8 +196,8 @@ def render_demo1() -> None:
                     except Exception as exc:
                         st.error(f"LongBench download failed: {exc}")
                 return
-            case_labels = [f"Case {index}: {case['input'][:58]}…" for index, case in enumerate(cases, start=1)]
-            chosen_case = st.selectbox("Official LongBench case", range(len(cases)), format_func=lambda index: case_labels[index], key="demo1_longbench_case")
+            case_labels = [f"Question {index}: {case['input'][:58]}…" for index, case in enumerate(cases, start=1)]
+            chosen_case = st.selectbox("HotpotQA question", range(len(cases)), format_func=lambda index: case_labels[index], key="demo1_longbench_case")
             dataset = _longbench_case_dataset(cases[chosen_case])
         else:
             dataset = DATASETS[dataset_name]
@@ -211,8 +211,13 @@ def render_demo1() -> None:
         with st.expander("Benchmark Dataset and Expected Facts"):
             st.markdown("**Conversation history**")
             for message_id, role, content in current_history:
-                with st.chat_message(role):
-                    st.write(f"[{message_id}] {role.title()}: {content}")
+                if role == "document":
+                    with st.container(border=True):
+                        st.caption(f"[{message_id}] Document passage")
+                        st.write(content)
+                else:
+                    with st.chat_message(role):
+                        st.write(f"[{message_id}] {role.title()}: {content}")
             st.markdown("**Expected facts**")
             st.dataframe(
                 [{"Requirement": name.title(), "Expected terms": ", ".join(words)} for name, words in dataset["expected_facts"].items()],
