@@ -13,6 +13,7 @@ from core.state_manager import WORKFLOW, add_feedback, list_states, load_state, 
 def render_week2() -> None:
     """Render the three Week 2 lab demos."""
     st.header("Week 2 · Context Engineering")
+    st.info("Demo 2 and Demo 3 are coming soon!")
     demo1, demo2, demo3 = st.tabs(
         [
             "Demo 1 · Benchmark",
