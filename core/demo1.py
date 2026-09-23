@@ -89,11 +89,8 @@ def render_demo1() -> None:
         with st.expander("Inspect benchmark dataset and expected facts"):
             st.markdown("**Conversation history**")
             for message_id, role, content in HISTORY:
-                id_column, message_column = st.columns([0.12, 0.88], gap=None)
-                id_column.caption(f"[{message_id}]")
-                with message_column:
-                    with st.chat_message(role):
-                        st.write(f"{role.title()}: {content}")
+                with st.chat_message(role):
+                    st.write(f"[{message_id}] {role.title()}: {content}")
             st.markdown("**Expected facts**")
             st.dataframe(
                 [{"Requirement": name.title(), "Expected terms": ", ".join(words)} for name, words in EXPECTED_FACTS.items()],
