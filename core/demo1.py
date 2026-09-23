@@ -152,13 +152,19 @@ def build_benchmark_context(strategy: str, instruction: str, history: list[tuple
     included = selected[:]
     passages = [_text(item) for item in included]
     while passages and estimate_tokens("\n".join(passages) + instruction) > budget:
-        included.pop(0)
-        passages.pop(0)
+        # Full-document and retrieval contexts are ordered by importance at
+        # the front. Recent-window contexts intentionally retain the tail.
+        if strategy in {"S1 · Full history", "S4 · Keyword retrieval"}:
+            included.pop()
+            passages.pop()
+        else:
+            included.pop(0)
+            passages.pop(0)
     if not passages and selected:
         # A single LongBench passage can exceed the entire budget. Retain the
         # summary record when available; otherwise retain a clipped
         # excerpt rather than silently sending no context.
-        preferred = selected[0] if strategy == "S3 · Summary + recent" else selected[-1]
+        preferred = selected[0] if strategy in {"S1 · Full history", "S3 · Summary + recent", "S4 · Keyword retrieval"} else selected[-1]
         available_characters = max(200, (budget - estimate_tokens(instruction) - 12) * 4)
         included = [preferred]
         passages = [_text(preferred)[:available_characters] + "\n[Context clipped to budget]"]
@@ -244,6 +250,7 @@ def render_demo1() -> None:
             dataset = DATASETS[dataset_name]
             case_key = dataset_name
         current_history = dataset["history"]
+        context_budget = 16_000 if dataset.get("official") else 1_800
         st.markdown("**Strategies**")
         strategy_options = ["S0 · Baseline", "S1 · Full history", "S2 · Recent window", "S3 · Summary + recent", "S4 · Keyword retrieval"]
         strategies = [
@@ -278,15 +285,20 @@ def render_demo1() -> None:
                 results = []
                 summary = dataset["summary"]
                 summary_metrics = None
+                summary_error = None
                 if "S3 · Summary + recent" in strategies and not summary:
                     try:
                         with st.spinner("Generating query-focused document summary…"):
                             summary, summary_metrics = _generate_query_summary(model, instruction, current_history, int(max_output))
+                        if not summary or not summary.strip():
+                            raise ValueError("The model returned an empty summary.")
                     except Exception as exc:
-                        st.error(f"Summary generation failed: {exc}")
-                        summary = ""
+                        summary_error = str(exc)
                 for strategy in strategies:
-                    built = build_benchmark_context(strategy, instruction, current_history, summary)
+                    if strategy == "S3 · Summary + recent" and summary_error:
+                        results.append({"dataset": dataset_name, "case_key": case_key, "strategy": strategy, "error": f"Summary generation failed; this strategy was not run: {summary_error}", "context": None, "evidence_recall": None})
+                        continue
+                    built = build_benchmark_context(strategy, instruction, current_history, summary, context_budget)
                     evidence = set(built["source_ids"]) & set(dataset["evidence_ids"])
                     evidence_recall = len(evidence) / len(dataset["evidence_ids"]) if dataset["evidence_ids"] else None
                     try:
@@ -325,6 +337,7 @@ def render_demo1() -> None:
                             metrics = result["summary_metrics"]
                             st.caption(f"Generated summary: {metrics['input_tokens']} input tokens, {metrics['output_tokens']} output tokens, {metrics['latency']:.2f}s. Its cost is included above.")
                         st.info(result["response"] or "No visible response returned.")
-                    with st.expander("Constructed Context to LLM"):
-                        st.caption(f"{result['context']['provenance']} · IDs: {', '.join(result['context']['source_ids']) or 'none'} · Estimated: {result['context']['estimated_tokens']} tokens")
-                        st.code(result["context"]["context"], language="text")
+                    if result["context"]:
+                        with st.expander("Constructed Context to LLM"):
+                            st.caption(f"{result['context']['provenance']} · IDs: {', '.join(result['context']['source_ids']) or 'none'} · Estimated: {result['context']['estimated_tokens']} tokens")
+                            st.code(result["context"]["context"], language="text")
