@@ -77,7 +77,6 @@ def render_demo1() -> None:
     st.caption("Run independent calls against the same synthetic file-processing API history.")
     left, right = st.columns([0.9, 1.1], gap="large")
     with left:
-        instruction = st.text_area("Benchmark instruction", INSTRUCTION, key="demo1_instruction", height=95)
         model = st.text_input("Model", "gpt-5.4-mini", key="demo1_model")
         max_output = st.number_input("Max output tokens", 200, 3000, 700, 100, key="demo1_max_output")
         output_price = st.number_input("Output $ / 1M", 0.0, 4.50, format="%.4f", key="demo1_out_price")
@@ -100,6 +99,7 @@ def render_demo1() -> None:
     if "demo1_results" not in st.session_state:
         st.session_state.demo1_results = []
     with right:
+        instruction = st.text_area("Benchmark instruction", INSTRUCTION, key="demo1_instruction", height=95)
         if st.button("Run benchmark", type="primary", disabled=not strategies, key="demo1_run", use_container_width=True):
             if not os.getenv("OPENAI_API_KEY"):
                 st.error("OPENAI_API_KEY is not configured.")
