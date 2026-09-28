@@ -38,10 +38,28 @@ def _record_agent_response(state: dict, result: dict, context: dict, operation: 
     state["history"].append({"role": "assistant", "kind": operation.lower(), "content": result["text"], "at": utc_now()})
     state["metrics"].append({**result, "step": step, "operation": operation, "estimated_input_tokens": context["estimated_input_tokens"]})
     state["current_step"] = step
-    state["status"] = "complete" if step == len(WORKFLOW) else "in_progress"
+    state["status"] = "in_progress"
     state["summary"] = f"Completed {operation}; approved requirements: {[x['text'] for x in state['requirements']]}"
-    if state["status"] == "complete":
-        state["validation_results"].append(validate_final_output(state, result["text"]))
+    return state
+
+
+def _user_declared_complete(message: str) -> bool:
+    """Only an explicit user statement, never workflow count, ends a goal."""
+    normalized = " ".join(message.lower().replace("'", "").split())
+    completion_messages = {
+        "done", "finished", "complete", "this is done", "this is finished", "this is complete",
+        "the goal is done", "the goal is finished", "the goal is complete", "we are done", "were done",
+    }
+    return normalized in completion_messages
+
+
+def _complete_goal(state: dict, user_message: str) -> dict:
+    """Record the user's completion declaration and validate the latest agent response."""
+    state["history"].append({"role": "user", "kind": "completion", "content": user_message.strip(), "at": utc_now()})
+    state["status"] = "complete"
+    state["summary"] = "The user declared this goal complete."
+    latest_response = next((entry["content"] for entry in reversed(state["history"]) if entry["role"] == "assistant"), "")
+    state["validation_results"].append(validate_final_output(state, latest_response))
     return state
 
 
@@ -106,7 +124,7 @@ def _render_demo2_builder() -> None:
         st.session_state.goal_id = None
         st.rerun()
     index = state["current_step"]
-    complete = index >= len(WORKFLOW)
+    complete = state["status"] == "complete"
     left, right = st.columns([1, 1.15], gap="large")
     with left:
         st.subheader(state["goal"])
@@ -117,15 +135,18 @@ def _render_demo2_builder() -> None:
             st.markdown(entry["content"])
             st.divider()
         if complete:
-            st.success("All six workflow steps are complete.")
+            st.success("You marked this goal complete.")
         else:
-            operation, description = WORKFLOW[index]
+            operation = WORKFLOW[index][0] if index < len(WORKFLOW) else "Continue"
             if index == 0:
                 st.info("Start the agent to get its first response to your goal. Then use this box to give feedback on each response.")
                 note = st.text_area("Optional instructions for the agent", placeholder="For example: prioritize a simple API design and call out assumptions.", key=f"week2_note_{index}")
                 button_label = "Start agent"
             else:
-                st.info("Read the latest agent response above, then tell it what to change, clarify, or improve.")
+                if index >= len(WORKFLOW):
+                    st.info("The suggested workflow is complete. Keep collaborating until you tell the agent that the goal is finished.")
+                else:
+                    st.info("Read the latest agent response above, then tell it what to change, clarify, or improve.")
                 note = st.text_area("Your feedback to the agent", placeholder="For example: Add soft deletion and make task IDs globally unique.", key=f"week2_note_{index}")
                 button_label = "Send feedback to agent"
             context = build_goal_context(state, note, token_budget=3500)
@@ -144,7 +165,7 @@ def _render_demo2_builder() -> None:
         d.metric("Output tokens", total_out)
         st.subheader("Step progress")
         for column, (number, (name, _)) in zip(st.columns(len(WORKFLOW)), enumerate(WORKFLOW)):
-            marker = "🔵" if number == index and not complete else "🟢" if number < index else "⚪"
+            marker = "🔵" if number == index and index < len(WORKFLOW) and not complete else "🟢" if number < index else "⚪"
             column.markdown(f"{marker}<br><small>{name}</small>", unsafe_allow_html=True)
         model = str(st.session_state.get("week2_model", "gpt-5.4-mini"))
         maximum = int(st.session_state.get("week2_tokens", 1200))
@@ -166,7 +187,11 @@ def _render_demo2_builder() -> None:
             st.subheader("Final validation")
             st.json(validation)
     if not complete and run_step:
-        if not os.getenv("OPENAI_API_KEY"):
+        if _user_declared_complete(note):
+            state = _complete_goal(state, note)
+            save_state(state)
+            st.rerun()
+        elif not os.getenv("OPENAI_API_KEY"):
             st.error("OPENAI_API_KEY is not configured.")
         else:
             try:
