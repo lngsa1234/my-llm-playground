@@ -111,12 +111,8 @@ def _render_demo2_builder() -> None:
     with left:
         st.subheader(state["goal"])
         st.caption(f"Run ID: `{state['goal_id']}` · Strategy: **{state['strategy']}** · Status: **{state['status']}**")
-        st.subheader("Your conversation")
-        progress_label = "The goal is complete" if complete else f"The agent is preparing response {index + 1} of {len(WORKFLOW)}"
-        st.progress(index / len(WORKFLOW), text=f"Goal progress — {index} of {len(WORKFLOW)} responses complete")
-        st.caption(progress_label)
         for entry in state["history"]:
-            label = "You" if entry["role"] == "user" else "Agent"
+            label = "You" if entry["role"] == "user" else "🤖 Agent"
             st.caption(label)
             st.markdown(entry["content"])
             st.divider()
@@ -150,8 +146,8 @@ def _render_demo2_builder() -> None:
         for column, (number, (name, _)) in zip(st.columns(len(WORKFLOW)), enumerate(WORKFLOW)):
             marker = "🔵" if number == index and not complete else "🟢" if number < index else "⚪"
             column.markdown(f"{marker}<br><small>{name}</small>", unsafe_allow_html=True)
-        st.subheader("Model settings")
-        model, maximum, input_price, output_price = _render_model_settings()
+        model = str(st.session_state.get("week2_model", "gpt-5.4-mini"))
+        maximum = int(st.session_state.get("week2_tokens", 1200))
         if not complete:
             with st.expander("Context for the next agent response", expanded=True):
                 st.caption(f"Estimated input: {context['estimated_input_tokens']} tokens · Sources: {', '.join(context['provenance'])}")
