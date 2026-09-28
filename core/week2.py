@@ -29,6 +29,22 @@ def _render_context_approach() -> None:
     )
 
 
+def _record_agent_response(state: dict, result: dict, context: dict, operation: str, feedback: str = "") -> dict:
+    """Persist one successful agent response and advance the hidden workflow."""
+    if feedback.strip():
+        state = add_feedback(state, feedback)
+    step = state["current_step"] + 1
+    state["artifacts"][f"{step}_{operation.lower()}"] = result["text"]
+    state["history"].append({"role": "assistant", "kind": operation.lower(), "content": result["text"], "at": utc_now()})
+    state["metrics"].append({**result, "step": step, "operation": operation, "estimated_input_tokens": context["estimated_input_tokens"]})
+    state["current_step"] = step
+    state["status"] = "complete" if step == len(WORKFLOW) else "in_progress"
+    state["summary"] = f"Completed {operation}; approved requirements: {[x['text'] for x in state['requirements']]}"
+    if state["status"] == "complete":
+        state["validation_results"].append(validate_final_output(state, result["text"]))
+    return state
+
+
 def render_week2() -> None:
     """Render the three Week 2 lab demos."""
     st.header("Week 2 · Context Engineering")
@@ -59,16 +75,30 @@ def _render_demo2_builder() -> None:
         start, settings = st.columns([2, 1])
         with start:
             goal = st.text_area("Goal", "Design a REST API for a task management system. Support creating tasks, updating task status, retrieving tasks, and soft deletion. Generate an API specification and a test plan.", key="week2_goal", height=115)
-            if st.button("Start goal", type="primary", key="week2_create"):
-                if goal.strip():
-                    state = new_goal_state(goal, "structured")
-                    save_state(state)
-                    st.session_state.goal_id = state["goal_id"]
-                    st.rerun()
-                else:
-                    st.warning("Enter a goal first.")
+            start_goal = st.button("Start goal", type="primary", key="week2_create")
         with settings:
-            _render_model_settings()
+            model, maximum, _, _ = _render_model_settings()
+        if start_goal:
+            if not goal.strip():
+                st.warning("Enter a goal first.")
+            elif not os.getenv("OPENAI_API_KEY"):
+                st.error("OPENAI_API_KEY is not configured.")
+            else:
+                state = new_goal_state(goal, "structured")
+                operation = WORKFLOW[0][0]
+                context = build_goal_context(state, "", token_budget=3500)
+                try:
+                    with st.spinner("Starting the agent…"):
+                        result = execute_goal_call(model, context["context"], operation, maximum)
+                    if not validate_response(result["text"])["valid"]:
+                        st.error("The agent returned no visible text. The goal was not started.")
+                    else:
+                        state = _record_agent_response(state, result, context, operation)
+                        save_state(state)
+                        st.session_state.goal_id = state["goal_id"]
+                        st.rerun()
+                except Exception as exc:
+                    st.error(f"The agent could not start: {exc}")
         return
     try:
         state = load_state(st.session_state.goal_id)
@@ -105,6 +135,21 @@ def _render_demo2_builder() -> None:
             context = build_goal_context(state, note, token_budget=3500)
             run_step = st.button(button_label, type="primary", key="week2_run")
     with right:
+        input_price = float(st.session_state.get("week2_in_price", 0.0))
+        output_price = float(st.session_state.get("week2_out_price", 0.0))
+        total_in = sum(x["input_tokens"] for x in state["metrics"])
+        total_out = sum(x["output_tokens"] for x in state["metrics"])
+        st.subheader("Run metrics")
+        a, b = st.columns(2)
+        a.metric("LLM calls", len(state["metrics"]))
+        b.metric("Estimated cost", f"${total_in * input_price / 1_000_000 + total_out * output_price / 1_000_000:.5f}")
+        c, d = st.columns(2)
+        c.metric("Input tokens", total_in)
+        d.metric("Output tokens", total_out)
+        st.subheader("Step progress")
+        for column, (number, (name, _)) in zip(st.columns(len(WORKFLOW)), enumerate(WORKFLOW)):
+            marker = "🔵" if number == index and not complete else "🟢" if number < index else "⚪"
+            column.markdown(f"{marker}<br><small>{name}</small>", unsafe_allow_html=True)
         st.subheader("Model settings")
         model, maximum, input_price, output_price = _render_model_settings()
         if not complete:
@@ -124,16 +169,6 @@ def _render_demo2_builder() -> None:
             validation = state["validation_results"][-1] if state["validation_results"] else validate_final_output(state, latest)
             st.subheader("Final validation")
             st.json(validation)
-        if state["metrics"]:
-            total_in = sum(x["input_tokens"] for x in state["metrics"])
-            total_out = sum(x["output_tokens"] for x in state["metrics"])
-            st.subheader("Run metrics")
-            a, b = st.columns(2)
-            a.metric("LLM calls", len(state["metrics"]))
-            b.metric("Estimated cost", f"${total_in * input_price / 1_000_000 + total_out * output_price / 1_000_000:.5f}")
-            c, d = st.columns(2)
-            c.metric("Input tokens", total_in)
-            d.metric("Output tokens", total_out)
     if not complete and run_step:
         if not os.getenv("OPENAI_API_KEY"):
             st.error("OPENAI_API_KEY is not configured.")
@@ -144,17 +179,7 @@ def _render_demo2_builder() -> None:
                 if not validate_response(result["text"])["valid"]:
                     st.error("Step was not saved because the model returned no visible text.")
                 else:
-                    artifact = f"{index + 1}_{operation.lower()}"
-                    if note.strip():
-                        state = add_feedback(state, note)
-                    state["artifacts"][artifact] = result["text"]
-                    state["history"].append({"role": "assistant", "kind": operation.lower(), "content": result["text"], "at": utc_now()})
-                    state["metrics"].append({**result, "step": index + 1, "operation": operation, "estimated_input_tokens": context["estimated_input_tokens"]})
-                    state["current_step"] += 1
-                    state["status"] = "complete" if state["current_step"] == len(WORKFLOW) else "in_progress"
-                    state["summary"] = f"Completed {operation}; approved requirements: {[x['text'] for x in state['requirements']]}"
-                    if state["status"] == "complete":
-                        state["validation_results"].append(validate_final_output(state, result["text"]))
+                    state = _record_agent_response(state, result, context, operation, note)
                     save_state(state)
                     st.rerun()
             except Exception as exc:
