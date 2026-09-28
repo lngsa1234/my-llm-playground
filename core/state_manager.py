@@ -9,7 +9,9 @@ from datetime import datetime, timezone
 from pathlib import Path
 from uuid import uuid4
 
-RUNS_DIRECTORY = Path("runs")
+# Resolve storage from this module rather than the terminal directory that
+# launched Streamlit, so Demo 2 always writes inside this repository.
+RUNS_DIRECTORY = Path(__file__).resolve().parent.parent / "runs"
 
 WORKFLOW = [
     ("Understand", "Extract the goal's requirements, constraints, assumptions, and open questions."),
