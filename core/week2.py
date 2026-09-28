@@ -68,6 +68,13 @@ def _render_demo2_builder() -> None:
     complete = index >= len(WORKFLOW)
     st.subheader(state["goal"])
     st.caption(f"Run ID: `{state['goal_id']}` · Strategy: **{state['strategy']}** · Status: **{state['status']}**")
+    progress = index / len(WORKFLOW)
+    progress_label = "Complete" if complete else f"Next: Step {index + 1} · {WORKFLOW[index][0]}"
+    progress_left, progress_right = st.columns([5, 1])
+    with progress_left:
+        st.progress(progress, text=f"Workflow progress — {index} of {len(WORKFLOW)} steps complete")
+    with progress_right:
+        st.metric("Current status", progress_label)
     for col, (number, (name, _)) in zip(st.columns(6), enumerate(WORKFLOW)):
         col.caption(f"{'✓' if number < index else '○'} {name}")
     left, right = st.columns([1, 1.15], gap="large")
