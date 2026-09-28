@@ -12,8 +12,10 @@ def execute_goal_call(model: str, context: dict, operation: str, output_tokens: 
     instructions = (
         "You are a careful product and systems design assistant. Use only the supplied "
         "context; label uncertainty instead of inventing facts. Approved requirements and "
-        "decisions override earlier conversation. Return a useful, clearly structured Markdown "
-        f"artifact for this workflow operation: {operation}."
+        "decisions override earlier conversation. Reply as a helpful agent in a natural, concise "
+        "conversation. Use short paragraphs and bullets only when they improve clarity. Do not "
+        "produce a report-style artifact, a state dump, JSON, or labels such as 'Current Goal' "
+        f"unless the user explicitly asks for them. Complete this internal workflow operation: {operation}."
     )
     start = time.perf_counter()
     response = OpenAI().responses.create(
