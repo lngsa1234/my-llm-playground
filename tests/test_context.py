@@ -20,3 +20,18 @@ def test_structured_context_contains_old_approved_requirement():
     state["history"] = [{"role": "assistant", "content": "unrelated"} for _ in range(10)]
     result = build_goal_context(state, "design it")
     assert result["context"]["approved_requirements"][0]["text"] == "Use soft deletion"
+
+
+def test_summary_and_structured_modes_select_different_context_sources():
+    state = new_goal_state("Build a task API", "summary")
+    state["artifacts"] = {
+        "design": "The API uses soft deletion and bearer-token authentication.",
+        "other": "Unrelated notes about dashboard colors.",
+    }
+    summary = build_goal_context(state, "review the deletion behavior")
+    assert "state_summary" in summary["context"]
+    assert "relevant_artifacts" not in summary["context"]
+
+    state["strategy"] = "structured"
+    hybrid = build_goal_context(state, "review the deletion behavior")
+    assert list(hybrid["context"]["relevant_artifacts"])[0] == "design"

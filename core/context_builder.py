@@ -37,6 +37,17 @@ def _summary(state: dict) -> str:
     )
 
 
+def _relevant_artifacts(artifacts: dict[str, str], query: str, limit: int = 2) -> dict[str, str]:
+    """Select prior artifacts with simple, inspectable keyword retrieval."""
+    terms = {word.lower().strip(".,:;()[]") for word in query.split() if len(word) > 3}
+    ranked = sorted(
+        artifacts.items(),
+        key=lambda item: len(terms & set(item[1].lower().split())),
+        reverse=True,
+    )
+    return dict(ranked[:limit])
+
+
 def build_goal_context(state: dict, user_message: str, token_budget: int = 3500) -> dict:
     """Build model input and provenance without mutating the persisted state."""
     base = {
@@ -56,12 +67,17 @@ def build_goal_context(state: dict, user_message: str, token_budget: int = 3500)
     elif strategy == "recent":
         base["recent_history"] = _clip(history[-6:], max(250, token_budget - estimate_tokens(base)))
         provenance.append("last 6 history entries")
+    elif strategy == "summary":
+        base["state_summary"] = state.get("summary") or _summary(state)
+        base["recent_history"] = _clip(history[-4:], max(250, token_budget - estimate_tokens(base)))
+        provenance.extend(["structured state summary", "last 4 history entries"])
     else:
         base["state_summary"] = state.get("summary") or _summary(state)
         base["recent_history"] = _clip(history[-4:], max(250, token_budget - estimate_tokens(base)))
-        recent_artifacts = list(state.get("artifacts", {}).items())[-2:]
-        base["relevant_artifacts"] = dict(recent_artifacts)
-        provenance.extend(["structured state summary", "last 4 history entries", "last 2 artifacts"])
+        base["relevant_artifacts"] = _relevant_artifacts(
+            state.get("artifacts", {}), f"{state['goal']} {user_message}"
+        )
+        provenance.extend(["structured state summary", "last 4 history entries", "keyword-selected artifacts"])
 
     # Drop oldest optional content until the budget is honored.
     while estimate_tokens(base) > token_budget and base.get("recent_history"):

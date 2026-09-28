@@ -5,6 +5,7 @@ import streamlit as st
 
 from core.context_builder import build_goal_context
 from core.demo1 import render_demo1
+from core.demo3 import render_demo3
 from core.evaluator import validate_final_output, validate_response
 from core.llm_client import execute_goal_call
 from core.state_manager import WORKFLOW, add_feedback, load_state, new_goal_state, save_state, utc_now
@@ -78,8 +79,7 @@ def render_week2() -> None:
     with demo2:
         render_demo2()
     with demo3:
-        st.subheader("Context Builder Evaluation")
-        st.info("Coming soon!")
+        render_demo3()
 
 
 def _render_demo2_builder() -> None:
