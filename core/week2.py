@@ -13,7 +13,6 @@ from core.state_manager import WORKFLOW, add_feedback, list_states, load_state, 
 def render_week2() -> None:
     """Render the three Week 2 lab demos."""
     st.header("Week 2 · Context Engineering")
-    st.info("Demo 2 and Demo 3 are coming soon!")
     demo1, demo2, demo3 = st.tabs(
         [
             "Demo 1 · Benchmark",
@@ -89,7 +88,8 @@ def _render_demo2_builder() -> None:
         if complete:
             st.success("All six workflow steps are complete.")
             latest = state["history"][-1]["content"] if state["history"] else ""
-            st.json(validate_final_output(state, latest))
+            validation = state["validation_results"][-1] if state["validation_results"] else validate_final_output(state, latest)
+            st.json(validation)
         else:
             operation, description = WORKFLOW[index]
             st.subheader(f"Step {index + 1}: {operation}")
@@ -116,6 +116,8 @@ def _render_demo2_builder() -> None:
                             state["current_step"] += 1
                             state["status"] = "complete" if state["current_step"] == len(WORKFLOW) else "in_progress"
                             state["summary"] = f"Completed {operation}; approved requirements: {[x['text'] for x in state['requirements']]}"
+                            if state["status"] == "complete":
+                                state["validation_results"].append(validate_final_output(state, result["text"]))
                             save_state(state)
                             st.rerun()
                     except Exception as exc:
@@ -137,6 +139,5 @@ def _render_demo2_builder() -> None:
 
 
 def render_demo2() -> None:
-    """Render the Demo 2 placeholder until the builder is ready."""
-    st.header("Demo 2 · Multi-Run Goal Builder")
-    st.info("Coming soon!")
+    """Render the persistent, six-call Demo 2 goal-builder workflow."""
+    _render_demo2_builder()
