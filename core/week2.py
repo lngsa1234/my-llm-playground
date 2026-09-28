@@ -10,6 +10,15 @@ from core.llm_client import execute_goal_call
 from core.state_manager import WORKFLOW, add_feedback, list_states, load_state, new_goal_state, save_state, utc_now
 
 
+def _render_model_settings() -> tuple[str, int, float, float]:
+    """Render shared LLM settings in the right-hand control column."""
+    model = st.text_input("Model", "gpt-5.4-mini", key="week2_model")
+    maximum = st.number_input("Max output tokens", 200, 4000, 1200, 100, key="week2_tokens")
+    input_price = st.number_input("Input $ / 1M", 0.0, 0.75, format="%.4f", key="week2_in_price")
+    output_price = st.number_input("Output $ / 1M", 0.0, 4.50, format="%.4f", key="week2_out_price")
+    return model, int(maximum), input_price, output_price
+
+
 def render_week2() -> None:
     """Render the three Week 2 lab demos."""
     st.header("Week 2 · Context Engineering")
@@ -38,16 +47,20 @@ def _render_demo2_builder() -> None:
     labels = {f"{x['goal_id']} · {x['goal'][:38]}": x["goal_id"] for x in saved}
     if st.session_state.goal_id is None:
         st.subheader("Set your goal")
-        goal = st.text_area("Goal", "Design a REST API for a task management system. Support creating tasks, updating task status, retrieving tasks, and soft deletion. Generate an API specification and a test plan.", key="week2_goal", height=115)
-        strategy = st.radio("Context strategy", ["structured", "recent", "full"], horizontal=True, key="week2_strategy")
-        if st.button("Create Week 2 goal", type="primary", key="week2_create"):
-            if goal.strip():
-                state = new_goal_state(goal, strategy)
-                save_state(state)
-                st.session_state.goal_id = state["goal_id"]
-                st.rerun()
-            else:
-                st.warning("Enter a goal first.")
+        start, settings = st.columns([2, 1])
+        with start:
+            goal = st.text_area("Goal", "Design a REST API for a task management system. Support creating tasks, updating task status, retrieving tasks, and soft deletion. Generate an API specification and a test plan.", key="week2_goal", height=115)
+            strategy = st.radio("Context strategy", ["structured", "recent", "full"], horizontal=True, key="week2_strategy")
+            if st.button("Start goal", type="primary", key="week2_create"):
+                if goal.strip():
+                    state = new_goal_state(goal, strategy)
+                    save_state(state)
+                    st.session_state.goal_id = state["goal_id"]
+                    st.rerun()
+                else:
+                    st.warning("Enter a goal first.")
+        with settings:
+            _render_model_settings()
         if labels:
             st.divider()
             st.subheader("Resume a saved run")
@@ -72,10 +85,7 @@ def _render_demo2_builder() -> None:
             st.session_state.goal_id = labels[selected]
             st.rerun()
     with settings:
-        model = st.text_input("Model", "gpt-5.4-mini", key="week2_model")
-        maximum = st.number_input("Max output tokens", 200, 4000, 1200, 100, key="week2_tokens")
-        input_price = st.number_input("Input $ / 1M", 0.0, 0.75, format="%.4f", key="week2_in_price")
-        output_price = st.number_input("Output $ / 1M", 0.0, 4.50, format="%.4f", key="week2_out_price")
+        model, maximum, input_price, output_price = _render_model_settings()
     progress = index / len(WORKFLOW)
     progress_label = "Complete" if complete else f"Next: Step {index + 1} · {WORKFLOW[index][0]}"
     progress_left, progress_right = st.columns([5, 1])
@@ -109,12 +119,13 @@ def _render_demo2_builder() -> None:
             operation, description = WORKFLOW[index]
             st.subheader(f"Step {index + 1}: {operation}")
             st.write(description)
-            note = st.text_area("Message for this run (optional)", key="week2_note")
+            st.info("Tell the agent what to prioritize, clarify, or change. Use **Approved changes** for requirements that must persist through every future step.")
+            note = st.text_area("Message to your agent", placeholder="For this step, prioritize a simple API design and call out any assumptions.", key=f"week2_note_{index}")
             context = build_goal_context(state, note, token_budget=3500)
             with st.expander("Inspect constructed context", expanded=True):
                 st.caption(f"Estimated input: {context['estimated_input_tokens']} tokens · Sources: {', '.join(context['provenance'])}")
                 st.json(context["context"])
-            if st.button(f"Run step {index + 1}: {operation}", type="primary", key="week2_run"):
+            if st.button(f"Send to agent: {operation}", type="primary", key="week2_run"):
                 if not os.getenv("OPENAI_API_KEY"):
                     st.error("OPENAI_API_KEY is not configured.")
                 else:
@@ -126,6 +137,8 @@ def _render_demo2_builder() -> None:
                         else:
                             artifact = f"{index + 1}_{operation.lower()}"
                             state["artifacts"][artifact] = result["text"]
+                            if note.strip():
+                                state["history"].append({"role": "user", "kind": "message", "content": note.strip(), "at": utc_now()})
                             state["history"].append({"role": "assistant", "kind": operation.lower(), "content": result["text"], "at": utc_now()})
                             state["metrics"].append({**result, "step": index + 1, "operation": operation, "estimated_input_tokens": context["estimated_input_tokens"]})
                             state["current_step"] += 1
