@@ -19,6 +19,16 @@ def _render_model_settings() -> tuple[str, int, float, float]:
     return model, int(maximum), input_price, output_price
 
 
+def _render_context_approach() -> None:
+    st.info(
+        "**Context approach: hybrid structured context.** For every agent call, the app rebuilds context "
+        "from the goal and approved requirements (durable state), a compact summary plus recent messages "
+        "(memory), and relevant earlier artifacts (working documents). This combines Demo 1’s **Summary + "
+        "recent** idea with application-specific state, so the agent receives what matters without sending "
+        "the entire conversation every time."
+    )
+
+
 def render_week2() -> None:
     """Render the three Week 2 lab demos."""
     st.header("Week 2 · Context Engineering")
@@ -41,6 +51,7 @@ def render_week2() -> None:
 def _render_demo2_builder() -> None:
     st.header("Demo 2 · Multi-Run Goal Builder")
     st.caption("Persistent state, inspectable context, and one LLM call per workflow step.")
+    _render_context_approach()
     if "goal_id" not in st.session_state:
         st.session_state.goal_id = None
     saved = list_states()
@@ -50,10 +61,9 @@ def _render_demo2_builder() -> None:
         start, settings = st.columns([2, 1])
         with start:
             goal = st.text_area("Goal", "Design a REST API for a task management system. Support creating tasks, updating task status, retrieving tasks, and soft deletion. Generate an API specification and a test plan.", key="week2_goal", height=115)
-            strategy = st.radio("Context strategy", ["structured", "recent", "full"], horizontal=True, key="week2_strategy")
             if st.button("Start goal", type="primary", key="week2_create"):
                 if goal.strip():
-                    state = new_goal_state(goal, strategy)
+                    state = new_goal_state(goal, "structured")
                     save_state(state)
                     st.session_state.goal_id = state["goal_id"]
                     st.rerun()
