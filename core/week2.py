@@ -86,54 +86,61 @@ def _render_demo2_builder() -> None:
         st.rerun()
     index = state["current_step"]
     complete = index >= len(WORKFLOW)
-    st.subheader(state["goal"])
-    st.caption(f"Run ID: `{state['goal_id']}` · Strategy: **{state['strategy']}** · Status: **{state['status']}**")
     left, right = st.columns([1, 1.15], gap="large")
     with left:
-        st.subheader("Guide the agent")
-        progress_label = "Workflow complete" if complete else f"Next: Step {index + 1} · {WORKFLOW[index][0]}"
-        st.progress(index / len(WORKFLOW), text=f"Workflow progress — {index} of {len(WORKFLOW)} steps complete")
+        st.subheader(state["goal"])
+        st.caption(f"Run ID: `{state['goal_id']}` · Strategy: **{state['strategy']}** · Status: **{state['status']}**")
+        st.subheader("Your conversation")
+        progress_label = "The goal is complete" if complete else f"The agent is preparing response {index + 1} of {len(WORKFLOW)}"
+        st.progress(index / len(WORKFLOW), text=f"Goal progress — {index} of {len(WORKFLOW)} responses complete")
         st.caption(progress_label)
-        with st.expander("Model settings and saved runs"):
-            model, maximum, input_price, output_price = _render_model_settings()
+        with st.expander("Saved runs"):
             selected = st.selectbox("Resume a saved Week 2 run", ["Choose a run"] + list(labels), key="week2_resume")
             if st.button("Load selected run", disabled=selected == "Choose a run", key="week2_load"):
                 st.session_state.goal_id = labels[selected]
                 st.rerun()
+        for entry in state["history"]:
+            with st.chat_message(entry["role"]):
+                if entry["role"] == "assistant":
+                    st.caption(f"Agent · {entry.get('kind', 'response').title()}")
+                st.markdown(entry["content"])
         if complete:
             st.success("All six workflow steps are complete.")
         else:
             operation, description = WORKFLOW[index]
-            st.subheader(f"Step {index + 1}: {operation}")
-            st.write(description)
-            st.info("Tell the agent what to prioritize, clarify, or change. Use **Approved changes** for requirements that must persist through every future step.")
-            note = st.text_area("Message to your agent", placeholder="For this step, prioritize a simple API design and call out any assumptions.", key=f"week2_note_{index}")
-            context = build_goal_context(state, note, token_budget=3500)
-            with st.expander("Inspect constructed context"):
-                st.caption(f"Estimated input: {context['estimated_input_tokens']} tokens · Sources: {', '.join(context['provenance'])}")
-                st.json(context["context"])
-            run_step = st.button(f"Send to agent: {operation}", type="primary", key="week2_run")
-        st.subheader("Approved changes")
-        feedback = st.text_area("Feedback or changed requirement", placeholder="Task IDs must be globally unique.", key="week2_feedback")
-        if st.button("Save feedback", key="week2_save_feedback"):
-            if feedback.strip():
-                save_state(add_feedback(state, feedback))
-                st.rerun()
+            if index == 0:
+                st.info("Start the agent to get its first response to your goal. Then use this box to give feedback on each response.")
+                note = st.text_area("Optional instructions for the agent", placeholder="For example: prioritize a simple API design and call out assumptions.", key=f"week2_note_{index}")
+                button_label = "Start agent"
             else:
-                st.warning("Enter feedback to save.")
-        for item in state["requirements"]:
-            st.write(f"• {item['text']}")
-        with st.expander("Inspect persisted state"):
-            st.json(state)
+                st.info("Read the latest agent response above, then tell it what to change, clarify, or improve.")
+                note = st.text_area("Your feedback to the agent", placeholder="For example: Add soft deletion and make task IDs globally unique.", key=f"week2_note_{index}")
+                button_label = "Send feedback to agent"
+            context = build_goal_context(state, note, token_budget=3500)
+            run_step = st.button(button_label, type="primary", key="week2_run")
     with right:
-        st.subheader("Agent responses")
+        st.subheader("Model settings")
+        model, maximum, input_price, output_price = _render_model_settings()
+        st.subheader("Artifacts")
         if state["artifacts"]:
             tabs = st.tabs(list(state["artifacts"].keys()))
             for tab, (_, content) in zip(tabs, state["artifacts"].items()):
                 with tab:
                     st.markdown(content)
         else:
-            st.info("The agent’s first response will appear here after you send the Understand step.")
+            st.caption("Generated artifacts will be collected here as the conversation progresses.")
+        if not complete:
+            with st.expander("Context for the next agent response", expanded=True):
+                st.caption(f"Estimated input: {context['estimated_input_tokens']} tokens · Sources: {', '.join(context['provenance'])}")
+                st.json(context["context"])
+        with st.expander("Feedback remembered by the agent"):
+            if state["requirements"]:
+                for item in state["requirements"]:
+                    st.write(f"• {item['text']}")
+            else:
+                st.caption("Feedback sent to the agent will be saved here.")
+        with st.expander("Inspect persisted state"):
+            st.json(state)
         if complete:
             latest = state["history"][-1]["content"] if state["history"] else ""
             validation = state["validation_results"][-1] if state["validation_results"] else validate_final_output(state, latest)
@@ -160,9 +167,9 @@ def _render_demo2_builder() -> None:
                     st.error("Step was not saved because the model returned no visible text.")
                 else:
                     artifact = f"{index + 1}_{operation.lower()}"
-                    state["artifacts"][artifact] = result["text"]
                     if note.strip():
-                        state["history"].append({"role": "user", "kind": "message", "content": note.strip(), "at": utc_now()})
+                        state = add_feedback(state, note)
+                    state["artifacts"][artifact] = result["text"]
                     state["history"].append({"role": "assistant", "kind": operation.lower(), "content": result["text"], "at": utc_now()})
                     state["metrics"].append({**result, "step": index + 1, "operation": operation, "estimated_input_tokens": context["estimated_input_tokens"]})
                     state["current_step"] += 1
