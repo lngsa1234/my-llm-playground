@@ -88,25 +88,31 @@ def _render_demo2_builder() -> None:
     complete = index >= len(WORKFLOW)
     st.subheader(state["goal"])
     st.caption(f"Run ID: `{state['goal_id']}` · Strategy: **{state['strategy']}** · Status: **{state['status']}**")
-    control, settings = st.columns([2, 1])
-    with control:
-        selected = st.selectbox("Resume a saved Week 2 run", ["Choose a run"] + list(labels), key="week2_resume")
-        if st.button("Load selected run", disabled=selected == "Choose a run", key="week2_load"):
-            st.session_state.goal_id = labels[selected]
-            st.rerun()
-    with settings:
-        model, maximum, input_price, output_price = _render_model_settings()
-    progress = index / len(WORKFLOW)
-    progress_label = "Complete" if complete else f"Next: Step {index + 1} · {WORKFLOW[index][0]}"
-    progress_left, progress_right = st.columns([5, 1])
-    with progress_left:
-        st.progress(progress, text=f"Workflow progress — {index} of {len(WORKFLOW)} steps complete")
-    with progress_right:
-        st.metric("Current status", progress_label)
-    for col, (number, (name, _)) in zip(st.columns(6), enumerate(WORKFLOW)):
-        col.caption(f"{'✓' if number < index else '○'} {name}")
     left, right = st.columns([1, 1.15], gap="large")
     with left:
+        st.subheader("Guide the agent")
+        progress_label = "Workflow complete" if complete else f"Next: Step {index + 1} · {WORKFLOW[index][0]}"
+        st.progress(index / len(WORKFLOW), text=f"Workflow progress — {index} of {len(WORKFLOW)} steps complete")
+        st.caption(progress_label)
+        with st.expander("Model settings and saved runs"):
+            model, maximum, input_price, output_price = _render_model_settings()
+            selected = st.selectbox("Resume a saved Week 2 run", ["Choose a run"] + list(labels), key="week2_resume")
+            if st.button("Load selected run", disabled=selected == "Choose a run", key="week2_load"):
+                st.session_state.goal_id = labels[selected]
+                st.rerun()
+        if complete:
+            st.success("All six workflow steps are complete.")
+        else:
+            operation, description = WORKFLOW[index]
+            st.subheader(f"Step {index + 1}: {operation}")
+            st.write(description)
+            st.info("Tell the agent what to prioritize, clarify, or change. Use **Approved changes** for requirements that must persist through every future step.")
+            note = st.text_area("Message to your agent", placeholder="For this step, prioritize a simple API design and call out any assumptions.", key=f"week2_note_{index}")
+            context = build_goal_context(state, note, token_budget=3500)
+            with st.expander("Inspect constructed context"):
+                st.caption(f"Estimated input: {context['estimated_input_tokens']} tokens · Sources: {', '.join(context['provenance'])}")
+                st.json(context["context"])
+            run_step = st.button(f"Send to agent: {operation}", type="primary", key="week2_run")
         st.subheader("Approved changes")
         feedback = st.text_area("Feedback or changed requirement", placeholder="Task IDs must be globally unique.", key="week2_feedback")
         if st.button("Save feedback", key="week2_save_feedback"):
@@ -120,60 +126,54 @@ def _render_demo2_builder() -> None:
         with st.expander("Inspect persisted state"):
             st.json(state)
     with right:
+        st.subheader("Agent responses")
+        if state["artifacts"]:
+            tabs = st.tabs(list(state["artifacts"].keys()))
+            for tab, (_, content) in zip(tabs, state["artifacts"].items()):
+                with tab:
+                    st.markdown(content)
+        else:
+            st.info("The agent’s first response will appear here after you send the Understand step.")
         if complete:
-            st.success("All six workflow steps are complete.")
             latest = state["history"][-1]["content"] if state["history"] else ""
             validation = state["validation_results"][-1] if state["validation_results"] else validate_final_output(state, latest)
+            st.subheader("Final validation")
             st.json(validation)
+        if state["metrics"]:
+            total_in = sum(x["input_tokens"] for x in state["metrics"])
+            total_out = sum(x["output_tokens"] for x in state["metrics"])
+            st.subheader("Run metrics")
+            a, b = st.columns(2)
+            a.metric("LLM calls", len(state["metrics"]))
+            b.metric("Estimated cost", f"${total_in * input_price / 1_000_000 + total_out * output_price / 1_000_000:.5f}")
+            c, d = st.columns(2)
+            c.metric("Input tokens", total_in)
+            d.metric("Output tokens", total_out)
+    if not complete and run_step:
+        if not os.getenv("OPENAI_API_KEY"):
+            st.error("OPENAI_API_KEY is not configured.")
         else:
-            operation, description = WORKFLOW[index]
-            st.subheader(f"Step {index + 1}: {operation}")
-            st.write(description)
-            st.info("Tell the agent what to prioritize, clarify, or change. Use **Approved changes** for requirements that must persist through every future step.")
-            note = st.text_area("Message to your agent", placeholder="For this step, prioritize a simple API design and call out any assumptions.", key=f"week2_note_{index}")
-            context = build_goal_context(state, note, token_budget=3500)
-            with st.expander("Inspect constructed context", expanded=True):
-                st.caption(f"Estimated input: {context['estimated_input_tokens']} tokens · Sources: {', '.join(context['provenance'])}")
-                st.json(context["context"])
-            if st.button(f"Send to agent: {operation}", type="primary", key="week2_run"):
-                if not os.getenv("OPENAI_API_KEY"):
-                    st.error("OPENAI_API_KEY is not configured.")
+            try:
+                with st.spinner(f"Running {operation.lower()}…"):
+                    result = execute_goal_call(model, context["context"], operation, maximum)
+                if not validate_response(result["text"])["valid"]:
+                    st.error("Step was not saved because the model returned no visible text.")
                 else:
-                    try:
-                        with st.spinner(f"Running {operation.lower()}…"):
-                            result = execute_goal_call(model, context["context"], operation, int(maximum))
-                        if not validate_response(result["text"])["valid"]:
-                            st.error("Step was not saved because the model returned no visible text.")
-                        else:
-                            artifact = f"{index + 1}_{operation.lower()}"
-                            state["artifacts"][artifact] = result["text"]
-                            if note.strip():
-                                state["history"].append({"role": "user", "kind": "message", "content": note.strip(), "at": utc_now()})
-                            state["history"].append({"role": "assistant", "kind": operation.lower(), "content": result["text"], "at": utc_now()})
-                            state["metrics"].append({**result, "step": index + 1, "operation": operation, "estimated_input_tokens": context["estimated_input_tokens"]})
-                            state["current_step"] += 1
-                            state["status"] = "complete" if state["current_step"] == len(WORKFLOW) else "in_progress"
-                            state["summary"] = f"Completed {operation}; approved requirements: {[x['text'] for x in state['requirements']]}"
-                            if state["status"] == "complete":
-                                state["validation_results"].append(validate_final_output(state, result["text"]))
-                            save_state(state)
-                            st.rerun()
-                    except Exception as exc:
-                        st.error(f"API call failed; the workflow was not advanced: {exc}")
-    st.subheader("Artifacts and cumulative metrics")
-    if state["artifacts"]:
-        tabs = st.tabs(list(state["artifacts"].keys()))
-        for tab, (_, content) in zip(tabs, state["artifacts"].items()):
-            with tab:
-                st.markdown(content)
-    if state["metrics"]:
-        total_in = sum(x["input_tokens"] for x in state["metrics"])
-        total_out = sum(x["output_tokens"] for x in state["metrics"])
-        a, b, c, d = st.columns(4)
-        a.metric("LLM calls", len(state["metrics"]))
-        b.metric("Input tokens", total_in)
-        c.metric("Output tokens", total_out)
-        d.metric("Estimated cost", f"${total_in * input_price / 1_000_000 + total_out * output_price / 1_000_000:.5f}")
+                    artifact = f"{index + 1}_{operation.lower()}"
+                    state["artifacts"][artifact] = result["text"]
+                    if note.strip():
+                        state["history"].append({"role": "user", "kind": "message", "content": note.strip(), "at": utc_now()})
+                    state["history"].append({"role": "assistant", "kind": operation.lower(), "content": result["text"], "at": utc_now()})
+                    state["metrics"].append({**result, "step": index + 1, "operation": operation, "estimated_input_tokens": context["estimated_input_tokens"]})
+                    state["current_step"] += 1
+                    state["status"] = "complete" if state["current_step"] == len(WORKFLOW) else "in_progress"
+                    state["summary"] = f"Completed {operation}; approved requirements: {[x['text'] for x in state['requirements']]}"
+                    if state["status"] == "complete":
+                        state["validation_results"].append(validate_final_output(state, result["text"]))
+                    save_state(state)
+                    st.rerun()
+            except Exception as exc:
+                st.error(f"API call failed; the workflow was not advanced: {exc}")
 
 
 def render_demo2() -> None:
