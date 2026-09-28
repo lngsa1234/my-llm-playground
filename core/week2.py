@@ -86,10 +86,10 @@ def _render_demo2_builder() -> None:
         st.progress(index / len(WORKFLOW), text=f"Goal progress — {index} of {len(WORKFLOW)} responses complete")
         st.caption(progress_label)
         for entry in state["history"]:
-            with st.chat_message(entry["role"]):
-                if entry["role"] == "assistant":
-                    st.caption(f"Agent · {entry.get('kind', 'response').title()}")
-                st.markdown(entry["content"])
+            label = "You" if entry["role"] == "user" else "Agent"
+            st.caption(label)
+            st.markdown(entry["content"])
+            st.divider()
         if complete:
             st.success("All six workflow steps are complete.")
         else:
@@ -107,14 +107,6 @@ def _render_demo2_builder() -> None:
     with right:
         st.subheader("Model settings")
         model, maximum, input_price, output_price = _render_model_settings()
-        st.subheader("Artifacts")
-        if state["artifacts"]:
-            tabs = st.tabs(list(state["artifacts"].keys()))
-            for tab, (_, content) in zip(tabs, state["artifacts"].items()):
-                with tab:
-                    st.markdown(content)
-        else:
-            st.caption("Generated artifacts will be collected here as the conversation progresses.")
         if not complete:
             with st.expander("Context for the next agent response", expanded=True):
                 st.caption(f"Estimated input: {context['estimated_input_tokens']} tokens · Sources: {', '.join(context['provenance'])}")
