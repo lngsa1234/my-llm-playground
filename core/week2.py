@@ -7,7 +7,7 @@ from core.context_builder import build_goal_context
 from core.demo1 import render_demo1
 from core.evaluator import validate_final_output, validate_response
 from core.llm_client import execute_goal_call
-from core.state_manager import WORKFLOW, add_feedback, list_states, load_state, new_goal_state, save_state, utc_now
+from core.state_manager import WORKFLOW, add_feedback, load_state, new_goal_state, save_state, utc_now
 
 
 def _render_model_settings() -> tuple[str, int, float, float]:
@@ -54,8 +54,6 @@ def _render_demo2_builder() -> None:
     _render_context_approach()
     if "goal_id" not in st.session_state:
         st.session_state.goal_id = None
-    saved = list_states()
-    labels = {f"{x['goal_id']} · {x['goal'][:38]}": x["goal_id"] for x in saved}
     if st.session_state.goal_id is None:
         st.subheader("Set your goal")
         start, settings = st.columns([2, 1])
@@ -71,13 +69,6 @@ def _render_demo2_builder() -> None:
                     st.warning("Enter a goal first.")
         with settings:
             _render_model_settings()
-        if labels:
-            st.divider()
-            st.subheader("Resume a saved run")
-            selected = st.selectbox("Saved Week 2 runs", ["Choose a run"] + list(labels), key="week2_resume")
-            if st.button("Load selected run", disabled=selected == "Choose a run", key="week2_load"):
-                st.session_state.goal_id = labels[selected]
-                st.rerun()
         return
     try:
         state = load_state(st.session_state.goal_id)
@@ -94,11 +85,6 @@ def _render_demo2_builder() -> None:
         progress_label = "The goal is complete" if complete else f"The agent is preparing response {index + 1} of {len(WORKFLOW)}"
         st.progress(index / len(WORKFLOW), text=f"Goal progress — {index} of {len(WORKFLOW)} responses complete")
         st.caption(progress_label)
-        with st.expander("Saved runs"):
-            selected = st.selectbox("Resume a saved Week 2 run", ["Choose a run"] + list(labels), key="week2_resume")
-            if st.button("Load selected run", disabled=selected == "Choose a run", key="week2_load"):
-                st.session_state.goal_id = labels[selected]
-                st.rerun()
         for entry in state["history"]:
             with st.chat_message(entry["role"]):
                 if entry["role"] == "assistant":
