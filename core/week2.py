@@ -36,18 +36,8 @@ def _render_demo2_builder() -> None:
         st.session_state.goal_id = None
     saved = list_states()
     labels = {f"{x['goal_id']} · {x['goal'][:38]}": x["goal_id"] for x in saved}
-    top, settings = st.columns([2, 1])
-    with top:
-        selected = st.selectbox("Resume a saved Week 2 run", ["Choose a run"] + list(labels), key="week2_resume")
-        if st.button("Load selected run", disabled=selected == "Choose a run", key="week2_load"):
-            st.session_state.goal_id = labels[selected]
-            st.rerun()
-    with settings:
-        model = st.text_input("Model", "gpt-5.4-mini", key="week2_model")
-        maximum = st.number_input("Max output tokens", 200, 4000, 1200, 100, key="week2_tokens")
-        input_price = st.number_input("Input $ / 1M", 0.0, 0.75, format="%.4f", key="week2_in_price")
-        output_price = st.number_input("Output $ / 1M", 0.0, 4.50, format="%.4f", key="week2_out_price")
     if st.session_state.goal_id is None:
+        st.subheader("Set your goal")
         goal = st.text_area("Goal", "Design a REST API for a task management system. Support creating tasks, updating task status, retrieving tasks, and soft deletion. Generate an API specification and a test plan.", key="week2_goal", height=115)
         strategy = st.radio("Context strategy", ["structured", "recent", "full"], horizontal=True, key="week2_strategy")
         if st.button("Create Week 2 goal", type="primary", key="week2_create"):
@@ -58,6 +48,13 @@ def _render_demo2_builder() -> None:
                 st.rerun()
             else:
                 st.warning("Enter a goal first.")
+        if labels:
+            st.divider()
+            st.subheader("Resume a saved run")
+            selected = st.selectbox("Saved Week 2 runs", ["Choose a run"] + list(labels), key="week2_resume")
+            if st.button("Load selected run", disabled=selected == "Choose a run", key="week2_load"):
+                st.session_state.goal_id = labels[selected]
+                st.rerun()
         return
     try:
         state = load_state(st.session_state.goal_id)
@@ -68,6 +65,18 @@ def _render_demo2_builder() -> None:
     complete = index >= len(WORKFLOW)
     st.subheader(state["goal"])
     st.caption(f"Run ID: `{state['goal_id']}` · Strategy: **{state['strategy']}** · Status: **{state['status']}**")
+    with st.expander("Run settings and saved goals"):
+        control, settings = st.columns([2, 1])
+        with control:
+            selected = st.selectbox("Resume a saved Week 2 run", ["Choose a run"] + list(labels), key="week2_resume")
+            if st.button("Load selected run", disabled=selected == "Choose a run", key="week2_load"):
+                st.session_state.goal_id = labels[selected]
+                st.rerun()
+        with settings:
+            model = st.text_input("Model", "gpt-5.4-mini", key="week2_model")
+            maximum = st.number_input("Max output tokens", 200, 4000, 1200, 100, key="week2_tokens")
+            input_price = st.number_input("Input $ / 1M", 0.0, 0.75, format="%.4f", key="week2_in_price")
+            output_price = st.number_input("Output $ / 1M", 0.0, 4.50, format="%.4f", key="week2_out_price")
     progress = index / len(WORKFLOW)
     progress_label = "Complete" if complete else f"Next: Step {index + 1} · {WORKFLOW[index][0]}"
     progress_left, progress_right = st.columns([5, 1])
