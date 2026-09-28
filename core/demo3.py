@@ -94,6 +94,20 @@ def render_demo3() -> None:
         "Each strategy starts from a new state and cannot access another strategy’s messages or artifacts. "
         "Only context construction changes; the goal, model, events, and output limit are fixed."
     )
+    with st.expander("How this benchmark works", expanded=True):
+        st.markdown(
+            "Demo 3 is a **controlled replay**, not a live conversation like Demo 2. It applies the same "
+            "predefined user feedback at each run to every strategy. After each event, the agent generates "
+            "a response, and that response is saved only in that strategy’s own history and artifacts. "
+            "This makes the comparison fair: the feedback is identical, while the context available to the "
+            "agent differs."
+        )
+        st.markdown(
+            "1. Start each strategy with a fresh copy of the goal.\n"
+            "2. Apply the same fixed user event.\n"
+            "3. Build that strategy’s context and call the agent.\n"
+            "4. Save the response only in that strategy’s session, then repeat."
+        )
     setup, controls = st.columns([2, 1])
     with setup:
         goal = st.text_area("Controlled benchmark goal", DEFAULT_GOAL, key="demo3_goal", height=110)
