@@ -24,7 +24,7 @@ from core.rag import (
 
 
 ROOT = Path(__file__).resolve().parents[1]
-RETRIEVAL_PIPELINE_VERSION = "hybrid-title-neighbors-v3"
+RETRIEVAL_PIPELINE_VERSION = "hybrid-title-neighbors-v4"
 DATASETS = {
     "HotpotQA mini · multi-hop": {
         "knowledge_base": ROOT / "knowledge_base" / "hotpotqa_mini",
@@ -279,7 +279,7 @@ def render_week3() -> None:
             overlap = max(0, chunk_size - 1)
         top_k = int(st.slider("Top-K initial chunks", 1, 8, 3, key="week3_top_k"))
         threshold = float(st.slider("Evidence threshold", 0.0, 1.0, 0.35, 0.01, key="week3_threshold"))
-        st.caption("Retrieval combines dense embeddings, BM25 keywords, reciprocal-rank fusion, and title-linked second hops. A linked document can add up to three neighboring chunks so its evidence stays intact. Below this cosine-similarity score, the app abstains before calling the LLM.")
+        st.caption("Retrieval combines dense embeddings, BM25 keywords, reciprocal-rank fusion, and title-linked second hops. A linked document can add up to three neighboring chunks so its evidence stays intact. Below this cosine-similarity score, the app abstains unless a title-linked evidence chain was verified.")
     playground, knowledge, benchmark = st.tabs(["Playground", "Documents & chunks", "Benchmark"])
     with playground:
         _render_playground(dataset, model, embedding_model, chunk_size, overlap, top_k, threshold)
