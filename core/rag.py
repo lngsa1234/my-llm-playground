@@ -266,7 +266,7 @@ def generate_without_rag(model: str, question: str) -> dict:
 
 def generate_with_rag(model: str, question: str, results: list[dict], threshold: float) -> dict:
     """Generate only when the best retrieved evidence clears the chosen threshold."""
-    top_score = results[0]["score"] if results else -1.0
+    top_score = max((item["score"] for item in results), default=-1.0)
     if top_score < threshold:
         return {
             "text": ABSTENTION,

@@ -24,7 +24,7 @@ from core.rag import (
 
 
 ROOT = Path(__file__).resolve().parents[1]
-RETRIEVAL_PIPELINE_VERSION = "hybrid-title-neighbors-v2"
+RETRIEVAL_PIPELINE_VERSION = "hybrid-title-neighbors-v3"
 DATASETS = {
     "HotpotQA mini · multi-hop": {
         "knowledge_base": ROOT / "knowledge_base" / "hotpotqa_mini",
@@ -71,7 +71,7 @@ def _render_metrics(retrieval_latency: float | None, retrieval_tokens: int | Non
     a.metric("Retrieval latency", f"{retrieval_latency * 1000:.0f} ms" if retrieval_latency is not None else "—")
     b.metric("Generation latency", f"{generation['latency_seconds']:.2f} s" if generation else "—")
     c.metric("Retrieved chunks", len(results))
-    d.metric("Top similarity", f"{results[0]['score']:.3f}" if results else "—")
+    d.metric("Top similarity", f"{max(item['score'] for item in results):.3f}" if results else "—")
     if generation:
         st.caption(
             f"Embedding tokens: {retrieval_tokens or 0} · Context estimate: {approximate_tokens(build_context(results))} tokens "
