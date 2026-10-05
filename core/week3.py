@@ -84,29 +84,24 @@ def _run_retrieval(index, question: str, top_k: int) -> None:
 
 def _render_playground(dataset: dict, model: str, embedding_model: str, chunk_size: int, overlap: int, top_k: int, threshold: float) -> None:
     st.subheader("RAG playground")
-    st.caption("First inspect retrieval. Then compare the base model with the same question answered using retrieved evidence.")
+    st.caption("Compare the base model's answer with an answer grounded in retrieved knowledge-base evidence.")
     question = st.text_area(
         "Ask a question",
         dataset["default_question"],
         height=88,
         key="week3_question",
     )
-    inspect, plain, rag = st.columns(3)
+    plain, rag = st.columns(2)
     has_key = bool(os.getenv("OPENAI_API_KEY"))
     if not has_key:
         st.warning("Set OPENAI_API_KEY to run retrieval or generation.")
-    if inspect.button("1. Inspect retrieval", use_container_width=True, disabled=not has_key):
-        try:
-            _run_retrieval(_get_index(dataset["knowledge_base"], chunk_size, overlap, embedding_model), question, top_k)
-        except Exception as exc:
-            st.error(f"Retrieval failed: {exc}")
-    if plain.button("2. Ask without RAG", use_container_width=True, disabled=not has_key):
+    if plain.button("1. Ask without RAG", use_container_width=True, disabled=not has_key):
         try:
             with st.spinner("Calling the base model without retrieved documents…"):
                 st.session_state.week3_plain = {"question": question, "result": generate_without_rag(model, question)}
         except Exception as exc:
             st.error(f"Baseline request failed: {exc}")
-    if rag.button("3. Ask with RAG", type="primary", use_container_width=True, disabled=not has_key):
+    if rag.button("2. Ask with RAG", type="primary", use_container_width=True, disabled=not has_key):
         try:
             index = _get_index(dataset["knowledge_base"], chunk_size, overlap, embedding_model)
             _run_retrieval(index, question, top_k)
@@ -118,7 +113,7 @@ def _render_playground(dataset: dict, model: str, embedding_model: str, chunk_si
 
     retrieved = st.session_state.get("week3_retrieval", {})
     if retrieved and retrieved.get("question") != question:
-        st.caption("The visible retrieval belongs to a previous question. Inspect retrieval to refresh it.")
+        st.caption("The visible retrieval belongs to a previous question. Ask with RAG to refresh it.")
     comparison_left, comparison_right = st.columns(2, gap="large")
     with comparison_left:
         st.markdown("#### Without RAG")
@@ -129,7 +124,7 @@ def _render_playground(dataset: dict, model: str, embedding_model: str, chunk_si
         st.markdown("#### With RAG")
         stored = st.session_state.get("week3_rag")
         result = stored["result"] if stored and stored["question"] == question else None
-        st.success(result["text"] if result else "Retrieve evidence and generate a grounded answer.")
+        st.success(result["text"] if result else "Ask with RAG to generate a grounded answer.")
         if result and result.get("prompt"):
             with st.expander("Inspect augmented prompt"):
                 st.code(result["prompt"], language="text")
