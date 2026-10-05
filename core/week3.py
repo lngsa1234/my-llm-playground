@@ -66,6 +66,24 @@ def _build_stamp() -> str:
     return f"Build {revision} · code {digest.hexdigest()[:8]} · RAG {RETRIEVAL_PIPELINE_VERSION}"
 
 
+def _render_request_error(stage: str, exc: Exception) -> None:
+    """Show actionable API diagnostics without exposing credentials or request content."""
+    details = {"stage": stage, "exception_type": type(exc).__name__, "message": str(exc)}
+    for attribute in ("status_code", "code", "type", "request_id"):
+        value = getattr(exc, attribute, None)
+        if value is not None:
+            details[attribute] = value
+    response = getattr(exc, "response", None)
+    headers = getattr(response, "headers", None)
+    if headers:
+        request_id = headers.get("x-request-id") or headers.get("request-id")
+        if request_id and "request_id" not in details:
+            details["request_id"] = request_id
+    st.error(f"{stage} failed: {type(exc).__name__}: {exc}")
+    with st.expander("Request error diagnostics"):
+        st.json(details)
+
+
 def _get_index(knowledge_base: Path, chunk_size: int, overlap: int, embedding_model: str):
     key = _index_key(knowledge_base, chunk_size, overlap, embedding_model)
     if st.session_state.get("week3_index_key") != key:
@@ -160,20 +178,28 @@ def _render_playground(dataset: dict, model: str, embedding_model: str, chunk_si
             with st.spinner("Calling the base model without retrieved documents…"):
                 st.session_state.week3_plain = {"question": question, "result": generate_without_rag(model, question)}
         except Exception as exc:
-            st.error(f"Baseline request failed: {exc}")
+            _render_request_error("Baseline generation", exc)
     if rag.button("2. Ask with RAG", type="primary", use_container_width=True, disabled=not has_key):
         try:
             index = _get_index(dataset["knowledge_base"], chunk_size, overlap, embedding_model)
-            _run_retrieval(index, question, top_k)
-            retrieved = st.session_state.week3_retrieval
-            with st.spinner("Generating a grounded answer from retrieved context…"):
-                st.session_state.week3_rag = {
-                    "question": question,
-                    "pipeline_version": RETRIEVAL_PIPELINE_VERSION,
-                    "result": generate_with_rag(model, question, retrieved["results"], threshold),
-                }
         except Exception as exc:
-            st.error(f"RAG request failed: {exc}")
+            _render_request_error("RAG index build", exc)
+        else:
+            try:
+                _run_retrieval(index, question, top_k)
+            except Exception as exc:
+                _render_request_error("RAG query retrieval", exc)
+            else:
+                try:
+                    retrieved = st.session_state.week3_retrieval
+                    with st.spinner("Generating a grounded answer from retrieved context…"):
+                        st.session_state.week3_rag = {
+                            "question": question,
+                            "pipeline_version": RETRIEVAL_PIPELINE_VERSION,
+                            "result": generate_with_rag(model, question, retrieved["results"], threshold),
+                        }
+                except Exception as exc:
+                    _render_request_error("RAG grounded generation", exc)
 
     retrieved = st.session_state.get("week3_retrieval", {})
     retrieval_is_current = (
