@@ -26,6 +26,7 @@ from openai import OpenAI
 
 DEFAULT_EMBEDDING_MODEL = "text-embedding-3-small"
 ABSTENTION = "I don't have enough information in the provided knowledge base."
+MAX_LINKED_CHUNKS = 3
 
 
 @dataclass(frozen=True)
@@ -180,23 +181,25 @@ def _ranked_positions(scores: list[float], limit: int) -> list[int]:
     return sorted(range(len(scores)), key=lambda position: scores[position], reverse=True)[:limit]
 
 
-def _linked_source_positions(
-    rag_index: RagIndex, primary_positions: list[int], excluded_sources: set[str]
-) -> list[int]:
-    """Follow titles named in retrieved text, without asking an LLM to expand a query."""
-    text = " ".join(rag_index.chunks[position].text.casefold() for position in primary_positions)
-    first_chunk_by_source: dict[str, int] = {}
+def _linked_source_positions(rag_index: RagIndex, primary_positions: list[int]) -> list[int]:
+    """Follow titles named in retrieved text and keep their local evidence together."""
+    chunks_by_source: dict[str, list[int]] = {}
     for position, chunk in enumerate(rag_index.chunks):
-        first_chunk_by_source.setdefault(chunk.source, position)
+        chunks_by_source.setdefault(chunk.source, []).append(position)
     linked: list[int] = []
     for source, title in rag_index.source_titles.items():
         title_terms = _terms(title)
-        if source in excluded_sources or len(title_terms) < 2:
+        if len(title_terms) < 2:
             continue
         pattern = r"(?<!\w)" + r"\s+".join(re.escape(term) for term in title_terms) + r"(?!\w)"
-        if re.search(pattern, text):
-            linked.append(first_chunk_by_source[source])
-    return linked
+        text_from_other_sources = " ".join(
+            rag_index.chunks[position].text.casefold()
+            for position in primary_positions
+            if rag_index.chunks[position].source != source
+        )
+        if re.search(pattern, text_from_other_sources):
+            linked.extend(chunks_by_source[source])
+    return linked[:MAX_LINKED_CHUNKS]
 
 
 def retrieve(rag_index: RagIndex, question: str, top_k: int) -> tuple[list[dict], float, int]:
@@ -224,11 +227,11 @@ def retrieve(rag_index: RagIndex, question: str, top_k: int) -> tuple[list[dict]
     linked_positions = _linked_source_positions(
         rag_index,
         primary_positions[:top_k],
-        {rag_index.chunks[position].source for position in primary_positions[:top_k]},
     )
-    linked_positions = linked_positions[: max(0, top_k - 1)]
+    linked_positions = [position for position in linked_positions if position not in primary_positions[:1]]
     remaining_primary = [position for position in primary_positions[1:] if position not in linked_positions]
-    selected_positions = (primary_positions[:1] + linked_positions + remaining_primary)[:top_k]
+    selected_limit = max(top_k, 1 + len(linked_positions))
+    selected_positions = (primary_positions[:1] + linked_positions + remaining_primary)[:selected_limit]
     results = [
         {
             "source": rag_index.chunks[position].source,
@@ -279,7 +282,10 @@ def generate_with_rag(model: str, question: str, results: list[dict], threshold:
     instructions = (
         "You are a grounded knowledge assistant. Answer using only the supplied context. "
         f"If the context does not contain enough evidence, reply exactly: {ABSTENTION} "
-        "Do not use outside knowledge or make up policies. Give a concise answer, then a final "
+        "Do not use outside knowledge or make up policies. Start with only the exact, most-specific "
+        "phrase from the context that directly fills the question. For a question asking for a position, "
+        "office, title, role, date, amount, or name, copy that precise field rather than giving a broader "
+        "category or explanation. You may add one short explanatory sentence after the direct answer, then a final "
         "line beginning `Sources:` that lists only the supplied filenames supporting the answer."
     )
     prompt = f"CONTEXT:\n{context}\n\nQUESTION:\n{question}"

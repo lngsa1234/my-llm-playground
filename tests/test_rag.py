@@ -87,9 +87,28 @@ def test_title_linked_retrieval_adds_the_named_document_as_second_hop():
         embedding_tokens=0,
     )
 
-    linked = _linked_source_positions(index, [0], {"kiss.md"})
+    linked = _linked_source_positions(index, [0, 1])
 
     assert linked == [1]
+
+
+def test_title_linked_retrieval_keeps_neighboring_chunks_from_the_linked_document():
+    index = RagIndex(
+        index=None,
+        chunks=[
+            Chunk("kiss.md", "# Kiss and Tell Shirley Temple portrayed Corliss Archer.", 1),
+            Chunk("shirley.md", "# Shirley Temple She was a diplomat.", 1),
+            Chunk("shirley.md", "She also served as Chief of Protocol of the United States.", 2),
+        ],
+        source_titles={"kiss.md": "Kiss and Tell", "shirley.md": "Shirley Temple"},
+        embedding_model="test",
+        build_latency_seconds=0.0,
+        embedding_tokens=0,
+    )
+
+    linked = _linked_source_positions(index, [0])
+
+    assert linked == [1, 2]
 
 
 def test_hybrid_retrieval_keeps_a_title_linked_second_hop(monkeypatch):

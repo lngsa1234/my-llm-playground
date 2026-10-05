@@ -24,6 +24,7 @@ from core.rag import (
 
 
 ROOT = Path(__file__).resolve().parents[1]
+RETRIEVAL_PIPELINE_VERSION = "hybrid-title-neighbors-v2"
 DATASETS = {
     "HotpotQA mini · multi-hop": {
         "knowledge_base": ROOT / "knowledge_base" / "hotpotqa_mini",
@@ -80,7 +81,13 @@ def _render_metrics(retrieval_latency: float | None, retrieval_tokens: int | Non
 
 def _run_retrieval(index, question: str, top_k: int) -> None:
     results, latency, tokens = retrieve(index, question, top_k)
-    st.session_state.week3_retrieval = {"question": question, "results": results, "latency": latency, "tokens": tokens}
+    st.session_state.week3_retrieval = {
+        "question": question,
+        "results": results,
+        "latency": latency,
+        "tokens": tokens,
+        "pipeline_version": RETRIEVAL_PIPELINE_VERSION,
+    }
 
 
 def _expected_answer(benchmark_file: Path, question: str) -> str | None:
@@ -114,13 +121,21 @@ def _render_playground(dataset: dict, model: str, embedding_model: str, chunk_si
             _run_retrieval(index, question, top_k)
             retrieved = st.session_state.week3_retrieval
             with st.spinner("Generating a grounded answer from retrieved context…"):
-                st.session_state.week3_rag = {"question": question, "result": generate_with_rag(model, question, retrieved["results"], threshold)}
+                st.session_state.week3_rag = {
+                    "question": question,
+                    "pipeline_version": RETRIEVAL_PIPELINE_VERSION,
+                    "result": generate_with_rag(model, question, retrieved["results"], threshold),
+                }
         except Exception as exc:
             st.error(f"RAG request failed: {exc}")
 
     retrieved = st.session_state.get("week3_retrieval", {})
-    if retrieved and retrieved.get("question") != question:
-        st.caption("The visible retrieval belongs to a previous question. Ask with RAG to refresh it.")
+    retrieval_is_current = (
+        retrieved.get("question") == question
+        and retrieved.get("pipeline_version") == RETRIEVAL_PIPELINE_VERSION
+    )
+    if retrieved and not retrieval_is_current:
+        st.caption("The visible retrieval uses a previous question or retrieval version. Ask with RAG to refresh it.")
     comparison_left, comparison_right = st.columns(2, gap="large")
     with comparison_left:
         st.markdown("#### Without RAG")
@@ -130,12 +145,18 @@ def _render_playground(dataset: dict, model: str, embedding_model: str, chunk_si
     with comparison_right:
         st.markdown("#### With RAG")
         stored = st.session_state.get("week3_rag")
-        result = stored["result"] if stored and stored["question"] == question else None
+        result = (
+            stored["result"]
+            if stored
+            and stored["question"] == question
+            and stored.get("pipeline_version") == RETRIEVAL_PIPELINE_VERSION
+            else None
+        )
         st.success(result["text"] if result else "Ask with RAG to generate a grounded answer.")
         if result and result.get("prompt"):
             with st.expander("Inspect augmented prompt"):
                 st.code(result["prompt"], language="text")
-    results = retrieved.get("results", []) if retrieved.get("question") == question else []
+    results = retrieved.get("results", []) if retrieval_is_current else []
     expected_answer = _expected_answer(dataset["benchmark"], question)
     if expected_answer:
         st.caption(f"Benchmark expected answer: {expected_answer}")
@@ -256,9 +277,9 @@ def render_week3() -> None:
         if overlap >= chunk_size:
             st.error("Overlap must be smaller than chunk size.")
             overlap = max(0, chunk_size - 1)
-        top_k = int(st.slider("Top-K chunks", 1, 8, 3, key="week3_top_k"))
+        top_k = int(st.slider("Top-K initial chunks", 1, 8, 3, key="week3_top_k"))
         threshold = float(st.slider("Evidence threshold", 0.0, 1.0, 0.35, 0.01, key="week3_threshold"))
-        st.caption("Retrieval combines dense embeddings, BM25 keywords, reciprocal-rank fusion, and title-linked second hops. Below this cosine-similarity score, the app abstains before calling the LLM.")
+        st.caption("Retrieval combines dense embeddings, BM25 keywords, reciprocal-rank fusion, and title-linked second hops. A linked document can add up to three neighboring chunks so its evidence stays intact. Below this cosine-similarity score, the app abstains before calling the LLM.")
     playground, knowledge, benchmark = st.tabs(["Playground", "Documents & chunks", "Benchmark"])
     with playground:
         _render_playground(dataset, model, embedding_model, chunk_size, overlap, top_k, threshold)
