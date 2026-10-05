@@ -245,7 +245,7 @@ def retrieve(rag_index: RagIndex, question: str, top_k: int) -> tuple[list[dict]
             "fused_score": fused_scores.get(position, 0.0),
             "dense_rank": dense_ranks.get(position),
             "lexical_rank": lexical_ranks.get(position),
-            "fused_rank": fused_ranks[position],
+            "fused_rank": fused_ranks.get(position, "linked"),
             "retrieval_method": "title-linked second hop" if position in linked_positions else "dense + BM25 + RRF",
         }
         for position in selected_positions

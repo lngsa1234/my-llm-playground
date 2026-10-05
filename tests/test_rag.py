@@ -138,6 +138,31 @@ def test_hybrid_retrieval_keeps_a_title_linked_second_hop(monkeypatch):
     assert results[0]["fused_rank"] == 1
 
 
+def test_linked_chunk_outside_initial_candidates_has_no_fused_rank(monkeypatch):
+    class FakeFaissIndex:
+        def search(self, vector, limit):
+            return [[0.9 - (position * 0.01) for position in range(limit)]], [list(range(limit))]
+
+    chunks = [Chunk("kiss.md", "Kiss and Tell starred Shirley Temple as Corliss Archer.", 1)]
+    chunks.extend(Chunk(f"other-{position}.md", "Unrelated text.", 1) for position in range(1, 12))
+    chunks.append(Chunk("shirley.md", "Shirley Temple served as Chief of Protocol.", 1))
+    index = RagIndex(
+        index=FakeFaissIndex(),
+        chunks=chunks,
+        source_titles={"kiss.md": "Kiss and Tell", "shirley.md": "Shirley Temple"},
+        embedding_model="test",
+        build_latency_seconds=0.0,
+        embedding_tokens=0,
+    )
+    monkeypatch.setattr("core.rag.OpenAI", lambda: object())
+    monkeypatch.setattr("core.rag.embed_texts", lambda client, texts, model: ([[0.0]], 1))
+
+    results, _, _ = retrieve(index, "What position did the woman in Kiss and Tell hold?", top_k=3)
+
+    linked = next(result for result in results if result["source"] == "shirley.md")
+    assert linked["fused_rank"] == "linked"
+
+
 def test_low_similarity_abstains_without_calling_the_llm(monkeypatch):
     def unexpected_client():
         raise AssertionError("The LLM should not be called when evidence is insufficient")
