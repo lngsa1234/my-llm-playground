@@ -314,6 +314,15 @@ def _answer_scores(answer: str, expected: str) -> tuple[float, float]:
 def _render_benchmark(knowledge_base: Path, benchmark_file: Path, model: str, embedding_model: str, chunk_size: int, overlap: int, top_k: int, threshold: float) -> None:
     st.subheader("Benchmark")
     st.caption("Evidence Recall@K evaluates retrieval independently. The full benchmark then checks whether a grounded answer contains the expected phrase or properly abstains.")
+    with st.expander("How benchmark evaluation works", expanded=False):
+        st.markdown(
+            """
+1. **Gold evidence** — Each benchmark question names the expected supporting source file or files.
+2. **Evidence Recall@K** — A question is counted as retrieved correctly only when every expected source filename appears among the retrieved top-*K* chunks. Multi-hop questions therefore require all supporting documents.
+3. **Optional answer evaluation** — Enable **Generate answers too** to run grounded generation for each question. The app compares the answer before its `Sources:` line with the expected answer using exact match and token-level F1. For unanswerable questions, it checks whether the system abstained.
+4. **Important limitation** — Gold evidence is stored at the document level, not the chunk level. Retrieving any chunk from an expected document earns evidence credit, even if the specific answer-bearing chunk was not retrieved. Use the displayed chunks and answer scores alongside Evidence Recall@K.
+            """
+        )
     questions = json.loads(benchmark_file.read_text(encoding="utf-8"))
     full = st.checkbox("Generate answers too (uses one LLM call per question)", key="week3_benchmark_full")
     if st.button("Run benchmark", type="primary", disabled=not os.getenv("OPENAI_API_KEY"), key="week3_benchmark_run"):
