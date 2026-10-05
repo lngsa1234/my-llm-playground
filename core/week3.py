@@ -146,14 +146,15 @@ def _render_knowledge_base(knowledge_base: Path, description: str, chunk_size: i
     with document_column:
         selected_source = st.selectbox("Source document", [document.source for document in documents])
         document = next(item for item in documents if item.source == selected_source)
-        st.code(document.text, language="markdown")
+        st.caption(f"Original indexed Markdown file · {len(document.text):,} characters")
+        st.code(document.text, language="markdown", wrap_lines=True, height=460)
     with chunk_column:
         chunks = chunk_documents(documents, chunk_size, overlap)
         st.metric("Chunks created", len(chunks))
         selected_chunks = [chunk for chunk in chunks if chunk.source == selected_source]
         for chunk in selected_chunks:
             with st.expander(f"{chunk.source} · chunk {chunk.chunk_number}", expanded=True):
-                st.write(chunk.text)
+                st.code(chunk.text, language="markdown", wrap_lines=True)
 
 
 def _expected_found(item: dict, results: list[dict]) -> bool | None:
