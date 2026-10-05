@@ -59,8 +59,9 @@ def _render_retrieval(results: list[dict]) -> None:
         st.info("Retrieve evidence to inspect the chunks before generating an answer.")
         return
     for rank, item in enumerate(results, start=1):
-        with st.expander(f"#{rank} · {item['source']} · chunk {item['chunk_number']} · similarity {item['score']:.3f}", expanded=rank == 1):
-            st.write(item["text"])
+        method = item.get("retrieval_method", "dense retrieval")
+        with st.expander(f"#{rank} · {item['source']} · chunk {item['chunk_number']} · {method} · similarity {item['score']:.3f}", expanded=rank == 1):
+            st.code(item["text"], language="markdown", wrap_lines=True)
 
 
 def _render_metrics(retrieval_latency: float | None, retrieval_tokens: int | None, results: list[dict], generation: dict | None) -> None:
@@ -82,9 +83,15 @@ def _run_retrieval(index, question: str, top_k: int) -> None:
     st.session_state.week3_retrieval = {"question": question, "results": results, "latency": latency, "tokens": tokens}
 
 
+def _expected_answer(benchmark_file: Path, question: str) -> str | None:
+    """Return the reference answer when the playground question is benchmarked."""
+    questions = json.loads(benchmark_file.read_text(encoding="utf-8"))
+    return next((item["expected_answer"] for item in questions if item["question"] == question), None)
+
+
 def _render_playground(dataset: dict, model: str, embedding_model: str, chunk_size: int, overlap: int, top_k: int, threshold: float) -> None:
     st.subheader("RAG playground")
-    st.caption("Compare the base model's answer with an answer grounded in retrieved knowledge-base evidence.")
+    st.caption("Compare the base model's answer with an answer grounded in hybrid, multi-hop knowledge-base evidence.")
     question = st.text_area(
         "Ask a question",
         dataset["default_question"],
@@ -119,7 +126,7 @@ def _render_playground(dataset: dict, model: str, embedding_model: str, chunk_si
         st.markdown("#### Without RAG")
         stored = st.session_state.get("week3_plain")
         result = stored["result"] if stored and stored["question"] == question else None
-        st.info(result["text"] if result else "Ask the base model to record the no-RAG baseline.")
+        st.info(result["text"] if result else "Click Ask without RAG to generate a baseline answer.")
     with comparison_right:
         st.markdown("#### With RAG")
         stored = st.session_state.get("week3_rag")
@@ -129,6 +136,9 @@ def _render_playground(dataset: dict, model: str, embedding_model: str, chunk_si
             with st.expander("Inspect augmented prompt"):
                 st.code(result["prompt"], language="text")
     results = retrieved.get("results", []) if retrieved.get("question") == question else []
+    expected_answer = _expected_answer(dataset["benchmark"], question)
+    if expected_answer:
+        st.caption(f"Benchmark expected answer: {expected_answer}")
     _render_retrieval(results)
     _render_metrics(retrieved.get("latency") if results else None, retrieved.get("tokens") if results else None, results, result)
 
@@ -248,7 +258,7 @@ def render_week3() -> None:
             overlap = max(0, chunk_size - 1)
         top_k = int(st.slider("Top-K chunks", 1, 8, 3, key="week3_top_k"))
         threshold = float(st.slider("Evidence threshold", 0.0, 1.0, 0.35, 0.01, key="week3_threshold"))
-        st.caption("Below this cosine-similarity score, the app abstains before calling the LLM.")
+        st.caption("Retrieval combines dense embeddings, BM25 keywords, reciprocal-rank fusion, and title-linked second hops. Below this cosine-similarity score, the app abstains before calling the LLM.")
     playground, knowledge, benchmark = st.tabs(["Playground", "Documents & chunks", "Benchmark"])
     with playground:
         _render_playground(dataset, model, embedding_model, chunk_size, overlap, top_k, threshold)

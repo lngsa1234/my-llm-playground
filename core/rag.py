@@ -8,7 +8,10 @@ in a FAISS inner-product index (cosine similarity after normalization).
 from __future__ import annotations
 
 from dataclasses import dataclass
+from collections import Counter
+import math
 from pathlib import Path
+import re
 import time
 from typing import Any, Iterable
 
@@ -42,6 +45,7 @@ class Chunk:
 class RagIndex:
     index: Any
     chunks: list[Chunk]
+    source_titles: dict[str, str]
     embedding_model: str
     build_latency_seconds: float
     embedding_tokens: int
@@ -126,31 +130,116 @@ def build_index(
     if faiss is None or np is None:
         raise RuntimeError("FAISS is not installed. Run `pip install -r requirements.txt` and restart Streamlit.")
     started = time.perf_counter()
-    chunks = chunk_documents(load_documents(knowledge_base), chunk_size, overlap)
+    documents = load_documents(knowledge_base)
+    chunks = chunk_documents(documents, chunk_size, overlap)
     if not chunks:
         raise ValueError("No markdown chunks were found in the knowledge base.")
     matrix, tokens = embed_texts(OpenAI(), [chunk.text for chunk in chunks], embedding_model)
     index = faiss.IndexFlatIP(matrix.shape[1])
     index.add(matrix)
-    return RagIndex(index, chunks, embedding_model, time.perf_counter() - started, tokens)
+    source_titles = {document.source: _document_title(document) for document in documents}
+    return RagIndex(index, chunks, source_titles, embedding_model, time.perf_counter() - started, tokens)
+
+
+def _document_title(document: Document) -> str:
+    """Use the Markdown H1 as a deterministic entity label for a document."""
+    for line in document.text.splitlines():
+        match = re.fullmatch(r"\s*#\s+(.+?)\s*", line)
+        if match:
+            return match.group(1)
+    return Path(document.source).stem.replace("-", " ")
+
+
+def _terms(text: str) -> list[str]:
+    return re.findall(r"\w+", text.casefold())
+
+
+def _bm25_scores(query: str, chunks: list[Chunk]) -> list[float]:
+    """A small dependency-free BM25 implementation for keyword retrieval."""
+    query_terms = _terms(query)
+    documents = [_terms(chunk.text) for chunk in chunks]
+    if not query_terms or not documents:
+        return [0.0] * len(chunks)
+    document_frequency = Counter(term for document in documents for term in set(document))
+    average_length = sum(len(document) for document in documents) / len(documents)
+    scores: list[float] = []
+    for document in documents:
+        counts = Counter(document)
+        score = 0.0
+        for term in set(query_terms):
+            frequency = counts[term]
+            if not frequency:
+                continue
+            inverse_frequency = math.log(1 + (len(documents) - document_frequency[term] + 0.5) / (document_frequency[term] + 0.5))
+            score += inverse_frequency * frequency * 2.5 / (frequency + 1.5 * (1 - 0.75 + 0.75 * len(document) / average_length))
+        scores.append(score)
+    return scores
+
+
+def _ranked_positions(scores: list[float], limit: int) -> list[int]:
+    return sorted(range(len(scores)), key=lambda position: scores[position], reverse=True)[:limit]
+
+
+def _linked_source_positions(
+    rag_index: RagIndex, primary_positions: list[int], excluded_sources: set[str]
+) -> list[int]:
+    """Follow titles named in retrieved text, without asking an LLM to expand a query."""
+    text = " ".join(rag_index.chunks[position].text.casefold() for position in primary_positions)
+    first_chunk_by_source: dict[str, int] = {}
+    for position, chunk in enumerate(rag_index.chunks):
+        first_chunk_by_source.setdefault(chunk.source, position)
+    linked: list[int] = []
+    for source, title in rag_index.source_titles.items():
+        title_terms = _terms(title)
+        if source in excluded_sources or len(title_terms) < 2:
+            continue
+        pattern = r"(?<!\w)" + r"\s+".join(re.escape(term) for term in title_terms) + r"(?!\w)"
+        if re.search(pattern, text):
+            linked.append(first_chunk_by_source[source])
+    return linked
 
 
 def retrieve(rag_index: RagIndex, question: str, top_k: int) -> tuple[list[dict], float, int]:
-    """Return highest-cosine-similarity chunks and query embedding timing."""
+    """Hybrid, multi-hop retrieval using dense search, BM25, RRF, and title links."""
     if not question.strip():
         raise ValueError("Enter a question first.")
     started = time.perf_counter()
     vector, tokens = embed_texts(OpenAI(), [question], rag_index.embedding_model)
-    scores, positions = rag_index.index.search(vector, min(top_k, len(rag_index.chunks)))
+    candidate_limit = min(max(top_k * 4, 12), len(rag_index.chunks))
+    scores, positions = rag_index.index.search(vector, candidate_limit)
+    dense_scores = {int(position): float(score) for score, position in zip(scores[0], positions[0]) if position != -1}
+    lexical_scores = _bm25_scores(question, rag_index.chunks)
+    dense_positions = list(dense_scores)
+    lexical_positions = _ranked_positions(lexical_scores, candidate_limit)
+    candidates = set(dense_positions) | set(lexical_positions)
+    fused_scores = {position: 0.0 for position in candidates}
+    for rank, position in enumerate(dense_positions, start=1):
+        fused_scores[position] = fused_scores.get(position, 0.0) + 1 / (60 + rank)
+    for rank, position in enumerate(lexical_positions, start=1):
+        fused_scores[position] = fused_scores.get(position, 0.0) + 1 / (60 + rank)
+    primary_positions = sorted(candidates, key=lambda position: fused_scores[position], reverse=True)
+
+    # A title named in a retrieved chunk is an explicit, corpus-grounded bridge
+    # to another document. Reserve room for these second-hop evidence chunks.
+    linked_positions = _linked_source_positions(
+        rag_index,
+        primary_positions[:top_k],
+        {rag_index.chunks[position].source for position in primary_positions[:top_k]},
+    )
+    linked_positions = linked_positions[: max(0, top_k - 1)]
+    remaining_primary = [position for position in primary_positions[1:] if position not in linked_positions]
+    selected_positions = (primary_positions[:1] + linked_positions + remaining_primary)[:top_k]
     results = [
         {
             "source": rag_index.chunks[position].source,
             "chunk_number": rag_index.chunks[position].chunk_number,
             "text": rag_index.chunks[position].text,
-            "score": float(score),
+            "score": dense_scores.get(position, 0.0),
+            "lexical_score": lexical_scores[position],
+            "fused_score": fused_scores.get(position, 0.0),
+            "retrieval_method": "title-linked second hop" if position in linked_positions else "dense + BM25 + RRF",
         }
-        for score, position in zip(scores[0], positions[0])
-        if position != -1
+        for position in selected_positions
     ]
     return results, time.perf_counter() - started, tokens
 
