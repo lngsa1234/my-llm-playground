@@ -221,6 +221,9 @@ def retrieve(rag_index: RagIndex, question: str, top_k: int) -> tuple[list[dict]
     for rank, position in enumerate(lexical_positions, start=1):
         fused_scores[position] = fused_scores.get(position, 0.0) + 1 / (60 + rank)
     primary_positions = sorted(candidates, key=lambda position: fused_scores[position], reverse=True)
+    dense_ranks = {position: rank for rank, position in enumerate(dense_positions, start=1)}
+    lexical_ranks = {position: rank for rank, position in enumerate(lexical_positions, start=1)}
+    fused_ranks = {position: rank for rank, position in enumerate(primary_positions, start=1)}
 
     # A title named in a retrieved chunk is an explicit, corpus-grounded bridge
     # to another document. Reserve room for these second-hop evidence chunks.
@@ -240,6 +243,9 @@ def retrieve(rag_index: RagIndex, question: str, top_k: int) -> tuple[list[dict]
             "score": dense_scores.get(position, 0.0),
             "lexical_score": lexical_scores[position],
             "fused_score": fused_scores.get(position, 0.0),
+            "dense_rank": dense_ranks.get(position),
+            "lexical_rank": lexical_ranks.get(position),
+            "fused_rank": fused_ranks[position],
             "retrieval_method": "title-linked second hop" if position in linked_positions else "dense + BM25 + RRF",
         }
         for position in selected_positions
@@ -277,6 +283,7 @@ def generate_with_rag(model: str, question: str, results: list[dict], threshold:
             "output_tokens": 0,
             "total_tokens": 0,
             "status": "abstained_before_generation",
+            "gate": f"blocked: best dense similarity {top_score:.3f} is below {threshold:.3f}; no keyword or title-linked evidence",
             "prompt": "Evidence did not meet the similarity threshold; no LLM call was made.",
             "abstained": True,
         }
@@ -297,7 +304,8 @@ def generate_with_rag(model: str, question: str, results: list[dict], threshold:
     started = time.perf_counter()
     response = OpenAI().responses.create(model=model, instructions=instructions, input=prompt)
     result = _generation_result(response, time.perf_counter() - started)
-    result.update({"prompt": prompt, "abstained": False})
+    evidence = "title-linked evidence" if has_title_linked_evidence else ("keyword evidence" if has_keyword_evidence else "dense similarity")
+    result.update({"prompt": prompt, "abstained": False, "gate": f"allowed: {evidence}"})
     return result
 
 

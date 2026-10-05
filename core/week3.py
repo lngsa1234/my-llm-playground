@@ -100,6 +100,31 @@ def _render_metrics(retrieval_latency: float | None, retrieval_tokens: int | Non
         )
 
 
+def _render_retrieval_diagnostics(results: list[dict], generation: dict | None) -> None:
+    """Expose the selection and generation decision needed to debug RAG behavior."""
+    with st.expander("Retrieval diagnostics"):
+        if not results:
+            st.info("Run Ask with RAG to collect retrieval diagnostics.")
+            return
+        rows = [
+            {
+                "Selected": rank,
+                "Source": item["source"],
+                "Chunk": item["chunk_number"],
+                "Method": item.get("retrieval_method"),
+                "Dense similarity": f"{item['score']:.3f}",
+                "Dense rank": item.get("dense_rank", "—"),
+                "BM25 score": f"{item.get('lexical_score', 0.0):.3f}",
+                "BM25 rank": item.get("lexical_rank", "—"),
+                "Fused rank": item.get("fused_rank", "—"),
+            }
+            for rank, item in enumerate(results, start=1)
+        ]
+        st.dataframe(rows, use_container_width=True, hide_index=True)
+        if generation:
+            st.caption(f"Generation decision: {generation.get('gate', 'not recorded')}")
+
+
 def _run_retrieval(index, question: str, top_k: int) -> None:
     results, latency, tokens = retrieve(index, question, top_k)
     st.session_state.week3_retrieval = {
@@ -174,6 +199,8 @@ def _render_playground(dataset: dict, model: str, embedding_model: str, chunk_si
             else None
         )
         st.success(result["text"] if result else "Ask with RAG to generate a grounded answer.")
+        if result:
+            st.caption(f"Generation decision: {result.get('gate', 'not recorded')}")
         if result and result.get("prompt"):
             with st.expander("Inspect augmented prompt"):
                 st.code(result["prompt"], language="text")
@@ -183,6 +210,7 @@ def _render_playground(dataset: dict, model: str, embedding_model: str, chunk_si
         st.caption(f"Benchmark expected answer: {expected_answer}")
     _render_retrieval(results)
     _render_metrics(retrieved.get("latency") if results else None, retrieved.get("tokens") if results else None, results, result)
+    _render_retrieval_diagnostics(results, result)
 
 
 def _render_knowledge_base(knowledge_base: Path, description: str, chunk_size: int, overlap: int) -> None:

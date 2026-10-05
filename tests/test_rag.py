@@ -135,6 +135,7 @@ def test_hybrid_retrieval_keeps_a_title_linked_second_hop(monkeypatch):
 
     assert [result["source"] for result in results] == ["kiss.md", "shirley.md"]
     assert results[1]["retrieval_method"] == "title-linked second hop"
+    assert results[0]["fused_rank"] == 1
 
 
 def test_low_similarity_abstains_without_calling_the_llm(monkeypatch):
@@ -152,6 +153,7 @@ def test_low_similarity_abstains_without_calling_the_llm(monkeypatch):
     assert result["text"] == ABSTENTION
     assert result["abstained"] is True
     assert result["status"] == "abstained_before_generation"
+    assert result["gate"].startswith("blocked:")
 
 
 def test_multi_hop_evidence_requires_every_supporting_document():
