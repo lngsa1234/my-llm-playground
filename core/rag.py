@@ -283,6 +283,9 @@ def generate_with_rag(model: str, question: str, results: list[dict], threshold:
     instructions = (
         "You are a grounded knowledge assistant. Answer using only the supplied context. "
         f"If the context does not contain enough evidence, reply exactly: {ABSTENTION} "
+        "Use all supplied chunks together and combine explicit facts across different sources when they form "
+        "an evidence chain for a multi-hop question. Do not abstain when one chunk identifies an entity and "
+        "another chunk explicitly provides the requested fact about that entity. "
         "Do not use outside knowledge or make up policies. Start with only the exact, most-specific "
         "phrase from the context that directly fills the question. For a question asking for a position, "
         "office, title, role, date, amount, or name, copy that precise field rather than giving a broader "

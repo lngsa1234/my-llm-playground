@@ -26,7 +26,7 @@ from core.rag import (
 
 
 ROOT = Path(__file__).resolve().parents[1]
-RETRIEVAL_PIPELINE_VERSION = "hybrid-title-neighbors-v5"
+RETRIEVAL_PIPELINE_VERSION = "hybrid-title-neighbors-v6"
 DATASETS = {
     "HotpotQA mini · multi-hop": {
         "knowledge_base": ROOT / "knowledge_base" / "hotpotqa_mini",
