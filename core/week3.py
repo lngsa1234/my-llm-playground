@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import json
 import os
+import re
+from collections import Counter
 from pathlib import Path
 
 import streamlit as st
@@ -22,19 +24,31 @@ from core.rag import (
 
 
 ROOT = Path(__file__).resolve().parents[1]
-KNOWLEDGE_BASE = ROOT / "knowledge_base"
-BENCHMARK_FILE = ROOT / "benchmark" / "questions.json"
+DATASETS = {
+    "HotpotQA mini · multi-hop": {
+        "knowledge_base": ROOT / "knowledge_base" / "hotpotqa_mini",
+        "benchmark": ROOT / "benchmark" / "hotpotqa_mini_questions.json",
+        "description": "50 official HotpotQA development questions over 198 Wikipedia articles. Each question needs two supporting articles.",
+        "default_question": "What government position was held by the woman who portrayed Corliss Archer in the film Kiss and Tell?",
+    },
+    "NovaTech starter · single-hop": {
+        "knowledge_base": ROOT / "knowledge_base",
+        "benchmark": ROOT / "benchmark" / "questions.json",
+        "description": "Ten fictional company-policy documents for a smaller, single-hop introduction.",
+        "default_question": "How long do Pro customers have to request their money back?",
+    },
+}
 
 
-def _index_key(chunk_size: int, overlap: int, embedding_model: str) -> tuple[int, int, str]:
-    return chunk_size, overlap, embedding_model
+def _index_key(knowledge_base: Path, chunk_size: int, overlap: int, embedding_model: str) -> tuple[str, int, int, str]:
+    return str(knowledge_base), chunk_size, overlap, embedding_model
 
 
-def _get_index(chunk_size: int, overlap: int, embedding_model: str):
-    key = _index_key(chunk_size, overlap, embedding_model)
+def _get_index(knowledge_base: Path, chunk_size: int, overlap: int, embedding_model: str):
+    key = _index_key(knowledge_base, chunk_size, overlap, embedding_model)
     if st.session_state.get("week3_index_key") != key:
         with st.spinner("Loading documents, chunking, embedding, and building the FAISS index…"):
-            st.session_state.week3_index = build_index(KNOWLEDGE_BASE, chunk_size, overlap, embedding_model)
+            st.session_state.week3_index = build_index(knowledge_base, chunk_size, overlap, embedding_model)
             st.session_state.week3_index_key = key
     return st.session_state.week3_index
 
@@ -68,12 +82,12 @@ def _run_retrieval(index, question: str, top_k: int) -> None:
     st.session_state.week3_retrieval = {"question": question, "results": results, "latency": latency, "tokens": tokens}
 
 
-def _render_playground(model: str, embedding_model: str, chunk_size: int, overlap: int, top_k: int, threshold: float) -> None:
+def _render_playground(dataset: dict, model: str, embedding_model: str, chunk_size: int, overlap: int, top_k: int, threshold: float) -> None:
     st.subheader("RAG playground")
-    st.caption("First inspect retrieval. Then compare the base model with the same question answered using retrieved NovaTech evidence.")
+    st.caption("First inspect retrieval. Then compare the base model with the same question answered using retrieved evidence.")
     question = st.text_area(
-        "Ask NovaTech",
-        "How long do Pro customers have to request their money back?",
+        "Ask a question",
+        dataset["default_question"],
         height=88,
         key="week3_question",
     )
@@ -83,18 +97,18 @@ def _render_playground(model: str, embedding_model: str, chunk_size: int, overla
         st.warning("Set OPENAI_API_KEY to run retrieval or generation.")
     if inspect.button("1. Inspect retrieval", use_container_width=True, disabled=not has_key):
         try:
-            _run_retrieval(_get_index(chunk_size, overlap, embedding_model), question, top_k)
+            _run_retrieval(_get_index(dataset["knowledge_base"], chunk_size, overlap, embedding_model), question, top_k)
         except Exception as exc:
             st.error(f"Retrieval failed: {exc}")
     if plain.button("2. Ask without RAG", use_container_width=True, disabled=not has_key):
         try:
-            with st.spinner("Calling the base model without NovaTech documents…"):
+            with st.spinner("Calling the base model without retrieved documents…"):
                 st.session_state.week3_plain = {"question": question, "result": generate_without_rag(model, question)}
         except Exception as exc:
             st.error(f"Baseline request failed: {exc}")
     if rag.button("3. Ask with RAG", type="primary", use_container_width=True, disabled=not has_key):
         try:
-            index = _get_index(chunk_size, overlap, embedding_model)
+            index = _get_index(dataset["knowledge_base"], chunk_size, overlap, embedding_model)
             _run_retrieval(index, question, top_k)
             retrieved = st.session_state.week3_retrieval
             with st.spinner("Generating a grounded answer from retrieved context…"):
@@ -124,51 +138,80 @@ def _render_playground(model: str, embedding_model: str, chunk_size: int, overla
     _render_metrics(retrieved.get("latency") if results else None, retrieved.get("tokens") if results else None, results, result)
 
 
-def _render_knowledge_base(chunk_size: int, overlap: int) -> None:
+def _render_knowledge_base(knowledge_base: Path, description: str, chunk_size: int, overlap: int) -> None:
     st.subheader("Knowledge base and chunking")
-    documents = load_documents(KNOWLEDGE_BASE)
-    st.caption(f"{len(documents)} fictional NovaTech markdown documents. Change chunk settings in the sidebar to show the tradeoff.")
+    documents = load_documents(knowledge_base)
+    st.caption(f"{len(documents)} source documents. {description}")
     document_column, chunk_column = st.columns(2, gap="large")
     with document_column:
-        for document in documents:
-            with st.expander(document.source):
-                st.code(document.text, language="markdown")
+        selected_source = st.selectbox("Source document", [document.source for document in documents])
+        document = next(item for item in documents if item.source == selected_source)
+        st.code(document.text, language="markdown")
     with chunk_column:
         chunks = chunk_documents(documents, chunk_size, overlap)
         st.metric("Chunks created", len(chunks))
-        for chunk in chunks:
-            with st.expander(f"{chunk.source} · chunk {chunk.chunk_number}"):
+        selected_chunks = [chunk for chunk in chunks if chunk.source == selected_source]
+        for chunk in selected_chunks:
+            with st.expander(f"{chunk.source} · chunk {chunk.chunk_number}", expanded=True):
                 st.write(chunk.text)
 
 
 def _expected_found(item: dict, results: list[dict]) -> bool | None:
-    if item["evidence"] is None:
+    evidence = item["evidence"]
+    if evidence is None:
         return None
-    return item["evidence"] in {result["source"] for result in results}
+    expected_sources = {evidence} if isinstance(evidence, str) else set(evidence)
+    return expected_sources.issubset({result["source"] for result in results})
 
 
-def _render_benchmark(model: str, embedding_model: str, chunk_size: int, overlap: int, top_k: int, threshold: float) -> None:
+def _normalize_answer(text: str) -> list[str]:
+    return re.findall(r"\w+", text.lower())
+
+
+def _answer_before_sources(text: str) -> str:
+    return re.split(r"\n\s*sources?\s*:", text, maxsplit=1, flags=re.IGNORECASE)[0]
+
+
+def _answer_scores(answer: str, expected: str) -> tuple[float, float]:
+    """Return normalized exact match and token F1 for a generated answer."""
+    predicted_tokens = _normalize_answer(_answer_before_sources(answer))
+    expected_tokens = _normalize_answer(expected)
+    exact = float(predicted_tokens == expected_tokens)
+    if not predicted_tokens or not expected_tokens:
+        return exact, float(predicted_tokens == expected_tokens)
+    overlap = sum((Counter(predicted_tokens) & Counter(expected_tokens)).values())
+    precision = overlap / len(predicted_tokens)
+    recall = overlap / len(expected_tokens)
+    return exact, 2 * precision * recall / (precision + recall) if precision + recall else 0.0
+
+
+def _render_benchmark(knowledge_base: Path, benchmark_file: Path, model: str, embedding_model: str, chunk_size: int, overlap: int, top_k: int, threshold: float) -> None:
     st.subheader("Benchmark")
     st.caption("Evidence Recall@K evaluates retrieval independently. The full benchmark then checks whether a grounded answer contains the expected phrase or properly abstains.")
-    questions = json.loads(BENCHMARK_FILE.read_text(encoding="utf-8"))
+    questions = json.loads(benchmark_file.read_text(encoding="utf-8"))
     full = st.checkbox("Generate answers too (uses one LLM call per question)", key="week3_benchmark_full")
     if st.button("Run benchmark", type="primary", disabled=not os.getenv("OPENAI_API_KEY"), key="week3_benchmark_run"):
         try:
-            index = _get_index(chunk_size, overlap, embedding_model)
+            index = _get_index(knowledge_base, chunk_size, overlap, embedding_model)
             rows = []
             progress = st.progress(0, text="Retrieving benchmark evidence…")
             for position, item in enumerate(questions, start=1):
                 results, latency, tokens = retrieve(index, item["question"], top_k)
                 answer = generate_with_rag(model, item["question"], results, threshold) if full else None
                 evidence_found = _expected_found(item, results)
-                correct = None
+                exact_match = None
+                f1 = None
                 if answer:
                     expected = item["expected_answer"].lower()
-                    correct = answer["text"].lower().find(expected) >= 0 if expected != "not_found" else answer["abstained"] or ABSTENTION.lower() in answer["text"].lower()
+                    if expected != "not_found":
+                        exact_match, f1 = _answer_scores(answer["text"], expected)
+                    else:
+                        exact_match = float(answer["abstained"] or ABSTENTION.lower() in answer["text"].lower())
                 rows.append({
                     "Question": item["question"], "Expected evidence": item["evidence"] or "N/A (abstain)",
                     "Evidence found": "N/A" if evidence_found is None else ("✓" if evidence_found else "✗"),
-                    "Correct answer": "—" if correct is None else ("✓" if correct else "✗"),
+                    "Exact match": "—" if exact_match is None else f"{exact_match:.0%}",
+                    "Token F1": "—" if f1 is None else f"{f1:.0%}",
                     "Grounded": "—" if answer is None else ("✓" if answer["abstained"] or evidence_found else "?"),
                     "Latency": f"{latency + (answer['latency_seconds'] if answer else 0):.2f}s",
                 })
@@ -181,24 +224,28 @@ def _render_benchmark(model: str, embedding_model: str, chunk_size: int, overlap
     if rows:
         evaluable = [row for row in rows if row["Evidence found"] != "N/A"]
         recall = sum(row["Evidence found"] == "✓" for row in evaluable) / len(evaluable) if evaluable else 0
-        answers = [row for row in rows if row["Correct answer"] != "—"]
-        accuracy = sum(row["Correct answer"] == "✓" for row in answers) / len(answers) if answers else None
+        answers = [row for row in rows if row["Exact match"] != "—"]
+        exact_match = sum(float(row["Exact match"].strip("%")) / 100 for row in answers) / len(answers) if answers else None
+        f1 = [float(row["Token F1"].strip("%")) / 100 for row in rows if row["Token F1"] != "—"]
         a, b = st.columns(2)
         a.metric(f"Evidence Recall@{top_k}", f"{recall:.0%}")
-        b.metric("Answer accuracy", f"{accuracy:.0%}" if accuracy is not None else "Run full benchmark")
+        b.metric("Answer exact match", f"{exact_match:.0%}" if exact_match is not None else "Run full benchmark")
+        st.metric("Mean token F1", f"{sum(f1) / len(f1):.0%}" if f1 else "Run full benchmark")
         st.dataframe(rows, use_container_width=True, hide_index=True)
 
 
 def render_week3() -> None:
     """Render the complete Week 3 RAG lab."""
-    st.header("Week 3 · Build a RAG System from Scratch")
-    st.caption("Documents → chunks → embeddings → FAISS search → grounded answer + sources")
+    st.header("Week 3 · Build and Evaluate a RAG System")
+    st.caption("Documents → chunks → embeddings → FAISS search → grounded answer + sources → evidence evaluation")
     with st.sidebar:
         st.divider()
         st.subheader("RAG controls")
+        dataset_name = st.selectbox("Dataset", list(DATASETS), key="week3_dataset")
+        dataset = DATASETS[dataset_name]
         model = st.text_input("Generation model", "gpt-5.4-mini", key="week3_model")
         embedding_model = st.text_input("Embedding model", "text-embedding-3-small", key="week3_embedding_model")
-        chunk_size = int(st.slider("Chunk size (characters)", 100, 1200, 500, 50, key="week3_chunk_size"))
+        chunk_size = int(st.slider("Chunk size (characters)", 100, 1200, 200, 50, key="week3_chunk_size"))
         overlap = int(st.slider("Chunk overlap (characters)", 0, 250, 50, 10, key="week3_overlap"))
         if overlap >= chunk_size:
             st.error("Overlap must be smaller than chunk size.")
@@ -208,8 +255,8 @@ def render_week3() -> None:
         st.caption("Below this cosine-similarity score, the app abstains before calling the LLM.")
     playground, knowledge, benchmark = st.tabs(["Playground", "Documents & chunks", "Benchmark"])
     with playground:
-        _render_playground(model, embedding_model, chunk_size, overlap, top_k, threshold)
+        _render_playground(dataset, model, embedding_model, chunk_size, overlap, top_k, threshold)
     with knowledge:
-        _render_knowledge_base(chunk_size, overlap)
+        _render_knowledge_base(dataset["knowledge_base"], dataset["description"], chunk_size, overlap)
     with benchmark:
-        _render_benchmark(model, embedding_model, chunk_size, overlap, top_k, threshold)
+        _render_benchmark(dataset["knowledge_base"], dataset["benchmark"], model, embedding_model, chunk_size, overlap, top_k, threshold)

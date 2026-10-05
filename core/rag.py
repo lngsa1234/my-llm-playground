@@ -188,7 +188,7 @@ def generate_with_rag(model: str, question: str, results: list[dict], threshold:
         }
     context = build_context(results)
     instructions = (
-        "You are NovaTech's company knowledge assistant. Answer using only the supplied context. "
+        "You are a grounded knowledge assistant. Answer using only the supplied context. "
         f"If the context does not contain enough evidence, reply exactly: {ABSTENTION} "
         "Do not use outside knowledge or make up policies. Give a concise answer, then a final "
         "line beginning `Sources:` that lists only the supplied filenames supporting the answer."

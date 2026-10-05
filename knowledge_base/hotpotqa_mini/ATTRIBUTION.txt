@@ -1,0 +1,18 @@
+HotpotQA mini corpus attribution
+
+This teaching subset is derived from the HotpotQA development distractor split:
+https://hotpotqa.github.io/
+
+HotpotQA: A Dataset for Diverse, Explainable Multi-hop Question Answering
+Zhilin Yang et al., EMNLP 2018
+https://aclanthology.org/D18-1259/
+
+The HotpotQA dataset is licensed under CC BY-SA 4.0. The article excerpts in
+this directory are a derived subset; retain this notice and comply with the
+CC BY-SA 4.0 attribution and share-alike terms when redistributing them.
+
+This lab selected the first 50 rows returned by the Hugging Face HotpotQA
+validation/distractor dataset API on 2026-10-04. For each question, it retains
+the gold supporting Wikipedia articles and two supplied distractor articles.
+The five unanswerable benchmark questions are original teaching prompts and
+are not part of HotpotQA.

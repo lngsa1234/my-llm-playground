@@ -12,6 +12,7 @@ from core.rag import (
     generate_with_rag,
     load_documents,
 )
+from core.week3 import _answer_scores, _expected_found
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -73,3 +74,17 @@ def test_low_similarity_abstains_without_calling_the_llm(monkeypatch):
     assert result["text"] == ABSTENTION
     assert result["abstained"] is True
     assert result["status"] == "abstained_before_generation"
+
+
+def test_multi_hop_evidence_requires_every_supporting_document():
+    item = {"evidence": ["first.md", "second.md"]}
+
+    assert _expected_found(item, [{"source": "first.md"}, {"source": "second.md"}]) is True
+    assert _expected_found(item, [{"source": "first.md"}]) is False
+
+
+def test_answer_score_ignores_the_sources_line():
+    exact, f1 = _answer_scores("Chief of Protocol\nSources: kiss-and-tell.md", "Chief of Protocol")
+
+    assert exact == 1.0
+    assert f1 == 1.0
