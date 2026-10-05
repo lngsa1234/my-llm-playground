@@ -268,7 +268,8 @@ def generate_with_rag(model: str, question: str, results: list[dict], threshold:
     """Generate only when the best retrieved evidence clears the chosen threshold."""
     top_score = max((item["score"] for item in results), default=-1.0)
     has_title_linked_evidence = any(item.get("retrieval_method") == "title-linked second hop" for item in results)
-    if top_score < threshold and not has_title_linked_evidence:
+    has_keyword_evidence = any(item.get("lexical_score", 0.0) > 0 for item in results)
+    if top_score < threshold and not has_title_linked_evidence and not has_keyword_evidence:
         return {
             "text": ABSTENTION,
             "latency_seconds": 0.0,
