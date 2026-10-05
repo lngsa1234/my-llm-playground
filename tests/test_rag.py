@@ -111,6 +111,30 @@ def test_title_linked_retrieval_keeps_neighboring_chunks_from_the_linked_documen
     assert linked == [1, 2]
 
 
+def test_title_linking_prioritizes_mentions_from_higher_ranked_primary_chunks():
+    index = RagIndex(
+        index=None,
+        chunks=[
+            Chunk("kiss.md", "Kiss and Tell starred Shirley Temple as Corliss Archer.", 1),
+            Chunk("janet.md", "Janet Waldo was the title character in Meet Corliss Archer.", 1),
+            Chunk("meet.md", "# Meet Corliss Archer First linked chunk.", 1),
+            Chunk("meet.md", "Second linked chunk.", 2),
+            Chunk("meet.md", "Third linked chunk.", 3),
+            Chunk("shirley.md", "# Shirley Temple First linked chunk.", 1),
+            Chunk("shirley.md", "Second linked chunk.", 2),
+            Chunk("shirley.md", "Chief of Protocol of the United States.", 3),
+        ],
+        source_titles={"meet.md": "Meet Corliss Archer", "shirley.md": "Shirley Temple"},
+        embedding_model="test",
+        build_latency_seconds=0.0,
+        embedding_tokens=0,
+    )
+
+    linked = _linked_source_positions(index, [0, 1])
+
+    assert linked == [5, 6, 7]
+
+
 def test_hybrid_retrieval_keeps_a_title_linked_second_hop(monkeypatch):
     class FakeFaissIndex:
         def search(self, vector, limit):

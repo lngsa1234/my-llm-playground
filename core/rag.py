@@ -182,23 +182,26 @@ def _ranked_positions(scores: list[float], limit: int) -> list[int]:
 
 
 def _linked_source_positions(rag_index: RagIndex, primary_positions: list[int]) -> list[int]:
-    """Follow titles named in retrieved text and keep their local evidence together."""
+    """Follow the most relevant title mentions and keep their local evidence together."""
     chunks_by_source: dict[str, list[int]] = {}
     for position, chunk in enumerate(rag_index.chunks):
         chunks_by_source.setdefault(chunk.source, []).append(position)
-    linked: list[int] = []
+    matches: list[tuple[int, str]] = []
     for source, title in rag_index.source_titles.items():
         title_terms = _terms(title)
         if len(title_terms) < 2:
             continue
         pattern = r"(?<!\w)" + r"\s+".join(re.escape(term) for term in title_terms) + r"(?!\w)"
-        text_from_other_sources = " ".join(
-            rag_index.chunks[position].text.casefold()
-            for position in primary_positions
-            if rag_index.chunks[position].source != source
-        )
-        if re.search(pattern, text_from_other_sources):
-            linked.extend(chunks_by_source[source])
+        for rank, position in enumerate(primary_positions):
+            chunk = rag_index.chunks[position]
+            if chunk.source != source and re.search(pattern, chunk.text.casefold()):
+                matches.append((rank, source))
+                break
+    linked: list[int] = []
+    for _, source in sorted(matches):
+        linked.extend(chunks_by_source[source])
+        if len(linked) >= MAX_LINKED_CHUNKS:
+            break
     return linked[:MAX_LINKED_CHUNKS]
 
 
