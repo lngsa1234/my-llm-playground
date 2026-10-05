@@ -1,6 +1,6 @@
-# Context Engineering Lab — Week 2
+# Agent Engineering Peer Learning Labs
 
-A Streamlit multi-run goal builder. It uses explicit context construction and persistent JSON state to take a goal through six separate LLM calls: understand, plan, design, refine, validate, and finalize.
+A Streamlit collection of hands-on labs: a single API-call playground (Week 1), a multi-run context-engineering workflow (Week 2), and an inspectable Retrieval-Augmented Generation system (Week 3).
 
 ## Run locally
 
@@ -11,10 +11,11 @@ A Streamlit multi-run goal builder. It uses explicit context construction and pe
    pip install -r requirements.txt
    ```
 
-3. Set your API key:
+3. Copy the example environment file and set your API key:
 
    ```bash
-   export OPENAI_API_KEY="your-api-key"
+   cp .env.example .env
+   # Edit .env and set OPENAI_API_KEY="your-api-key"
    ```
 
 4. Start the app:
@@ -23,7 +24,7 @@ A Streamlit multi-run goal builder. It uses explicit context construction and pe
    streamlit run app.py
    ```
 
-State is saved after every successful call in `runs/`. You can pause, add an approved requirement or feedback, restart Streamlit, and resume the saved run from the sidebar. The UI shows the exact context sent for each call, provenance, artifacts, token usage, latency, and cumulative estimated cost.
+Week 2 state is saved after every successful call in `runs/`. Week 3 uses the ten fictional NovaTech markdown files in `knowledge_base/`, OpenAI embeddings, and a FAISS index. The Week 3 UI makes chunks, similarity scores, augmented prompts, answer sources, and benchmark Evidence Recall@K visible.
 
 Run the deterministic checks with:
 

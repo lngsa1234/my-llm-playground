@@ -1,0 +1,52 @@
+[
+  {
+    "question": "How many remote days are employees allowed?",
+    "expected_answer": "three days per week",
+    "evidence": "remote_work_policy.md"
+  },
+  {
+    "question": "How long is the Pro refund period?",
+    "expected_answer": "14 calendar days",
+    "evidence": "refund_policy.md"
+  },
+  {
+    "question": "What is the Pro API rate limit?",
+    "expected_answer": "1,000 API requests per minute",
+    "evidence": "api_limits.md"
+  },
+  {
+    "question": "Are Enterprise subscriptions refundable after signing?",
+    "expected_answer": "non-refundable",
+    "evidence": "refund_policy.md"
+  },
+  {
+    "question": "What does HTTP 429 mean for a NovaTech API customer?",
+    "expected_answer": "rate limit is exceeded",
+    "evidence": "api_limits.md"
+  },
+  {
+    "question": "What security control is required for company systems?",
+    "expected_answer": "multi-factor authentication",
+    "evidence": "security_policy.md"
+  },
+  {
+    "question": "How much professional-development funding is available?",
+    "expected_answer": "$1,200",
+    "evidence": "employee_benefits.md"
+  },
+  {
+    "question": "How many vacation days do full-time employees receive?",
+    "expected_answer": "20 paid vacation days",
+    "evidence": "vacation_policy.md"
+  },
+  {
+    "question": "Which Pro feature helps users create scheduled reports?",
+    "expected_answer": "scheduled reports",
+    "evidence": "product_features.md"
+  },
+  {
+    "question": "Does NovaTech reimburse gym memberships?",
+    "expected_answer": "NOT_FOUND",
+    "evidence": null
+  }
+]
