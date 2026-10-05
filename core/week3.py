@@ -27,6 +27,28 @@ from core.rag import (
 
 ROOT = Path(__file__).resolve().parents[1]
 RETRIEVAL_PIPELINE_VERSION = "hybrid-title-neighbors-v7"
+
+
+def _loaded_build_stamp() -> str:
+    """Capture the revision and source fingerprint when this Python module is imported."""
+    try:
+        revision = subprocess.run(
+            ["git", "rev-parse", "--short", "HEAD"],
+            cwd=ROOT,
+            check=True,
+            capture_output=True,
+            text=True,
+            timeout=1,
+        ).stdout.strip()
+    except (OSError, subprocess.SubprocessError):
+        revision = "git-unavailable"
+    digest = hashlib.sha256()
+    for file in (ROOT / "app.py", ROOT / "core" / "rag.py", Path(__file__)):
+        digest.update(file.read_bytes())
+    return f"Loaded {revision} · code {digest.hexdigest()[:8]} · RAG {RETRIEVAL_PIPELINE_VERSION}"
+
+
+LOADED_BUILD_STAMP = _loaded_build_stamp()
 DATASETS = {
     "HotpotQA mini · multi-hop": {
         "knowledge_base": ROOT / "knowledge_base" / "hotpotqa_mini",
@@ -48,22 +70,8 @@ def _index_key(knowledge_base: Path, chunk_size: int, overlap: int, embedding_mo
 
 
 def _build_stamp() -> str:
-    """Return a deploy-visible revision and file fingerprint without requiring Git."""
-    try:
-        revision = subprocess.run(
-            ["git", "rev-parse", "--short", "HEAD"],
-            cwd=ROOT,
-            check=True,
-            capture_output=True,
-            text=True,
-            timeout=1,
-        ).stdout.strip()
-    except (OSError, subprocess.SubprocessError):
-        revision = "git-unavailable"
-    digest = hashlib.sha256()
-    for file in (ROOT / "app.py", ROOT / "core" / "rag.py", Path(__file__)):
-        digest.update(file.read_bytes())
-    return f"Build {revision} · code {digest.hexdigest()[:8]} · RAG {RETRIEVAL_PIPELINE_VERSION}"
+    """Return the build identity actually loaded by this Python process."""
+    return LOADED_BUILD_STAMP
 
 
 def _render_request_error(stage: str, exc: Exception) -> None:
