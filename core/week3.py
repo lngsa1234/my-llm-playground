@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 import json
+import hashlib
 import os
 import re
+import subprocess
 from collections import Counter
 from pathlib import Path
 
@@ -24,7 +26,7 @@ from core.rag import (
 
 
 ROOT = Path(__file__).resolve().parents[1]
-RETRIEVAL_PIPELINE_VERSION = "hybrid-title-neighbors-v4"
+RETRIEVAL_PIPELINE_VERSION = "hybrid-title-neighbors-v5"
 DATASETS = {
     "HotpotQA mini · multi-hop": {
         "knowledge_base": ROOT / "knowledge_base" / "hotpotqa_mini",
@@ -43,6 +45,25 @@ DATASETS = {
 
 def _index_key(knowledge_base: Path, chunk_size: int, overlap: int, embedding_model: str) -> tuple[str, int, int, str]:
     return str(knowledge_base), chunk_size, overlap, embedding_model
+
+
+def _build_stamp() -> str:
+    """Return a deploy-visible revision and file fingerprint without requiring Git."""
+    try:
+        revision = subprocess.run(
+            ["git", "rev-parse", "--short", "HEAD"],
+            cwd=ROOT,
+            check=True,
+            capture_output=True,
+            text=True,
+            timeout=1,
+        ).stdout.strip()
+    except (OSError, subprocess.SubprocessError):
+        revision = "git-unavailable"
+    digest = hashlib.sha256()
+    for file in (ROOT / "app.py", ROOT / "core" / "rag.py", Path(__file__)):
+        digest.update(file.read_bytes())
+    return f"Build {revision} · code {digest.hexdigest()[:8]} · RAG {RETRIEVAL_PIPELINE_VERSION}"
 
 
 def _get_index(knowledge_base: Path, chunk_size: int, overlap: int, embedding_model: str):
@@ -278,8 +299,10 @@ def render_week3() -> None:
             st.error("Overlap must be smaller than chunk size.")
             overlap = max(0, chunk_size - 1)
         top_k = int(st.slider("Top-K initial chunks", 1, 8, 3, key="week3_top_k"))
-        threshold = float(st.slider("Evidence threshold", 0.0, 1.0, 0.35, 0.01, key="week3_threshold"))
-        st.caption("Retrieval combines dense embeddings, BM25 keywords, reciprocal-rank fusion, and title-linked second hops. A linked document can add up to three neighboring chunks so its evidence stays intact. Below this cosine-similarity score, the app abstains unless a title-linked evidence chain was verified.")
+        threshold = float(st.slider("Evidence threshold", 0.0, 1.0, 0.10, 0.01, key="week3_threshold_v2"))
+        st.caption("Retrieval combines dense embeddings, BM25 keywords, reciprocal-rank fusion, and title-linked second hops. A linked document can add up to three neighboring chunks so its evidence stays intact. The 0.10 default allows multi-hop evidence with modest embedding similarity; below the selected score, the app abstains unless a title-linked evidence chain was verified.")
+        st.divider()
+        st.caption(_build_stamp())
     playground, knowledge, benchmark = st.tabs(["Playground", "Documents & chunks", "Benchmark"])
     with playground:
         _render_playground(dataset, model, embedding_model, chunk_size, overlap, top_k, threshold)
