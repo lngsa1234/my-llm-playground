@@ -151,6 +151,22 @@ def _render_retrieval_diagnostics(results: list[dict], generation: dict | None) 
             st.caption(f"Generation decision: {generation.get('gate', 'not recorded')}")
 
 
+def _render_workflow() -> None:
+    """Explain the concrete RAG pipeline used by this lab."""
+    with st.expander("How this RAG workflow works", expanded=False):
+        st.markdown(
+            """
+1. **Load and chunk** — Markdown knowledge-base files are split into overlapping, readable chunks with source and chunk-number metadata.
+2. **Build two retrieval signals** — Every chunk receives an embedding for semantic search, while token frequencies support BM25 keyword search.
+3. **Rank the question** — The question is embedded, compared with chunks in FAISS, and combined with BM25 rankings through reciprocal-rank fusion (RRF).
+4. **Follow evidence links** — If a high-ranked chunk names another document title, the app follows that title link. Links mentioned by higher-ranked chunks are prioritized, and up to three chunks from the linked document are added for a grounded second hop.
+5. **Construct the context** — The selected chunks, source filenames, and chunk numbers become the context sent to the answer model.
+6. **Gate and answer** — The app proceeds when dense, keyword, or title-linked evidence supports the question. The model must use only that context, combine explicit multi-hop facts, give the most specific direct answer, and cite supplied source files.
+7. **Inspect and evaluate** — Retrieved chunks, ranks, scores, the augmented prompt, generation decision, and benchmark evidence recall are visible in the app.
+            """
+        )
+
+
 def _run_retrieval(index, question: str, top_k: int) -> None:
     results, latency, tokens = retrieve(index, question, top_k)
     st.session_state.week3_retrieval = {
@@ -348,6 +364,7 @@ def render_week3() -> None:
     """Render the complete Week 3 RAG lab."""
     st.header("Week 3 · Build and Evaluate a RAG System")
     st.caption("Documents → chunks → embeddings → FAISS search → grounded answer + sources → evidence evaluation")
+    _render_workflow()
     with st.sidebar:
         st.divider()
         st.subheader("RAG controls")
