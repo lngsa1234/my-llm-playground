@@ -120,24 +120,6 @@ def run_direct_agent(prompt: str, model: str) -> dict[str, Any]:
     return {"answer": "Tool-call limit reached.", "trace": trace, "latency": time.perf_counter() - start}
 
 
-def local_benchmark() -> list[dict[str, str]]:
-    """Run deterministic checks that require neither an API key nor network access."""
-    location_schema = WEATHER_TOOL["function"]["parameters"]
-    checks = [
-        ("Tool schema", "`location` is required", "location" in location_schema["required"]),
-        (
-            "Location normalization",
-            "Washington DC becomes Washington, D.C.",
-            LOCATION_ALIASES.get("washington dc") == "Washington, D.C.",
-        ),
-        ("Input handling", "Blank locations are rejected", get_weather("") == {"error": "Location is required."}),
-    ]
-    return [
-        {"Check": check, "Expected": expected, "Result": "PASS" if passed else "FAIL"}
-        for check, expected, passed in checks
-    ]
-
-
 LIVE_BENCHMARKS = [
     {"prompt": "What is weather?", "locations": []},
     {"prompt": "Weather in Detroit now?", "locations": ["Detroit"]},
@@ -213,13 +195,6 @@ def render_week4() -> None:
 
     st.divider()
     st.subheader("Benchmark results")
-    local_results = local_benchmark()
-    passes = sum(row["Result"] == "PASS" for row in local_results)
-    st.metric("Local validation", f"{passes} / {len(local_results)} passed")
-    st.dataframe(local_results, use_container_width=True, hide_index=True)
-    st.caption("These deterministic checks run locally; they do not call OpenAI or the weather provider.")
-
-    st.subheader("Live assistant benchmark")
     st.caption("Run three prompts against the selected model to measure tool selection and location arguments. This makes OpenAI and weather-provider requests.")
     if st.button("Run live benchmark", use_container_width=True):
         if not os.getenv("OPENAI_API_KEY"):
