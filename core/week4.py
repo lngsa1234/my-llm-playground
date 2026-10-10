@@ -37,6 +37,12 @@ SYSTEM_PROMPT = (
     "in a named location. For comparisons, make one call for each city. Never invent "
     "weather values. Clearly report a tool error instead of making up data."
 )
+LOCATION_ALIASES = {
+    "washington dc": "Washington, D.C.",
+    "washington, dc": "Washington, D.C.",
+    "washington d.c.": "Washington, D.C.",
+    "washington, d.c.": "Washington, D.C.",
+}
 
 
 def get_weather(location: str) -> dict[str, Any]:
@@ -44,10 +50,11 @@ def get_weather(location: str) -> dict[str, Any]:
     location = location.strip()
     if not location:
         return {"error": "Location is required."}
+    lookup_location = LOCATION_ALIASES.get(location.casefold(), location)
     try:
         geocode = requests.get(
             GEOCODING_URL,
-            params={"name": location, "count": 1, "language": "en", "format": "json"},
+            params={"name": lookup_location, "count": 1, "language": "en", "format": "json"},
             timeout=10,
         )
         geocode.raise_for_status()

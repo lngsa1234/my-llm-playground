@@ -14,6 +14,12 @@ import requests
 GEOCODING_URL = "https://geocoding-api.open-meteo.com/v1/search"
 FORECAST_URL = "https://api.open-meteo.com/v1/forecast"
 REQUEST_TIMEOUT_SECONDS = 10
+LOCATION_ALIASES = {
+    "washington dc": "Washington, D.C.",
+    "washington, dc": "Washington, D.C.",
+    "washington d.c.": "Washington, D.C.",
+    "washington, d.c.": "Washington, D.C.",
+}
 
 
 def _error(message: str) -> dict[str, str]:
@@ -31,11 +37,12 @@ def get_weather(location: str) -> dict[str, Any]:
     location = location.strip()
     if not location:
         return _error("Location is required.")
+    lookup_location = LOCATION_ALIASES.get(location.casefold(), location)
 
     try:
         geocode_response = requests.get(
             GEOCODING_URL,
-            params={"name": location, "count": 1, "language": "en", "format": "json"},
+            params={"name": lookup_location, "count": 1, "language": "en", "format": "json"},
             timeout=REQUEST_TIMEOUT_SECONDS,
         )
         geocode_response.raise_for_status()
