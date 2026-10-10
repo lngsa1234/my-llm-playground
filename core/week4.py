@@ -122,8 +122,13 @@ def run_direct_agent(prompt: str, model: str) -> dict[str, Any]:
 
 LIVE_BENCHMARKS = [
     {"prompt": "What is weather?", "locations": []},
+    {"prompt": "Explain humidity.", "locations": []},
     {"prompt": "Weather in Detroit now?", "locations": ["Detroit"]},
+    {"prompt": "What's the current weather in Miami?", "locations": ["Miami"]},
+    {"prompt": "What's the weather in Washington DC?", "locations": ["Washington DC"]},
     {"prompt": "Detroit vs Miami right now?", "locations": ["Detroit", "Miami"]},
+    {"prompt": "Which is warmer right now: Detroit, Miami, or Chicago?", "locations": ["Detroit", "Miami", "Chicago"]},
+    {"prompt": "What's the weather in asdfghxyz?", "locations": ["asdfghxyz"]},
 ]
 
 
@@ -141,7 +146,9 @@ def run_live_benchmark(model: str) -> tuple[list[dict[str, Any]], list[dict[str,
                 actual_locations.append("<invalid arguments>")
         expected_locations = case["locations"]
         selection_passed = len(result["trace"]) == len(expected_locations)
-        arguments_passed = [item.casefold() for item in actual_locations] == [item.casefold() for item in expected_locations]
+        canonical_actual = [LOCATION_ALIASES.get(item.casefold(), item).casefold() for item in actual_locations]
+        canonical_expected = [LOCATION_ALIASES.get(item.casefold(), item).casefold() for item in expected_locations]
+        arguments_passed = canonical_actual == canonical_expected
         rows.append(
             {
                 "Prompt": case["prompt"],
@@ -195,7 +202,7 @@ def render_week4() -> None:
 
     st.divider()
     st.subheader("Benchmark results")
-    st.caption("Run three prompts against the selected model to measure tool selection and location arguments. This makes OpenAI and weather-provider requests.")
+    st.caption("Run eight prompts against the selected model to measure tool selection and location arguments. This makes OpenAI and weather-provider requests.")
     if st.button("Run live benchmark", use_container_width=True):
         if not os.getenv("OPENAI_API_KEY"):
             st.error("OPENAI_API_KEY is not configured.")
@@ -203,7 +210,7 @@ def render_week4() -> None:
             st.warning("Enter a model first.")
         else:
             try:
-                with st.spinner("Running 3 benchmark prompts…"):
+                with st.spinner("Running 8 benchmark prompts…"):
                     rows, details = run_live_benchmark(model.strip())
                 st.session_state.week4_benchmark = {"rows": rows, "details": details}
             except Exception as exc:
