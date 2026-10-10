@@ -120,76 +120,125 @@ def run_direct_agent(prompt: str, model: str) -> dict[str, Any]:
     return {"answer": "Tool-call limit reached.", "trace": trace, "latency": time.perf_counter() - start}
 
 
+def local_benchmark() -> list[dict[str, str]]:
+    """Run deterministic checks that require neither an API key nor network access."""
+    location_schema = WEATHER_TOOL["function"]["parameters"]
+    checks = [
+        ("Tool schema", "`location` is required", "location" in location_schema["required"]),
+        (
+            "Location normalization",
+            "Washington DC becomes Washington, D.C.",
+            LOCATION_ALIASES.get("washington dc") == "Washington, D.C.",
+        ),
+        ("Input handling", "Blank locations are rejected", get_weather("") == {"error": "Location is required."}),
+    ]
+    return [
+        {"Check": check, "Expected": expected, "Result": "PASS" if passed else "FAIL"}
+        for check, expected, passed in checks
+    ]
+
+
+LIVE_BENCHMARKS = [
+    {"prompt": "What is weather?", "locations": []},
+    {"prompt": "Weather in Detroit now?", "locations": ["Detroit"]},
+    {"prompt": "Detroit vs Miami right now?", "locations": ["Detroit", "Miami"]},
+]
+
+
+def run_live_benchmark(model: str) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    """Score a small live set for tool selection and location arguments."""
+    rows: list[dict[str, Any]] = []
+    details: list[dict[str, Any]] = []
+    for case in LIVE_BENCHMARKS:
+        result = run_direct_agent(case["prompt"], model)
+        actual_locations = []
+        for entry in result["trace"]:
+            try:
+                actual_locations.append(json.loads(entry["arguments"])["location"])
+            except (json.JSONDecodeError, KeyError, TypeError):
+                actual_locations.append("<invalid arguments>")
+        expected_locations = case["locations"]
+        selection_passed = len(result["trace"]) == len(expected_locations)
+        arguments_passed = [item.casefold() for item in actual_locations] == [item.casefold() for item in expected_locations]
+        rows.append(
+            {
+                "Prompt": case["prompt"],
+                "Expected calls": len(expected_locations),
+                "Actual calls": len(result["trace"]),
+                "Tool selection": "PASS" if selection_passed else "FAIL",
+                "Arguments": "PASS" if arguments_passed else "FAIL",
+            }
+        )
+        details.append({"prompt": case["prompt"], **result})
+    return rows, details
+
+
 def render_week4() -> None:
-    """Render the Week 4 lab and expose the model/runtime boundary."""
+    """Render the Week 4 weather assistant and its benchmark results."""
     st.header("Week 4 · Weather Assistant")
     st.caption("Ask about current weather and inspect how the assistant uses live data.")
 
-    assistant, evaluate = st.tabs(["Weather Assistant", "Evaluate"])
-    with assistant:
-        st.markdown(
-            "The assistant can look up current weather for named locations. The trace below makes "
-            "its live-data requests and returned results visible."
-        )
-        left, right = st.columns([3, 1])
-        with left:
-            prompt = st.text_area(
-                "Try a prompt",
-                "Which is warmer right now, Detroit or Miami?",
-                key="week4_prompt",
-                height=90,
-            )
-        with right:
-            model = st.text_input("Model", os.getenv("OPENAI_MODEL", "gpt-4o-mini"), key="week4_model")
-            run = st.button("Run weather agent", type="primary", use_container_width=True)
-        if run:
-            if not os.getenv("OPENAI_API_KEY"):
-                st.error("OPENAI_API_KEY is not configured.")
-            elif not prompt.strip() or not model.strip():
-                st.warning("Enter both a prompt and model.")
+    st.markdown("The assistant can look up current weather for named locations. The trace below makes its live-data requests and returned results visible.")
+    left, right = st.columns([3, 1])
+    with left:
+        prompt = st.text_area("Try a prompt", "Which is warmer right now, Detroit or Miami?", key="week4_prompt", height=90)
+    with right:
+        model = st.text_input("Model", os.getenv("OPENAI_MODEL", "gpt-4o-mini"), key="week4_model")
+        run = st.button("Run weather agent", type="primary", use_container_width=True)
+    if run:
+        if not os.getenv("OPENAI_API_KEY"):
+            st.error("OPENAI_API_KEY is not configured.")
+        elif not prompt.strip() or not model.strip():
+            st.warning("Enter both a prompt and model.")
+        else:
+            try:
+                with st.spinner("Model deciding; runtime executing any requested tools…"):
+                    st.session_state.week4_result = run_direct_agent(prompt, model.strip())
+            except Exception as exc:
+                st.error(f"Agent request failed: {type(exc).__name__}: {exc}")
+    result = st.session_state.get("week4_result")
+    if result:
+        st.subheader("Final answer")
+        st.write(result["answer"])
+        count, latency = st.columns(2)
+        count.metric("Tool calls", len(result["trace"]))
+        latency.metric("Runtime latency", f"{result['latency']:.2f}s")
+        with st.expander("Inspect runtime trace", expanded=True):
+            if result["trace"]:
+                st.json(result["trace"])
             else:
-                try:
-                    with st.spinner("Model deciding; runtime executing any requested tools…"):
-                        st.session_state.week4_result = run_direct_agent(prompt, model.strip())
-                except Exception as exc:
-                    st.error(f"Agent request failed: {type(exc).__name__}: {exc}")
-        result = st.session_state.get("week4_result")
-        if result:
-            st.subheader("Final answer")
-            st.write(result["answer"])
-            count, latency = st.columns(2)
-            count.metric("Tool calls", len(result["trace"]))
-            latency.metric("Runtime latency", f"{result['latency']:.2f}s")
-            with st.expander("Inspect runtime trace", expanded=True):
-                if result["trace"]:
-                    st.json(result["trace"])
-                else:
-                    st.info("No tool requested: this is the expected outcome for conceptual questions.")
-        with st.expander("Tool schema supplied to the model"):
-            st.json(WEATHER_TOOL)
+                st.info("No tool requested: this is the expected outcome for conceptual questions.")
+    with st.expander("Tool schema supplied to the model"):
+        st.json(WEATHER_TOOL)
 
-    with evaluate:
-        st.subheader("Evaluation prompts")
-        st.dataframe(
-            [
-                {"Prompt": "What is weather?", "Expected behavior": "No tool call"},
-                {"Prompt": "Explain humidity.", "Expected behavior": "No tool call"},
-                {"Prompt": "Weather in Detroit now?", "Expected behavior": 'get_weather("Detroit")'},
-                {"Prompt": "Weather in Miami?", "Expected behavior": 'get_weather("Miami")'},
-                {"Prompt": "Detroit vs Miami right now?", "Expected behavior": "Two weather lookups"},
-                {"Prompt": "Weather in invalid city?", "Expected behavior": "Tool call and graceful error"},
-            ],
-            use_container_width=True,
-            hide_index=True,
-        )
-        st.subheader("What to assess")
-        st.markdown(
-            "1. **Tool selection** — was live weather data requested only when needed?\n"
-            "2. **Argument accuracy** — did the request contain the intended location?\n"
-            "3. **Execution success** — did the lookup return a usable result?\n"
-            "4. **Task success** — did the final answer satisfy the question without inventing facts?"
-        )
-        st.info(
-            "A correct `Location not found` result followed by an invented temperature is a task failure, "
-            "not a successful assistant response."
-        )
+    st.divider()
+    st.subheader("Benchmark results")
+    local_results = local_benchmark()
+    passes = sum(row["Result"] == "PASS" for row in local_results)
+    st.metric("Local validation", f"{passes} / {len(local_results)} passed")
+    st.dataframe(local_results, use_container_width=True, hide_index=True)
+    st.caption("These deterministic checks run locally; they do not call OpenAI or the weather provider.")
+
+    st.subheader("Live assistant benchmark")
+    st.caption("Run three prompts against the selected model to measure tool selection and location arguments. This makes OpenAI and weather-provider requests.")
+    if st.button("Run live benchmark", use_container_width=True):
+        if not os.getenv("OPENAI_API_KEY"):
+            st.error("OPENAI_API_KEY is not configured.")
+        elif not model.strip():
+            st.warning("Enter a model first.")
+        else:
+            try:
+                with st.spinner("Running 3 benchmark prompts…"):
+                    rows, details = run_live_benchmark(model.strip())
+                st.session_state.week4_benchmark = {"rows": rows, "details": details}
+            except Exception as exc:
+                st.error(f"Benchmark failed: {type(exc).__name__}: {exc}")
+    benchmark = st.session_state.get("week4_benchmark")
+    if benchmark:
+        rows = benchmark["rows"]
+        total = len(rows) * 2
+        passed = sum(row["Tool selection"] == "PASS" for row in rows) + sum(row["Arguments"] == "PASS" for row in rows)
+        st.metric("Live benchmark checks", f"{passed} / {total} passed")
+        st.dataframe(rows, use_container_width=True, hide_index=True)
+        with st.expander("Inspect benchmark responses"):
+            st.json(benchmark["details"])
