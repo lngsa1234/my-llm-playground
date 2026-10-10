@@ -118,7 +118,7 @@ def render_week4() -> None:
     st.header("Week 4 · Tool Calling & MCP")
     st.caption("Let an LLM request live weather data while the application controls execution.")
 
-    direct, mcp, evaluate = st.tabs(["Direct Tool Calling", "MCP Architecture", "Evaluate"])
+    direct, evaluate = st.tabs(["Direct Tool Calling", "Evaluate"])
     with direct:
         st.markdown(
             "The model receives the `get_weather` schema. It may request a call, but this runtime "
@@ -160,24 +160,6 @@ def render_week4() -> None:
                     st.info("No tool requested: this is the expected outcome for conceptual questions.")
         with st.expander("Tool schema supplied to the model"):
             st.json(WEATHER_TOOL)
-
-    with mcp:
-        st.markdown("""
-`weather-agent-lab/weather_mcp_server.py` exposes the same `get_weather` capability through MCP.
-The MCP client discovers its schema, makes it available to the model, and invokes the server only
-after the runtime receives a tool request.
-
-```text
-LLM → tool request → agent runtime → MCP client → MCP server → Open-Meteo
-```
-
-Run this protocol exercise from the repository root:
-
-```bash
-cd weather-agent-lab
-python mcp_client_demo.py "What's the weather in Detroit?"
-```
-""")
 
     with evaluate:
         st.markdown("""
