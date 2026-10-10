@@ -30,7 +30,7 @@ st.title("🧭 Agent Engineering Peer Learning")
 
 with st.sidebar:
     st.header("Lab navigation")
-    selected_week = st.radio("Choose a week", ["Week 1", "Week 2", "Week 3 · RAG", "Week 4 · Tools & MCP"], label_visibility="collapsed")
+    selected_week = st.radio("Choose a week", ["Week 1", "Week 2", "Week 3 · RAG", "Week 4 · Weather Assistant"], label_visibility="collapsed")
 
 if selected_week == "Week 1":
     render_week1()

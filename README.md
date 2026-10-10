@@ -34,11 +34,10 @@ pytest
 
 `app_*.py` files are retained as Week 1 API exercises.
 
-## Week 4: Tool Calling & MCP
+## Week 4: Weather Assistant
 
-Week 4 is available inside the Streamlit app as **Week 4 · Tools & MCP**. It
-includes an inspectable direct tool-calling exercise. The supporting MCP server
-and command-line client live in [`weather-agent-lab/`](weather-agent-lab/);
-they use the repository's shared virtual environment and `.env` file. After
-installing the root requirements, follow the
-[Week 4 lab guide](weather-agent-lab/README.md) to run the MCP exercise.
+Week 4 is available inside the Streamlit app as **Week 4 · Weather Assistant**.
+It lets learners ask live weather questions and inspect the assistant's
+requests and returned data. Supporting implementation material lives in
+[`weather-agent-lab/`](weather-agent-lab/) and uses the repository's shared
+virtual environment and `.env` file.

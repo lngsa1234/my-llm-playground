@@ -1,4 +1,4 @@
-"""Week 4 Streamlit lab: direct tool calling with a real weather integration."""
+"""Week 4 Streamlit lab: a weather assistant with a real weather integration."""
 
 from __future__ import annotations
 
@@ -115,14 +115,14 @@ def run_direct_agent(prompt: str, model: str) -> dict[str, Any]:
 
 def render_week4() -> None:
     """Render the Week 4 lab and expose the model/runtime boundary."""
-    st.header("Week 4 · Tool Calling & MCP")
-    st.caption("Let an LLM request live weather data while the application controls execution.")
+    st.header("Week 4 · Weather Assistant")
+    st.caption("Ask about current weather and inspect how the assistant uses live data.")
 
-    direct, evaluate = st.tabs(["Direct Tool Calling", "Evaluate"])
-    with direct:
+    assistant, evaluate = st.tabs(["Weather Assistant", "Evaluate"])
+    with assistant:
         st.markdown(
-            "The model receives the `get_weather` schema. It may request a call, but this runtime "
-            "parses arguments, invokes Open-Meteo, handles failures, and returns the result."
+            "The assistant can look up current weather for named locations. The trace below makes "
+            "its live-data requests and returned results visible."
         )
         left, right = st.columns([3, 1])
         with left:
