@@ -169,17 +169,27 @@ def render_week4() -> None:
             st.json(WEATHER_TOOL)
 
     with evaluate:
-        st.markdown("""
-| Prompt | Expected behavior |
-| --- | --- |
-| What is weather? | No tool call |
-| Explain humidity. | No tool call |
-| Weather in Detroit now? | `get_weather("Detroit")` |
-| Weather in Miami? | `get_weather("Miami")` |
-| Detroit vs Miami right now? | Two weather lookups |
-| Weather in invalid city? | Tool call and graceful error |
-
-Evaluate **tool selection**, **argument accuracy**, **execution success**, and finally **task success**.
-A correct `Location not found` tool result followed by an invented temperature is a task failure,
-not a successful agent run.
-""")
+        st.subheader("Evaluation prompts")
+        st.dataframe(
+            [
+                {"Prompt": "What is weather?", "Expected behavior": "No tool call"},
+                {"Prompt": "Explain humidity.", "Expected behavior": "No tool call"},
+                {"Prompt": "Weather in Detroit now?", "Expected behavior": 'get_weather("Detroit")'},
+                {"Prompt": "Weather in Miami?", "Expected behavior": 'get_weather("Miami")'},
+                {"Prompt": "Detroit vs Miami right now?", "Expected behavior": "Two weather lookups"},
+                {"Prompt": "Weather in invalid city?", "Expected behavior": "Tool call and graceful error"},
+            ],
+            use_container_width=True,
+            hide_index=True,
+        )
+        st.subheader("What to assess")
+        st.markdown(
+            "1. **Tool selection** — was live weather data requested only when needed?\n"
+            "2. **Argument accuracy** — did the request contain the intended location?\n"
+            "3. **Execution success** — did the lookup return a usable result?\n"
+            "4. **Task success** — did the final answer satisfy the question without inventing facts?"
+        )
+        st.info(
+            "A correct `Location not found` result followed by an invented temperature is a task failure, "
+            "not a successful assistant response."
+        )
