@@ -36,8 +36,9 @@ pytest
 
 ## Week 4: Tool Calling & MCP
 
-The Week 4 source lives in [`weather-agent-lab/`](weather-agent-lab/). It uses
-the repository's shared virtual environment and `.env` file; no separate
-project setup is needed. After installing the root requirements, follow the
-[Week 4 lab guide](weather-agent-lab/README.md) to run the direct tool-calling
-and MCP examples.
+Week 4 is available inside the Streamlit app as **Week 4 · Tools & MCP**. It
+includes an inspectable direct tool-calling exercise. The supporting MCP server
+and command-line client live in [`weather-agent-lab/`](weather-agent-lab/);
+they use the repository's shared virtual environment and `.env` file. After
+installing the root requirements, follow the
+[Week 4 lab guide](weather-agent-lab/README.md) to run the MCP exercise.

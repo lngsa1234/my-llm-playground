@@ -6,6 +6,7 @@ from dotenv import load_dotenv
 from core.week1 import render_week1
 from core.week2 import render_week2
 from core.week3 import render_week3
+from core.week4 import render_week4
 
 load_dotenv()
 
@@ -29,11 +30,13 @@ st.title("🧭 Agent Engineering Peer Learning")
 
 with st.sidebar:
     st.header("Lab navigation")
-    selected_week = st.radio("Choose a week", ["Week 1", "Week 2", "Week 3 · RAG"], label_visibility="collapsed")
+    selected_week = st.radio("Choose a week", ["Week 1", "Week 2", "Week 3 · RAG", "Week 4 · Tools & MCP"], label_visibility="collapsed")
 
 if selected_week == "Week 1":
     render_week1()
 elif selected_week == "Week 2":
     render_week2()
-else:
+elif selected_week == "Week 3 · RAG":
     render_week3()
+else:
+    render_week4()
