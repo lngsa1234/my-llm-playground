@@ -1,6 +1,6 @@
 # Agent Engineering Peer Learning Labs
 
-A Streamlit collection of hands-on labs: a single API-call playground (Week 1), a multi-run context-engineering workflow (Week 2), and an inspectable Retrieval-Augmented Generation system (Week 3).
+A collection of hands-on agent-engineering labs: a single API-call playground (Week 1), a multi-run context-engineering workflow (Week 2), an inspectable Retrieval-Augmented Generation system (Week 3), and a tool-calling/MCP weather assistant (Week 4).
 
 ## Run locally
 
@@ -33,3 +33,11 @@ pytest
 ```
 
 `app_*.py` files are retained as Week 1 API exercises.
+
+## Week 4: Tool Calling & MCP
+
+The Week 4 source lives in [`weather-agent-lab/`](weather-agent-lab/). It uses
+the repository's shared virtual environment and `.env` file; no separate
+project setup is needed. After installing the root requirements, follow the
+[Week 4 lab guide](weather-agent-lab/README.md) to run the direct tool-calling
+and MCP examples.

@@ -9,16 +9,16 @@ Open-Meteo supplies geocoding and current-weather data without a separate weathe
 
 ## Setup
 
-From this directory, create a virtual environment and install the lab dependencies:
+From the repository root, use the shared project virtual environment and install
+the project dependencies:
 
 ```bash
-python -m venv .venv
-source .venv/bin/activate        # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
-cp .env.example .env
 ```
 
-Edit `.env` to set `OPENAI_API_KEY`. You can set `OPENAI_MODEL` to any model in your account that supports Chat Completions tool calling.
+Edit the repository-root `.env` to set `OPENAI_API_KEY`. You can set
+`OPENAI_MODEL` to any model in your account that supports Chat Completions tool
+calling. Run the following commands from this `weather-agent-lab` directory.
 
 ## Part A: Weather capability
 
