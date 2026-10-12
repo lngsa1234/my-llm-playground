@@ -257,6 +257,12 @@ LIVE_BENCHMARKS = [
     {"prompt": "What's the weather in Washington DC?", "locations": ["Washington DC"]},
     {"prompt": "Detroit vs Miami right now?", "locations": ["Detroit", "Miami"]},
     {"prompt": "Which is warmer right now: Detroit, Miami, or Chicago?", "locations": ["Detroit", "Miami", "Chicago"]},
+    {"prompt": "I am flying from Seattle to Phoenix today. Which city is warmer right now, and by how much?", "locations": ["Seattle", "Phoenix"]},
+    {"prompt": "Should I pack a jacket? Give the current temperature and feels-like temperature for Anchorage, Alaska and Honolulu, Hawaii.", "locations": ["Anchorage, Alaska", "Honolulu, Hawaii"]},
+    {"prompt": "How much warmer does Miami feel than Chicago right now?", "locations": ["Miami", "Chicago"]},
+    {"prompt": "Compare the current weather in Portland, Oregon and Portland, Maine. Keep the two cities distinct.", "locations": ["Portland, Oregon", "Portland, Maine"]},
+    {"prompt": "What are the current conditions in São Paulo, Brazil and Reykjavík, Iceland?", "locations": ["São Paulo, Brazil", "Reykjavík, Iceland"]},
+    {"prompt": "Do not look up weather. Explain in general why coastal and inland cities can have different temperatures.", "locations": []},
     {"prompt": "What's the weather in asdfghxyz?", "locations": ["asdfghxyz"]},
 ]
 
@@ -348,7 +354,10 @@ def render_week4() -> None:
 
     st.divider()
     st.subheader("Benchmark results")
-    st.caption("Run eight prompts against the selected model to measure tool selection and location arguments. This makes OpenAI and weather-provider requests.")
+    st.caption(
+        f"Run {len(LIVE_BENCHMARKS)} prompts against the selected model to measure tool selection and "
+        "location arguments. This makes OpenAI and weather-provider requests."
+    )
     if st.button("Run live benchmark", use_container_width=True):
         if not os.getenv("OPENAI_API_KEY"):
             st.error("OPENAI_API_KEY is not configured.")
@@ -356,7 +365,7 @@ def render_week4() -> None:
             st.warning("Enter a model first.")
         else:
             try:
-                with st.spinner("Running 8 benchmark prompts…"):
+                with st.spinner(f"Running {len(LIVE_BENCHMARKS)} benchmark prompts…"):
                     rows, details = run_live_benchmark(model.strip())
                 st.session_state.week4_benchmark = {"rows": rows, "details": details}
             except Exception as exc:
