@@ -250,20 +250,65 @@ def run_direct_agent(prompt: str, model: str, use_tools: bool = True) -> dict[st
 
 
 LIVE_BENCHMARKS = [
-    {"prompt": "What is weather?", "locations": []},
-    {"prompt": "Explain humidity.", "locations": []},
-    {"prompt": "Weather in Detroit now?", "locations": ["Detroit"]},
-    {"prompt": "What's the current weather in Miami?", "locations": ["Miami"]},
-    {"prompt": "What's the weather in Washington DC?", "locations": ["Washington DC"]},
-    {"prompt": "Detroit vs Miami right now?", "locations": ["Detroit", "Miami"]},
-    {"prompt": "Which is warmer right now: Detroit, Miami, or Chicago?", "locations": ["Detroit", "Miami", "Chicago"]},
-    {"prompt": "I am flying from Seattle to Phoenix today. Which city is warmer right now, and by how much?", "locations": ["Seattle", "Phoenix"]},
-    {"prompt": "Should I pack a jacket? Give the current temperature and feels-like temperature for Anchorage, Alaska and Honolulu, Hawaii.", "locations": ["Anchorage, Alaska", "Honolulu, Hawaii"]},
-    {"prompt": "How much warmer does Miami feel than Chicago right now?", "locations": ["Miami", "Chicago"]},
-    {"prompt": "Compare the current weather in Portland, Oregon and Portland, Maine. Keep the two cities distinct.", "locations": ["Portland, Oregon", "Portland, Maine"]},
-    {"prompt": "What are the current conditions in São Paulo, Brazil and Reykjavík, Iceland?", "locations": ["São Paulo, Brazil", "Reykjavík, Iceland"]},
-    {"prompt": "Do not look up weather. Explain in general why coastal and inland cities can have different temperatures.", "locations": []},
-    {"prompt": "What's the weather in asdfghxyz?", "locations": ["asdfghxyz"]},
+    {
+        "prompt": "I'm deciding whether to take my toddler to the Detroit Zoo this afternoon. Is the current temperature or feels-like temperature jacket weather?",
+        "calls": [{"tool": "get_weather", "location": "Detroit"}],
+    },
+    {
+        "prompt": "My parents are leaving Miami and landing in Chicago tonight. Which place feels warmer right now, and by how many degrees?",
+        "calls": [
+            {"tool": "get_weather", "location": "Miami"},
+            {"tool": "get_weather", "location": "Chicago"},
+        ],
+    },
+    {
+        "prompt": "Compare current conditions in Portland, Oregon and Portland, Maine. Keep the two cities distinct and use feels-like temperature for the recommendation.",
+        "calls": [
+            {"tool": "get_weather", "location": "Portland, Oregon"},
+            {"tool": "get_weather", "location": "Portland, Maine"},
+        ],
+    },
+    {
+        "prompt": "For an outdoor family hike in Detroit this weekend, which day is the safer choice if rain is a deal-breaker and we prefer a high above 60°F?",
+        "calls": [{"tool": "get_weekend_forecast", "location": "Detroit"}],
+    },
+    {
+        "prompt": "We can drive either to Ann Arbor or Lansing this weekend. Which destination/day combination gives us the best chance of a dry picnic with a high over 65°F?",
+        "calls": [
+            {"tool": "get_weekend_forecast", "location": "Ann Arbor"},
+            {"tool": "get_weekend_forecast", "location": "Lansing"},
+        ],
+    },
+    {
+        "prompt": "I'm photographing fall color near Washington, DC this weekend. Compare Saturday and Sunday for rain risk and daytime high; do not assume that 'Washington' means Washington state.",
+        "calls": [{"tool": "get_weekend_forecast", "location": "Washington DC"}],
+    },
+    {
+        "prompt": "Before I book a Sunday beach outing in San Diego, tell me whether Saturday or Sunday is less likely to be wet. Also flag it if neither day reaches 70°F.",
+        "calls": [{"tool": "get_weekend_forecast", "location": "San Diego"}],
+    },
+    {
+        "prompt": "I leave Boston now and arrive in Phoenix tomorrow. Give me the current conditions in Boston, then compare Phoenix's upcoming-weekend days for a hot, dry walk.",
+        "calls": [
+            {"tool": "get_weather", "location": "Boston"},
+            {"tool": "get_weekend_forecast", "location": "Phoenix"},
+        ],
+    },
+    {
+        "prompt": "What are the current conditions in São Paulo, Brazil and Reykjavík, Iceland? I care more about feels-like temperature than the actual temperature.",
+        "calls": [
+            {"tool": "get_weather", "location": "São Paulo, Brazil"},
+            {"tool": "get_weather", "location": "Reykjavík, Iceland"},
+        ],
+    },
+    {
+        "prompt": "Do not look up weather. Explain, in general terms, why coastal and inland cities can have different temperatures.",
+        "calls": [],
+    },
+    {
+        "prompt": "The place name may be invalid: what is the current weather in asdfghxyz? Report a lookup problem honestly if it cannot be found.",
+        "calls": [{"tool": "get_weather", "location": "asdfghxyz"}],
+    },
 ]
 
 
@@ -273,22 +318,24 @@ def run_live_benchmark(model: str) -> tuple[list[dict[str, Any]], list[dict[str,
     details: list[dict[str, Any]] = []
     for case in LIVE_BENCHMARKS:
         result = run_direct_agent(case["prompt"], model)
-        actual_locations = []
+        actual_calls = []
         for entry in result["trace"]:
             try:
-                actual_locations.append(json.loads(entry["arguments"])["location"])
+                actual_calls.append({"tool": entry["tool"], "location": json.loads(entry["arguments"])["location"]})
             except (json.JSONDecodeError, KeyError, TypeError):
-                actual_locations.append("<invalid arguments>")
-        expected_locations = case["locations"]
-        selection_passed = len(result["trace"]) == len(expected_locations)
+                actual_calls.append({"tool": entry["tool"], "location": "<invalid arguments>"})
+        expected_calls = case["calls"]
+        selection_passed = [call["tool"] for call in actual_calls] == [call["tool"] for call in expected_calls]
+        actual_locations = [call["location"] for call in actual_calls]
+        expected_locations = [call["location"] for call in expected_calls]
         canonical_actual = [LOCATION_ALIASES.get(item.casefold(), item).casefold() for item in actual_locations]
         canonical_expected = [LOCATION_ALIASES.get(item.casefold(), item).casefold() for item in expected_locations]
         arguments_passed = canonical_actual == canonical_expected
         rows.append(
             {
                 "Prompt": case["prompt"],
-                "Expected calls": len(expected_locations),
-                "Actual calls": len(result["trace"]),
+                "Expected calls": len(expected_calls),
+                "Actual calls": len(actual_calls),
                 "Tool selection": "PASS" if selection_passed else "FAIL",
                 "Arguments": "PASS" if arguments_passed else "FAIL",
             }

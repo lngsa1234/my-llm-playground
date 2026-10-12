@@ -1,6 +1,7 @@
 from datetime import date
 from unittest.mock import Mock, patch
 
+import core.week4 as week4
 from core.week4 import get_weekend_forecast, run_direct_agent, system_prompt, upcoming_weekend
 
 
@@ -77,3 +78,20 @@ def test_run_without_tools_omits_tool_schema(mock_openai):
     request = create.call_args.kwargs
     assert "tools" not in request
     assert "without access to live weather data" in request["messages"][0]["content"]
+
+
+def test_live_benchmark_scores_the_expected_tool_and_location(monkeypatch):
+    monkeypatch.setattr(
+        week4,
+        "LIVE_BENCHMARKS",
+        [{"prompt": "Weekend hike", "calls": [{"tool": "get_weekend_forecast", "location": "Detroit"}]}],
+    )
+    monkeypatch.setattr(
+        week4,
+        "run_direct_agent",
+        lambda *_: {"answer": "Saturday", "latency": 0.1, "trace": [{"tool": "get_weekend_forecast", "arguments": '{"location": "Detroit"}', "result": {}}]},
+    )
+
+    rows, _ = week4.run_live_benchmark("test-model")
+
+    assert rows == [{"Prompt": "Weekend hike", "Expected calls": 1, "Actual calls": 1, "Tool selection": "PASS", "Arguments": "PASS"}]
