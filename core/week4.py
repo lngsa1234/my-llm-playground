@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import os
 import time
+from datetime import date, timedelta
 from typing import Any
 
 import requests
@@ -32,17 +33,62 @@ WEATHER_TOOL: dict[str, Any] = {
         },
     },
 }
-SYSTEM_PROMPT = (
-    "You are a concise weather assistant. Use get_weather only for current weather "
-    "in a named location. For comparisons, make one call for each city. Never invent "
-    "weather values. Clearly report a tool error instead of making up data."
-)
+WEEKEND_FORECAST_TOOL: dict[str, Any] = {
+    "type": "function",
+    "function": {
+        "name": "get_weekend_forecast",
+        "description": (
+            "Get the daily forecast for the upcoming Saturday and Sunday in a named "
+            "location. Use this for requests about this weekend or choosing a weekend day."
+        ),
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "location": {
+                    "type": "string",
+                    "description": "City or location to retrieve the weekend forecast for.",
+                }
+            },
+            "required": ["location"],
+            "additionalProperties": False,
+        },
+    },
+}
 LOCATION_ALIASES = {
     "washington dc": "Washington, D.C.",
     "washington, dc": "Washington, D.C.",
     "washington d.c.": "Washington, D.C.",
     "washington, d.c.": "Washington, D.C.",
 }
+LEGACY_DEFAULT_PROMPT = "Which is warmer right now, Detroit or Miami?"
+DEFAULT_PROMPT = (
+    "I want to take my kids hiking this weekend in Detroit. Which day is better? "
+    "I don't like rain and ideally it should be above 60°F."
+)
+
+
+def upcoming_weekend(today: date | None = None) -> tuple[date, date]:
+    """Return the Saturday and Sunday referred to as the upcoming weekend."""
+    today = today or date.today()
+    days_until_saturday = (5 - today.weekday()) % 7
+    saturday = today + timedelta(days=days_until_saturday)
+    return saturday, saturday + timedelta(days=1)
+
+
+def system_prompt(today: date | None = None) -> str:
+    """Build instructions with a date so relative time is never left to the model."""
+    saturday, sunday = upcoming_weekend(today)
+    return (
+        "You are a concise weather assistant. Never invent weather values; clearly report "
+        "a tool error instead. Use get_weather for current conditions in a named location. "
+        "Use get_weekend_forecast for requests about this weekend or for selecting a weekend "
+        "day. Today is "
+        f"{(today or date.today()).isoformat()}; 'this weekend' means {saturday.strftime('%A, %B %-d')} "
+        f"and {sunday.strftime('%A, %B %-d')}. Do not ask for dates when the user says 'this "
+        "weekend.' If a location is missing, ask only for the location. For hiking recommendations, "
+        "compare both days against the user's preferences (including rain and temperature) and "
+        "recommend the better day, noting any tradeoff."
+    )
 
 
 def get_weather(location: str) -> dict[str, Any]:
@@ -89,17 +135,84 @@ def get_weather(location: str) -> dict[str, Any]:
         return {"error": "Weather service is temporarily unavailable."}
 
 
+def get_weekend_forecast(location: str, today: date | None = None) -> dict[str, Any]:
+    """Geocode a place and retrieve daily Fahrenheit forecasts for the upcoming weekend."""
+    location = location.strip()
+    if not location:
+        return {"error": "Location is required."}
+    lookup_location = LOCATION_ALIASES.get(location.casefold(), location)
+    try:
+        geocode = requests.get(
+            GEOCODING_URL,
+            params={"name": lookup_location, "count": 1, "language": "en", "format": "json"},
+            timeout=10,
+        )
+        geocode.raise_for_status()
+        results = geocode.json().get("results", [])
+    except (requests.RequestException, ValueError):
+        return {"error": "Weather service is temporarily unavailable."}
+    if not results:
+        return {"error": "Location not found."}
+
+    saturday, sunday = upcoming_weekend(today)
+    place = results[0]
+    try:
+        weather = requests.get(
+            FORECAST_URL,
+            params={
+                "latitude": place["latitude"],
+                "longitude": place["longitude"],
+                "daily": "temperature_2m_max,temperature_2m_min,precipitation_sum,precipitation_probability_max",
+                "temperature_unit": "fahrenheit",
+                "forecast_days": 16,
+                "timezone": "auto",
+            },
+            timeout=10,
+        )
+        weather.raise_for_status()
+        daily = weather.json()["daily"]
+        by_day = {
+            forecast_date: index for index, forecast_date in enumerate(daily["time"])
+        }
+        forecast = []
+        for forecast_day in (saturday, sunday):
+            index = by_day[forecast_day.isoformat()]
+            forecast.append(
+                {
+                    "date": forecast_day.isoformat(),
+                    "day": forecast_day.strftime("%A"),
+                    "high_f": daily["temperature_2m_max"][index],
+                    "low_f": daily["temperature_2m_min"][index],
+                    "precipitation_probability_max": daily["precipitation_probability_max"][index],
+                    "precipitation_sum_in": daily["precipitation_sum"][index] / 25.4,
+                }
+            )
+        return {
+            "location": place["name"],
+            "state": place.get("admin1"),
+            "country": place.get("country"),
+            "forecast": forecast,
+        }
+    except (KeyError, IndexError, TypeError, requests.RequestException, ValueError):
+        return {
+            "error": "The weather service does not have a forecast for the upcoming weekend yet."
+        }
+
+
 def run_direct_agent(prompt: str, model: str) -> dict[str, Any]:
     """Run the runtime-owned tool loop and retain its trace for the lab UI."""
     messages: list[dict[str, Any]] = [
-        {"role": "system", "content": SYSTEM_PROMPT},
+        {"role": "system", "content": system_prompt()},
         {"role": "user", "content": prompt},
     ]
     trace: list[dict[str, Any]] = []
     start = time.perf_counter()
     for _ in range(5):
         response = OpenAI().chat.completions.create(
-            model=model, messages=messages, tools=[WEATHER_TOOL], tool_choice="auto"
+            model=model,
+            messages=messages,
+            tools=[WEATHER_TOOL, WEEKEND_FORECAST_TOOL],
+            tool_choice="auto",
         )
         assistant_message = response.choices[0].message
         messages.append(assistant_message.model_dump(exclude_none=True))
@@ -112,7 +225,12 @@ def run_direct_agent(prompt: str, model: str) -> dict[str, Any]:
         for call in assistant_message.tool_calls:
             try:
                 arguments = json.loads(call.function.arguments)
-                result = get_weather(arguments["location"]) if call.function.name == "get_weather" else {"error": "Unsupported tool."}
+                if call.function.name == "get_weather":
+                    result = get_weather(arguments["location"])
+                elif call.function.name == "get_weekend_forecast":
+                    result = get_weekend_forecast(arguments["location"])
+                else:
+                    result = {"error": "Unsupported tool."}
             except (json.JSONDecodeError, KeyError, TypeError):
                 result = {"error": "Invalid weather tool arguments."}
             trace.append({"tool": call.function.name, "arguments": call.function.arguments, "result": result})
@@ -165,12 +283,25 @@ def run_live_benchmark(model: str) -> tuple[list[dict[str, Any]], list[dict[str,
 def render_week4() -> None:
     """Render the Week 4 weather assistant and its benchmark results."""
     st.header("Week 4 · Weather Assistant")
-    st.caption("Ask about current weather and inspect how the assistant uses live data.")
+    st.caption("Ask about current conditions or which upcoming-weekend day is best, and inspect the live data.")
 
-    st.markdown("The assistant can look up current weather for named locations. The trace below makes its live-data requests and returned results visible.")
+    st.markdown(
+        "The assistant can look up current weather and the upcoming Saturday/Sunday forecast for named "
+        "locations. For example: *I want to take my kids hiking this weekend in Detroit. Which day is better? "
+        "I don't like rain and ideally it should be above 60°F.*"
+    )
     left, right = st.columns([3, 1])
     with left:
-        prompt = st.text_area("Try a prompt", "Which is warmer right now, Detroit or Miami?", key="week4_prompt", height=90)
+        # Streamlit retains keyed widget values between reruns. Upgrade only the old
+        # stock value so a user's own in-progress question is never overwritten.
+        if st.session_state.get("week4_prompt") == LEGACY_DEFAULT_PROMPT:
+            st.session_state.week4_prompt = DEFAULT_PROMPT
+        prompt = st.text_area(
+            "Try a prompt",
+            DEFAULT_PROMPT,
+            key="week4_prompt",
+            height=90,
+        )
     with right:
         model = st.text_input("Model", os.getenv("OPENAI_MODEL", "gpt-4o-mini"), key="week4_model")
         run = st.button("Run weather agent", type="primary", use_container_width=True)
@@ -197,8 +328,8 @@ def render_week4() -> None:
                 st.json(result["trace"])
             else:
                 st.info("No tool requested: this is the expected outcome for conceptual questions.")
-    with st.expander("Tool schema supplied to the model"):
-        st.json(WEATHER_TOOL)
+    with st.expander("Tool schemas supplied to the model"):
+        st.json([WEATHER_TOOL, WEEKEND_FORECAST_TOOL])
 
     st.divider()
     st.subheader("Benchmark results")
