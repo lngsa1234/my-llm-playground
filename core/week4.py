@@ -199,21 +199,26 @@ def get_weekend_forecast(location: str, today: date | None = None) -> dict[str, 
         }
 
 
-def run_direct_agent(prompt: str, model: str) -> dict[str, Any]:
-    """Run the runtime-owned tool loop and retain its trace for the lab UI."""
+def run_direct_agent(prompt: str, model: str, use_tools: bool = True) -> dict[str, Any]:
+    """Run the agent with optional weather tools and retain its trace for the lab UI."""
+    instructions = system_prompt()
+    if not use_tools:
+        instructions = (
+            "You are a concise weather assistant operating without access to live weather data. "
+            "Do not invent weather values or recommendations based on a forecast. Explain briefly "
+            "that current or forecast data is needed to answer location- and date-specific questions."
+        )
     messages: list[dict[str, Any]] = [
-        {"role": "system", "content": system_prompt()},
+        {"role": "system", "content": instructions},
         {"role": "user", "content": prompt},
     ]
     trace: list[dict[str, Any]] = []
     start = time.perf_counter()
     for _ in range(5):
-        response = OpenAI().chat.completions.create(
-            model=model,
-            messages=messages,
-            tools=[WEATHER_TOOL, WEEKEND_FORECAST_TOOL],
-            tool_choice="auto",
-        )
+        request: dict[str, Any] = {"model": model, "messages": messages}
+        if use_tools:
+            request.update({"tools": [WEATHER_TOOL, WEEKEND_FORECAST_TOOL], "tool_choice": "auto"})
+        response = OpenAI().chat.completions.create(**request)
         assistant_message = response.choices[0].message
         messages.append(assistant_message.model_dump(exclude_none=True))
         if not assistant_message.tool_calls:
@@ -221,6 +226,7 @@ def run_direct_agent(prompt: str, model: str) -> dict[str, Any]:
                 "answer": assistant_message.content or "No visible answer was returned.",
                 "trace": trace,
                 "latency": time.perf_counter() - start,
+                "mode": "With tools" if use_tools else "Without tools",
             }
         for call in assistant_message.tool_calls:
             try:
@@ -235,7 +241,12 @@ def run_direct_agent(prompt: str, model: str) -> dict[str, Any]:
                 result = {"error": "Invalid weather tool arguments."}
             trace.append({"tool": call.function.name, "arguments": call.function.arguments, "result": result})
             messages.append({"role": "tool", "tool_call_id": call.id, "content": json.dumps(result)})
-    return {"answer": "Tool-call limit reached.", "trace": trace, "latency": time.perf_counter() - start}
+    return {
+        "answer": "Tool-call limit reached.",
+        "trace": trace,
+        "latency": time.perf_counter() - start,
+        "mode": "With tools" if use_tools else "Without tools",
+    }
 
 
 LIVE_BENCHMARKS = [
@@ -304,21 +315,25 @@ def render_week4() -> None:
         )
     with right:
         model = st.text_input("Model", os.getenv("OPENAI_MODEL", "gpt-4o-mini"), key="week4_model")
-        run = st.button("Run weather agent", type="primary", use_container_width=True)
-    if run:
+        run_with_tools = st.button("Run with tools", type="primary", use_container_width=True)
+        run_without_tools = st.button("Run without tools", use_container_width=True)
+    if run_with_tools or run_without_tools:
         if not os.getenv("OPENAI_API_KEY"):
             st.error("OPENAI_API_KEY is not configured.")
         elif not prompt.strip() or not model.strip():
             st.warning("Enter both a prompt and model.")
         else:
             try:
-                with st.spinner("Model deciding; runtime executing any requested tools…"):
-                    st.session_state.week4_result = run_direct_agent(prompt, model.strip())
+                use_tools = run_with_tools
+                spinner_message = "Model deciding; runtime executing any requested tools…" if use_tools else "Running model without weather tools…"
+                with st.spinner(spinner_message):
+                    st.session_state.week4_result = run_direct_agent(prompt, model.strip(), use_tools=use_tools)
             except Exception as exc:
                 st.error(f"Agent request failed: {type(exc).__name__}: {exc}")
     result = st.session_state.get("week4_result")
     if result:
         st.subheader("Final answer")
+        st.caption(result.get("mode", "With tools"))
         st.write(result["answer"])
         count, latency = st.columns(2)
         count.metric("Tool calls", len(result["trace"]))

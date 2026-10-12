@@ -1,7 +1,7 @@
 from datetime import date
 from unittest.mock import Mock, patch
 
-from core.week4 import get_weekend_forecast, system_prompt, upcoming_weekend
+from core.week4 import get_weekend_forecast, run_direct_agent, system_prompt, upcoming_weekend
 
 
 def test_upcoming_weekend_is_the_next_saturday_and_sunday():
@@ -58,3 +58,22 @@ def test_weekend_forecast_returns_both_days(mock_get):
         },
     ]
     assert mock_get.call_args_list[1].kwargs["params"]["forecast_days"] == 16
+
+
+@patch("core.week4.OpenAI")
+def test_run_without_tools_omits_tool_schema(mock_openai):
+    response = Mock()
+    response.choices = [Mock()]
+    response.choices[0].message.content = "I need live forecast data to compare the days."
+    response.choices[0].message.tool_calls = []
+    response.choices[0].message.model_dump.return_value = {"role": "assistant", "content": response.choices[0].message.content}
+    create = mock_openai.return_value.chat.completions.create
+    create.return_value = response
+
+    result = run_direct_agent("Which hiking day is better in Detroit?", "test-model", use_tools=False)
+
+    assert result["mode"] == "Without tools"
+    assert result["trace"] == []
+    request = create.call_args.kwargs
+    assert "tools" not in request
+    assert "without access to live weather data" in request["messages"][0]["content"]
