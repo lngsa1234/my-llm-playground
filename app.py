@@ -34,10 +34,9 @@ PAGES = {
 
 st.set_page_config(page_title="Agent Engineering Peer Learning", page_icon="🧭", layout="wide")
 apply_page_style()
-st.title("🧭 Agent Engineering Peer Learning")
 
 with st.sidebar:
-    st.subheader("📚 Lab")
+    st.subheader("🧭 Agent Engineering Peer Learning")
     selected = st.radio("Choose a week", list(PAGES), label_visibility="collapsed", key="nav_week")
     st.divider()
 
