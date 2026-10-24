@@ -4,10 +4,23 @@ app.py only handles navigation. Each week's page is in ui/weekN.py and its
 logic is in core/weekN/. Shared sidebar panels are in ui/components.py.
 """
 
+import os
+import sys
+
 import streamlit as st
 from dotenv import load_dotenv
 
-from ui import week1, week2, week3, week4
+# A long-running Streamlit server (e.g. Streamlit Cloud) keeps modules from the
+# previous deploy in memory. If files were moved or renamed (core/week1.py became
+# core/week1/), those stale modules break the new imports. Drop any of our modules
+# whose source file no longer exists so they are re-imported from the new layout.
+for _name, _module in list(sys.modules.items()):
+    if _name.split(".")[0] in {"core", "ui"}:
+        _file = getattr(_module, "__file__", None)
+        if _file and not os.path.exists(_file):
+            del sys.modules[_name]
+
+from ui import week1, week2, week3, week4  # noqa: E402
 from ui.components import apply_page_style
 
 load_dotenv()
