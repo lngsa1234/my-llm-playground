@@ -1,13 +1,13 @@
 """
 Download public agent-evaluation benchmarks (or samples of them) to
-benchmark-datasets/downloads/. That folder is git-ignored: datasets have
+benchmark/public/downloads/. That folder is git-ignored: datasets have
 their own licenses and some ask not to be republished.
 
 Standard library only. Run from the repo root or this folder:
 
-    python3 benchmark-datasets/fetch_benchmarks.py --list
-    python3 benchmark-datasets/fetch_benchmarks.py bfcl tau2 hotpotqa
-    python3 benchmark-datasets/fetch_benchmarks.py all --limit 100
+    python3 benchmark/public/fetch_benchmarks.py --list
+    python3 benchmark/public/fetch_benchmarks.py bfcl tau2 hotpotqa
+    python3 benchmark/public/fetch_benchmarks.py all --limit 100
 
 Hugging Face datasets are fetched through the Hugging Face dataset viewer
 API, --limit rows at a time (default 50). Gated datasets (GAIA) need a

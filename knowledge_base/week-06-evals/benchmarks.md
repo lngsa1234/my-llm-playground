@@ -2,7 +2,7 @@
 
 There is no single "standard" golden dataset. A golden dataset is built around **your** agent: its tools, users and failure modes. Public benchmarks do something different: they compare models on shared tasks.
 
-Samples, a download script and a BFCL scorer are in [`benchmark-datasets/`](../../benchmark-datasets/) at the top of this repo.
+Samples, a download script and a BFCL scorer are in [`benchmark/public/`](../../benchmark/public/).
 
 Use them for two things:
 

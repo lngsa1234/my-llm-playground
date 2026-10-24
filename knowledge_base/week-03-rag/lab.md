@@ -16,7 +16,7 @@
 - Markdown/text files
 - Optional: pandas for benchmark results
 
-> The repository's own implementation of this lab lives in [`knowledge_base/`](../../knowledge_base/), [`benchmark/`](../../benchmark/) and the Week 3 tab of [`app.py`](../../app.py).
+> The repository's own implementation of this lab lives in [`knowledge_base/rag/`](../rag/) (the documents), [`benchmark/rag/`](../../benchmark/rag/) (the questions) and the Week 3 tab of [`app.py`](../../app.py).
 
 ---
 

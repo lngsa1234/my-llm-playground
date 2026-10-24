@@ -51,14 +51,14 @@ def _loaded_build_stamp() -> str:
 LOADED_BUILD_STAMP = _loaded_build_stamp()
 DATASETS = {
     "HotpotQA mini · multi-hop": {
-        "knowledge_base": ROOT / "knowledge_base" / "hotpotqa_mini",
-        "benchmark": ROOT / "benchmark" / "hotpotqa_mini_questions.json",
+        "knowledge_base": ROOT / "knowledge_base" / "rag" / "hotpotqa_mini",
+        "benchmark": ROOT / "benchmark" / "rag" / "hotpotqa_mini_questions.json",
         "description": "50 official HotpotQA development questions over 198 Wikipedia articles. Each question needs two supporting articles.",
         "default_question": "What government position was held by the woman who portrayed Corliss Archer in the film Kiss and Tell?",
     },
     "NovaTech starter · single-hop": {
-        "knowledge_base": ROOT / "knowledge_base",
-        "benchmark": ROOT / "benchmark" / "questions.json",
+        "knowledge_base": ROOT / "knowledge_base" / "rag" / "novatech",
+        "benchmark": ROOT / "benchmark" / "rag" / "questions.json",
         "description": "Ten fictional company-policy documents for a smaller, single-hop introduction.",
         "default_question": "How long do Pro customers have to request their money back?",
     },

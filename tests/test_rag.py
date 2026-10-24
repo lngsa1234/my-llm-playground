@@ -23,7 +23,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 def test_knowledge_base_loads_all_novatech_documents():
-    documents = load_documents(ROOT / "knowledge_base")
+    documents = load_documents(ROOT / "knowledge_base" / "rag" / "novatech")
 
     assert len(documents) == 10
     assert {document.source for document in documents} >= {

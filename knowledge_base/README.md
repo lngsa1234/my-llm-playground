@@ -15,6 +15,8 @@
 
 Also: [Project Pool](project-pool.md) · [AI Engineering Interview Questions](interview-questions.md)
 
+**RAG documents:** [`rag/`](rag/) holds the document collections the Week 3 app searches: [`rag/novatech/`](rag/novatech/) (ten fictional company policies) and [`rag/hotpotqa_mini/`](rag/hotpotqa_mini/) (198 Wikipedia articles). Their question sets and the public evaluation benchmarks are in [`benchmark/`](../benchmark/).
+
 ---
 
 **Target audience:** PM, Technical PM, Software/System Engineer, Data/ML professionals moving toward AI PM, AI Engineer, AI Systems or Agent Engineering.

@@ -2,7 +2,8 @@
 
 A collection of hands-on agent-engineering labs: a single API-call playground (Week 1), a multi-run context-engineering workflow (Week 2), an inspectable Retrieval-Augmented Generation system (Week 3), and a tool-calling/MCP weather assistant (Week 4).
 
-The circle's weekly plan, knowledge bases and lab guides are in [`circle-notes/`](circle-notes/), including the runnable Week 6 agent evaluation lab. Public evaluation benchmarks (BFCL, τ²-bench and a download script for others) are in [`benchmark-datasets/`](benchmark-datasets/).
+- [`knowledge_base/`](knowledge_base/) — the circle's weekly plan, knowledge bases and lab guides (including the runnable Week 6 agent evaluation lab), plus the RAG document collections in `knowledge_base/rag/`.
+- [`benchmark/`](benchmark/) — the Week 3 RAG question sets in `benchmark/rag/`, and public agent-evaluation benchmarks (BFCL, τ²-bench and a download script for others) in `benchmark/public/`.
 
 ## Run locally
 
@@ -26,7 +27,7 @@ The circle's weekly plan, knowledge bases and lab guides are in [`circle-notes/`
    streamlit run app.py
    ```
 
-Week 2 state is saved after every successful call in `runs/`. Week 3 uses the ten fictional NovaTech markdown files in `knowledge_base/`, OpenAI embeddings, and a FAISS index. The Week 3 UI makes chunks, similarity scores, augmented prompts, answer sources, and benchmark Evidence Recall@K visible.
+Week 2 state is saved after every successful call in `runs/`. Week 3 uses the ten fictional NovaTech markdown files in `knowledge_base/rag/novatech/`, OpenAI embeddings, and a FAISS index. The Week 3 UI makes chunks, similarity scores, augmented prompts, answer sources, and benchmark Evidence Recall@K visible.
 
 Run the deterministic checks with:
 

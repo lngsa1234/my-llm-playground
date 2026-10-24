@@ -6,10 +6,10 @@ Each case gives the model a user request and some function definitions.
 We check that it calls the right function(s) with acceptable arguments,
 or calls nothing at all for "irrelevance" cases.
 
-    python3 benchmark-datasets/run_bfcl.py                      # oracle: replays the answers (checks the scorer)
-    python3 benchmark-datasets/run_bfcl.py --model none          # never calls a tool (baseline)
-    python3 benchmark-datasets/run_bfcl.py --model claude        # needs ANTHROPIC_API_KEY
-    python3 benchmark-datasets/run_bfcl.py --data downloads/bfcl # use downloaded files instead of samples
+    python3 benchmark/public/run_bfcl.py                      # oracle: replays the answers (checks the scorer)
+    python3 benchmark/public/run_bfcl.py --model none          # never calls a tool (baseline)
+    python3 benchmark/public/run_bfcl.py --model claude        # needs ANTHROPIC_API_KEY
+    python3 benchmark/public/run_bfcl.py --data downloads/bfcl # use downloaded files instead of samples
 
 Optional: CLAUDE_MODEL env var (default claude-sonnet-5-5).
 This is a simplified checker for teaching. The official BFCL harness
