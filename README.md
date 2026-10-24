@@ -21,7 +21,7 @@ weather-agent-lab/      Week 4 command-line tool-calling and MCP demos
 agent-eval-lab/         Week 6 agent evaluation lab
 ```
 
-- [`knowledge_base/`](knowledge_base/) — the circle's weekly plan, knowledge bases and lab guides.
+- [`knowledge_base/`](knowledge_base/) — the circle's [8-week plan](knowledge_base/plan.md), weekly concepts and lab guides.
 - [`rag_corpus/`](rag_corpus/) — the documents the Week 3 RAG app searches: ten NovaTech policies and the HotpotQA mini articles.
 - [`agent-eval-lab/`](agent-eval-lab/) — the Week 6 agent evaluation lab (runs offline, standard library only).
 - [`benchmark/`](benchmark/) — the Week 3 RAG question sets in `benchmark/rag/`, and public agent-evaluation benchmarks (BFCL, τ²-bench and a download script for others) in `benchmark/public/`.
