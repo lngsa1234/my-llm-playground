@@ -5,27 +5,26 @@ A collection of hands-on agent-engineering labs: a single API-call playground (W
 ## Repository layout
 
 ```text
-app.py                  Streamlit entry point: navigation only
-ui/                     front end, one page per week
-  components.py         shared settings panel and widgets used by every page
-  week1.py … week6.py
-core/                   back-end logic per week (plain Python, no Streamlit)
-  common.py             ModelSettings + defaults shared by all weeks
-  week1/playground.py   one API call, structured output
-  week2/                context strategies, goal workflow, state, controlled replay
-  week3/                RAG pipeline (rag.py) and benchmark scoring (evaluation.py)
-  week4/weather.py      weather tools, tool-calling loop, live benchmark
-  week6/evals.py        agent evaluation: wraps agent-eval-lab/ and adds an LLM judge
-tests/                  pytest suite for core/
-exercises/week1/        standalone Week 1 API scripts
-weather-agent-lab/      Week 4 command-line tool-calling and MCP demos
-agent-eval-lab/         Week 6 evaluation lab (also runs from the command line)
+app.py                         the full site: every lab in one app (streamlit run app.py)
+labs/                          one self-contained folder per lab
+  shared/                      settings panel and model settings shared by every page
+  week1_llm_api/               one API call, structured output, command-line exercises
+  week2_context_engineering/   context strategies, multi-run goal builder, controlled replay
+  week3_rag/                   RAG pipeline, its documents/ and questions/, benchmark scoring
+  week4_tool_calling/          weather tools, command-line agent, MCP server and client
+  week6_agent_eval/            Muse agent, golden dataset, five evaluation steps, LLM judge
+knowledge_base/                the 8-week plan, weekly concepts and lab guides
+benchmark/                     public benchmarks: BFCL and τ²-bench samples, downloader, scorer
 ```
 
+Each lab folder holds everything for that week: its logic, data, tests, a README, and a `page.py`. Every lab runs three ways:
+
+- **In the full site** — `streamlit run app.py`, then pick the week in the sidebar.
+- **On its own** — `streamlit run labs/<lab>/page.py`, for example `streamlit run labs/week3_rag/page.py`.
+- **From the command line**, where the lab has command-line tools — see that lab's README.
+
 - [`knowledge_base/`](knowledge_base/) — the circle's [8-week plan](knowledge_base/plan.md), weekly concepts and lab guides.
-- [`rag_corpus/`](rag_corpus/) — the documents the Week 3 RAG app searches: ten NovaTech policies and the HotpotQA mini articles.
-- [`agent-eval-lab/`](agent-eval-lab/) — the Week 6 agent evaluation lab. It is the **Week 6 · Agent Evaluation** page in the app, and also runs offline from the command line with the standard library only.
-- [`benchmark/`](benchmark/) — the Week 3 RAG question sets in `benchmark/rag/`, and public agent-evaluation benchmarks (BFCL, τ²-bench and a download script for others) in `benchmark/public/`.
+- [`benchmark/`](benchmark/) — public agent-evaluation benchmarks (BFCL, τ²-bench and a download script for others).
 
 ## Run locally
 
@@ -49,9 +48,7 @@ agent-eval-lab/         Week 6 evaluation lab (also runs from the command line)
    streamlit run app.py
    ```
 
-Week 2 state is saved after every successful call in `runs/`. Week 3 uses the ten fictional NovaTech markdown files in `rag_corpus/novatech/`, OpenAI embeddings, and a FAISS index. The Week 3 UI makes chunks, similarity scores, augmented prompts, answer sources, and benchmark Evidence Recall@K visible.
-
-Run the deterministic checks with:
+Run every lab's tests with:
 
 ```bash
 pytest
@@ -67,14 +64,4 @@ Every week's page has the same layout:
   - **⚙️ Model settings** — model, max output tokens and $/1M token prices (plus the embedding model in Week 3). The values are shared across weeks, so set them once. The default is `gpt-5.4-mini`, with matching default prices; change both together if you switch models.
   - **🧪 Lab parameters** — the settings specific to that week, such as output format (Week 1), the demo and its dataset or strategies (Week 2), chunk size and Top-K (Week 3), max tool-call rounds (Week 4), or the evaluation step, agent version, judge and release gates (Week 6).
 
-To add a week: put its logic in `core/weekN/`, add `ui/weekN.py` with a `render()` function that calls `page_layout()` (title, caption, explainer), `model_settings()` and `lab_parameters()` from `ui/components.py`, and register it in `PAGES` in `app.py`.
-
-The standalone Week 1 API scripts are in [`exercises/week1/`](exercises/week1/).
-
-## Week 4: Weather Assistant
-
-Week 4 is available inside the Streamlit app as **Week 4 · Weather Assistant**.
-It lets learners ask live weather questions and inspect the assistant's
-requests and returned data. Supporting implementation material lives in
-[`weather-agent-lab/`](weather-agent-lab/) and uses the repository's shared
-virtual environment and `.env` file.
+To add a lab: create `labs/weekN_topic/` with its logic, a README, `tests/`, and a `page.py` whose `render()` calls `page_layout()`, `model_settings()` and `lab_parameters()` from `labs/shared/ui.py` (copy the first lines and the `__main__` block of an existing `page.py` so it also runs alone). Then register it in `PAGES` in `app.py`.

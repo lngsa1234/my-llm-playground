@@ -16,7 +16,7 @@
 - Markdown/text files
 - Optional: pandas for benchmark results
 
-> The repository's own implementation of this lab lives in [`rag_corpus/`](../../rag_corpus/) (the documents), [`benchmark/rag/`](../../benchmark/rag/) (the questions) and the Week 3 tab of [`app.py`](../../app.py).
+> The repository's own implementation of this lab is in [`labs/week3_rag/`](../../labs/week3_rag/): the [documents](../../labs/week3_rag/documents/), the [questions](../../labs/week3_rag/questions/) and the web page. Run it with `streamlit run labs/week3_rag/page.py`, or as Week 3 in `streamlit run app.py`.
 
 ---
 

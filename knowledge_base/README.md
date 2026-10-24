@@ -13,7 +13,7 @@ Notes for the Agent Engineering Peer Learning Circle, exported from Notion on 20
 | 3 · RAG | [Retrieval-augmented generation](week-03-rag/concepts.md) | [Build a RAG system from scratch](week-03-rag/lab.md) |
 | 4 · Tool Calling | [Tool calling](week-04-tool-calling/concepts.md) · [MCP](week-04-tool-calling/concepts-mcp.md) | [Weather assistant with tool calling & MCP](week-04-tool-calling/lab.md) |
 | 5 · Agent Engineering | [State, workflow, control loop, routing](week-05-agent-engineering/concepts.md) | [Stateful agent workflow in TypeScript](week-05-agent-engineering/lab.md) |
-| 6 · Evals | [Agent evaluation fundamentals](week-06-evals/concepts.md) · [Public benchmarks](week-06-evals/concepts-benchmarks.md) | [Evaluate and regression-test an agent](week-06-evals/lab.md) (code in [`agent-eval-lab/`](../agent-eval-lab/)) |
+| 6 · Evals | [Agent evaluation fundamentals](week-06-evals/concepts.md) · [Public benchmarks](week-06-evals/concepts-benchmarks.md) | [Evaluate and regression-test an agent](week-06-evals/lab.md) (code in [`labs/week6_agent_eval/`](../labs/week6_agent_eval/)) |
 
 **Naming convention.** Each week has a folder `week-NN-topic/` containing:
 
@@ -26,4 +26,4 @@ Page titles follow the same pattern: `Week N · Topic — Concepts` or `Week N �
 
 Also: [Project Pool](project-pool.md) · [AI Engineering Interview Questions](interview-questions.md)
 
-**Elsewhere in the repo:** lab code lives at the top level ([`agent-eval-lab/`](../agent-eval-lab/), [`weather-agent-lab/`](../weather-agent-lab/), [`app.py`](../app.py)); the Week 3 RAG documents are in [`rag_corpus/`](../rag_corpus/); question sets and public benchmarks are in [`benchmark/`](../benchmark/).
+**Elsewhere in the repo:** each lab's code, data and web page live in [`labs/`](../labs/), one folder per week; [`app.py`](../app.py) shows them all as one site; public benchmarks are in [`benchmark/`](../benchmark/).

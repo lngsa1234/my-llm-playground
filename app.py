@@ -1,7 +1,8 @@
 """Agent Engineering Peer Learning labs. Start with: streamlit run app.py
 
-app.py only handles navigation. Each week's page is in ui/weekN.py and its
-logic is in core/weekN/. Shared sidebar panels are in ui/components.py.
+app.py only handles navigation. Each lab is a self-contained folder in labs/
+with its own page.py, which can also run alone. The shared settings panel is
+in labs/shared/ui.py.
 """
 
 import os
@@ -15,13 +16,17 @@ from dotenv import load_dotenv
 # core/week1/), those stale modules break the new imports. Drop any of our modules
 # whose source file no longer exists so they are re-imported from the new layout.
 for _name, _module in list(sys.modules.items()):
-    if _name.split(".")[0] in {"core", "ui"}:
+    if _name.split(".")[0] in {"core", "ui", "labs"}:
         _file = getattr(_module, "__file__", None)
         if _file and not os.path.exists(_file):
             del sys.modules[_name]
 
-from ui import week1, week2, week3, week4, week6  # noqa: E402
-from ui.components import apply_page_style
+from labs.shared.ui import apply_page_style  # noqa: E402
+from labs.week1_llm_api import page as week1  # noqa: E402
+from labs.week2_context_engineering import page as week2  # noqa: E402
+from labs.week3_rag import page as week3  # noqa: E402
+from labs.week4_tool_calling import page as week4  # noqa: E402
+from labs.week6_agent_eval import page as week6  # noqa: E402
 
 load_dotenv()
 

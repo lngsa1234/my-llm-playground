@@ -1,6 +1,6 @@
 # Week 4 · Tool Calling — Lab: Weather Assistant with Tool Calling & MCP
 
-> The repository's own implementation of this lab lives in [`weather-agent-lab/`](../../weather-agent-lab/) and the **Week 4 · Weather Assistant** tab of [`app.py`](../../app.py).
+> The repository's own implementation of this lab is in [`labs/week4_tool_calling/`](../../labs/week4_tool_calling/): the weather tools, a command-line agent, an MCP server and client, and the web page. Run the page with `streamlit run labs/week4_tool_calling/page.py`, or as Week 4 in `streamlit run app.py`. The folder names below are for building your own version.
 
 ## 1. Lab Overview
 

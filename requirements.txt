@@ -6,4 +6,4 @@ numpy>=2.0.0
 python-dotenv>=1.0.0
 pytest>=8.0
 requests>=2.31.0
-mcp>=1.0.0
+mcp>=1.0.0,<2  # the Week 4 lab uses FastMCP from the 1.x SDK
