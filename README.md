@@ -7,7 +7,7 @@ A collection of hands-on agent-engineering labs: a single API-call playground (W
 ```text
 app.py                  Streamlit entry point: navigation only
 ui/                     front end, one page per week
-  components.py         shared sidebar panels and widgets used by every page
+  components.py         shared settings panel and widgets used by every page
   week1.py … week4.py
 core/                   back-end logic per week (plain Python, no Streamlit)
   common.py             ModelSettings + defaults shared by all weeks
@@ -62,8 +62,9 @@ Every week's page has the same layout:
 
 - **Left sidebar** — choose the week.
 - **Main area** — a one-line description, a "How this lab works" explainer, then inputs, a run button and results with the same token, latency and cost metrics.
-- **Right column · ⚙️ Model settings** — model, max output tokens and $/1M token prices (plus the embedding model in Week 3). The values are shared across weeks, so set them once. The default is `gpt-5.4-mini`, with matching default prices; change both together if you switch models.
-- **Right column · 🧪 Lab parameters** — the settings specific to that week, such as output format (Week 1), the demo and its dataset or strategies (Week 2), chunk size and Top-K (Week 3), or max tool-call rounds (Week 4).
+- **Right panel** — one box with two sections stacked in a single column:
+  - **⚙️ Model settings** — model, max output tokens and $/1M token prices (plus the embedding model in Week 3). The values are shared across weeks, so set them once. The default is `gpt-5.4-mini`, with matching default prices; change both together if you switch models.
+  - **🧪 Lab parameters** — the settings specific to that week, such as output format (Week 1), the demo and its dataset or strategies (Week 2), chunk size and Top-K (Week 3), or max tool-call rounds (Week 4).
 
 To add a week: put its logic in `core/weekN/`, add `ui/weekN.py` with a `render()` function that calls `page_layout()`, `model_settings()` and `lab_parameters()` from `ui/components.py`, and register it in `PAGES` in `app.py`.
 

@@ -4,8 +4,9 @@ Page layout used by every week:
 
     Left sidebar     week navigation only (app.py)
     Main column      header → "How this lab works" → tabs / inputs → results
-    Right column     ⚙️ Model settings  (same widgets, same keys, shared across weeks)
-                     🧪 Lab parameters  (week-specific knobs)
+    Right panel      one box, one column:
+                       ⚙️ Model settings  (same widgets, same keys, shared across weeks)
+                       🧪 Lab parameters  (week-specific knobs)
 
 Usage in a page:
 
@@ -61,9 +62,12 @@ def page_header(title: str, caption: str, how_it_works: str | None = None) -> No
 
 
 def page_layout():
-    """Split the page into the main column and the right-hand settings column."""
-    main, panel = st.columns(PANEL_RATIO, gap="large")
-    return main, panel
+    """Split the page into the main column and a single right-hand settings panel.
+
+    Model settings and lab parameters share one bordered box, stacked in one column.
+    """
+    main, column = st.columns(PANEL_RATIO, gap="large")
+    return main, column.container(border=True)
 
 
 def model_settings(panel, *, max_tokens: bool = True, prices: bool = True, embedding: bool = False) -> ModelSettings:
@@ -72,7 +76,7 @@ def model_settings(panel, *, max_tokens: bool = True, prices: bool = True, embed
     The widget keys are the same on every page, so a model chosen in one week
     carries over to the next. Weeks hide the fields they don't use.
     """
-    with panel.container(border=True):
+    with panel:
         st.markdown("**⚙️ Model settings**")
         model = st.text_input("Model", DEFAULT_MODEL, key="settings_model").strip()
         embedding_model = (
@@ -85,9 +89,8 @@ def model_settings(panel, *, max_tokens: bool = True, prices: bool = True, embed
         )
         input_price, output_price = DEFAULT_INPUT_PRICE, DEFAULT_OUTPUT_PRICE
         if prices:
-            left, right = st.columns(2)
-            input_price = left.number_input("Input $/1M", 0.0, 100.0, DEFAULT_INPUT_PRICE, format="%.2f", key="settings_input_price")
-            output_price = right.number_input("Output $/1M", 0.0, 200.0, DEFAULT_OUTPUT_PRICE, format="%.2f", key="settings_output_price")
+            input_price = st.number_input("Input $ / 1M tokens", 0.0, 100.0, DEFAULT_INPUT_PRICE, format="%.2f", key="settings_input_price")
+            output_price = st.number_input("Output $ / 1M tokens", 0.0, 200.0, DEFAULT_OUTPUT_PRICE, format="%.2f", key="settings_output_price")
         if not has_api_key():
             st.warning("OPENAI_API_KEY is not set. Add it to `.env` and restart.")
     return ModelSettings(model=model, max_output_tokens=max_output_tokens, input_price=input_price,
@@ -96,8 +99,9 @@ def model_settings(panel, *, max_tokens: bool = True, prices: bool = True, embed
 
 @contextmanager
 def lab_parameters(panel):
-    """The week's 🧪 Lab parameters, under Model settings in the right column."""
-    with panel.container(border=True):
+    """The week's 🧪 Lab parameters, below Model settings in the same right-hand panel."""
+    with panel:
+        st.divider()
         st.markdown("**🧪 Lab parameters**")
         yield
 
