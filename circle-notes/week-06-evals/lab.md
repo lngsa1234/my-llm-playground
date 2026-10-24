@@ -9,4 +9,4 @@ The full lab guide and runnable code are in [`agent-eval-lab/`](agent-eval-lab/)
 - **Lab guide:** [agent-eval-lab/README.md](agent-eval-lab/README.md)
 - **Run everything:** `cd circle-notes/week-06-evals/agent-eval-lab && python3 run_all.py`
 
-No installs are needed (Python 3.9+, standard library only), and it runs offline. Background reading: [Agent Evaluation Fundamentals](fundamentals.md).
+No installs are needed (Python 3.9+, standard library only), and it runs offline. Background reading: [Agent Evaluation Fundamentals](fundamentals.md) and [Public Benchmarks for Agent Evaluation](benchmarks.md).
