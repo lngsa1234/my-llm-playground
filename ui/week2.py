@@ -9,7 +9,7 @@ from core.week2 import goal_replay, goal_workflow, strategy_benchmark as bench
 from core.week2.evaluator import validate_final_output
 from core.week2.longbench_subset import download_subset, load_cached_cases
 from core.week2.state_manager import WORKFLOW, load_state
-from ui.components import can_run, metric_row, model_settings, page_header, show_error, tab_parameters
+from ui.components import can_run, lab_parameters, metric_row, model_settings, page_header, page_layout, show_error
 
 HOW_IT_WORKS = """
 - **Demo 1 · Strategy benchmark** — the same question is answered with five different contexts (none, full history, recent window, summary, keyword retrieval). Compare fact coverage, tokens and cost.
@@ -20,47 +20,64 @@ All three use the model, max output tokens and prices from ⚙️ Model settings
 """
 
 
+DEMOS = ["Demo 1 · Strategy benchmark", "Demo 2 · Multi-run builder", "Demo 3 · Controlled replay"]
+
+
 def render() -> None:
     page_header("Week 2 · Context Engineering",
                 "Choose what the model sees on each call, and measure what that choice costs and changes.",
                 HOW_IT_WORKS)
-    settings = model_settings()
-    demo1, demo2, demo3 = st.tabs(["Demo 1 · Strategy benchmark", "Demo 2 · Multi-run builder", "Demo 3 · Controlled replay"])
-    with demo1:
-        _render_strategy_benchmark(settings)
-    with demo2:
-        _render_goal_builder(settings)
-    with demo3:
-        _render_goal_replay(settings)
+    main, panel = page_layout()
+    settings = model_settings(panel)
+    with lab_parameters(panel):
+        demo = st.radio("Demo", DEMOS, key="week2_demo")
+        st.divider()
+        if demo == DEMOS[0]:
+            params = _strategy_benchmark_parameters()
+        elif demo == DEMOS[1]:
+            params = _goal_builder_parameters()
+        else:
+            params = _goal_replay_parameters()
+    with main:
+        st.subheader(demo)
+        if demo == DEMOS[0]:
+            _render_strategy_benchmark(settings, params)
+        elif demo == DEMOS[1]:
+            _render_goal_builder(settings, params)
+        else:
+            _render_goal_replay(settings, params)
 
 
 # ------------------------------------------------------------ Demo 1
-def _render_strategy_benchmark(settings: ModelSettings) -> None:
-    st.caption("Run independent calls against one dataset, one per context strategy.")
-    with tab_parameters():
-        dataset_name = st.selectbox("Dataset", list(bench.DATASETS) + [bench.OFFICIAL_DATASET], key="demo1_dataset")
-        if dataset_name == bench.OFFICIAL_DATASET:
-            cases = load_cached_cases()
-            if cases is None:
-                st.info("This option downloads the official LongBench archive once (about 109 MB), then caches ten HotpotQA cases locally.")
-                if st.button("Download official LongBench subset", key="demo1_download_longbench"):
-                    try:
-                        with st.spinner("Downloading and preparing the official subset…"):
-                            download_subset()
-                        st.rerun()
-                    except Exception as exc:  # noqa: BLE001
-                        show_error("LongBench download", exc)
-                return
-            labels = [f"Question {i}: {case['input'][:58]}…" for i, case in enumerate(cases, start=1)]
-            chosen = st.selectbox("HotpotQA question", range(len(cases)), format_func=lambda i: labels[i], key="demo1_longbench_case")
-            dataset = bench.longbench_dataset(cases[chosen])
-            case_key = f"{dataset_name}_{chosen}"
-        else:
-            dataset = bench.DATASETS[dataset_name]
-            case_key = dataset_name
-        strategies = st.multiselect("Context strategies", bench.STRATEGIES,
-                                    default=[s for s in bench.STRATEGIES if s in bench.DEFAULT_STRATEGIES], key="demo1_strategies")
+def _strategy_benchmark_parameters() -> dict:
+    dataset_name = st.selectbox("Dataset", list(bench.DATASETS) + [bench.OFFICIAL_DATASET], key="demo1_dataset")
+    if dataset_name == bench.OFFICIAL_DATASET:
+        cases = load_cached_cases()
+        if cases is None:
+            return {"needs_download": True}
+        labels = [f"Question {i}: {case['input'][:58]}…" for i, case in enumerate(cases, start=1)]
+        chosen = st.selectbox("HotpotQA question", range(len(cases)), format_func=lambda i: labels[i], key="demo1_longbench_case")
+        dataset, case_key = bench.longbench_dataset(cases[chosen]), f"{dataset_name}_{chosen}"
+    else:
+        dataset, case_key = bench.DATASETS[dataset_name], dataset_name
+    strategies = st.multiselect("Context strategies", bench.STRATEGIES,
+                                default=[s for s in bench.STRATEGIES if s in bench.DEFAULT_STRATEGIES], key="demo1_strategies")
+    return {"dataset": dataset, "case_key": case_key, "strategies": strategies}
 
+
+def _render_strategy_benchmark(settings: ModelSettings, params: dict) -> None:
+    st.caption("Run independent calls against one dataset, one per context strategy.")
+    if params.get("needs_download"):
+        st.info("This dataset downloads the official LongBench archive once (about 109 MB), then caches ten HotpotQA cases locally.")
+        if st.button("Download official LongBench subset", key="demo1_download_longbench"):
+            try:
+                with st.spinner("Downloading and preparing the official subset…"):
+                    download_subset()
+                st.rerun()
+            except Exception as exc:  # noqa: BLE001
+                show_error("LongBench download", exc)
+        return
+    dataset, case_key, strategies = params["dataset"], params["case_key"], params["strategies"]
     left, right = st.columns([0.9, 1.1], gap="large")
     with left:
         with st.expander("Dataset and expected facts"):
@@ -88,7 +105,7 @@ def _render_strategy_benchmark(settings: ModelSettings) -> None:
         results = [r for r in st.session_state.get("demo1_results", []) if r.get("case_key") == case_key]
         st.subheader("Results")
         if not results:
-            st.info("Choose strategies in 🧪 Lab parameters, then run the benchmark.")
+            st.info("Choose context strategies in 🧪 Lab parameters, then run the benchmark.")
             return
         metric_label = "Answer F1" if dataset.get("official") else "Fact coverage"
         st.dataframe([{
@@ -116,16 +133,26 @@ def _render_strategy_benchmark(settings: ModelSettings) -> None:
 
 
 # ------------------------------------------------------------ Demo 2
-def _render_goal_builder(settings: ModelSettings) -> None:
+def _goal_builder_parameters() -> dict:
+    if st.session_state.get("goal_id") is None:
+        goal = st.text_area("Goal", "Design a REST API for a task management system. Support creating tasks, updating task status, retrieving tasks, and soft deletion. Generate an API specification and a test plan.", key="week2_goal", height=150)
+        return {"goal": goal}
+    st.caption("A goal is in progress.")
+    if st.button("Start a new goal", key="week2_new", width="stretch"):
+        st.session_state.goal_id = None
+        st.rerun()
+    return {}
+
+
+def _render_goal_builder(settings: ModelSettings, params: dict) -> None:
     st.caption("Persistent state, inspectable context, and one LLM call per workflow step.")
     goal_id = st.session_state.get("goal_id")
     if goal_id is None:
-        with tab_parameters():
-            goal = st.text_area("Goal", "Design a REST API for a task management system. Support creating tasks, updating task status, retrieving tasks, and soft deletion. Generate an API specification and a test plan.", key="week2_goal", height=115)
-        if st.button("Start goal", type="primary", key="week2_create") and can_run(settings, goal):
+        st.info("Write your goal in 🧪 Lab parameters, then start. The agent's first response appears here.")
+        if st.button("Start goal", type="primary", key="week2_create") and can_run(settings, params["goal"]):
             try:
                 with st.spinner("Starting the agent…"):
-                    state = goal_workflow.start_goal(settings, goal)
+                    state = goal_workflow.start_goal(settings, params["goal"])
                 st.session_state.goal_id = state["goal_id"]
                 st.rerun()
             except Exception as exc:  # noqa: BLE001
@@ -143,9 +170,6 @@ def _render_goal_builder(settings: ModelSettings) -> None:
     with left:
         st.subheader(state["goal"])
         st.caption(f"Run ID: `{state['goal_id']}` · Status: **{state['status']}**")
-        if st.button("Start a new goal", key="week2_new"):
-            st.session_state.goal_id = None
-            st.rerun()
         for entry in state["history"]:
             st.caption("You" if entry["role"] == "user" else "🤖 Agent")
             st.markdown(entry["content"])
@@ -197,14 +221,18 @@ def _render_goal_builder(settings: ModelSettings) -> None:
 
 
 # ------------------------------------------------------------ Demo 3
-def _render_goal_replay(settings: ModelSettings) -> None:
+def _goal_replay_parameters() -> dict:
+    goal = st.text_area("Goal", goal_replay.DEFAULT_GOAL, key="demo3_goal", height=150)
+    selected = st.multiselect("Context strategies", list(goal_replay.STRATEGIES),
+                              default=list(goal_replay.STRATEGIES), key="demo3_strategies")
+    return {"goal": goal, "selected": selected}
+
+
+def _render_goal_replay(settings: ModelSettings, params: dict) -> None:
+    goal, selected = params["goal"], params["selected"]
     st.caption("Replay the same six events in independent sessions and compare context strategies end to end.")
     st.info("Each strategy starts from a new state and cannot see another strategy’s messages or artifacts. "
             "Only context construction changes; the goal, model, events and output limit are fixed.")
-    with tab_parameters():
-        goal = st.text_area("Goal", goal_replay.DEFAULT_GOAL, key="demo3_goal", height=110)
-        selected = st.multiselect("Context strategies", list(goal_replay.STRATEGIES),
-                                  default=list(goal_replay.STRATEGIES), key="demo3_strategies")
     with st.expander("Fixed events supplied to every strategy"):
         st.dataframe([{"Run": n, "Agent operation": WORKFLOW[n - 1][0], "User event": event or "Initial goal"}
                       for n, event in enumerate(goal_replay.CONTROLLED_EVENTS, start=1)],

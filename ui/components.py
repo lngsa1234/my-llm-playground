@@ -2,9 +2,20 @@
 
 Page layout used by every week:
 
-    Sidebar   ⚙️ Model settings   (same widgets, same keys, shared across weeks)
-              🧪 Lab parameters   (week-specific knobs)
-    Main      header → "How this lab works" → tabs / inputs → results
+    Left sidebar     week navigation only (app.py)
+    Main column      header → "How this lab works" → tabs / inputs → results
+    Right column     ⚙️ Model settings  (same widgets, same keys, shared across weeks)
+                     🧪 Lab parameters  (week-specific knobs)
+
+Usage in a page:
+
+    page_header(...)
+    main, panel = page_layout()
+    settings = model_settings(panel)
+    with lab_parameters(panel):
+        ...widgets...
+    with main:
+        ...content...
 """
 
 from __future__ import annotations
@@ -23,7 +34,8 @@ from core.common import (
     has_api_key,
 )
 
-SIDEBAR_WIDTH = 300
+SIDEBAR_WIDTH = 240
+PANEL_RATIO = [3, 1]  # main column : right settings column
 
 
 def apply_page_style() -> None:
@@ -48,14 +60,20 @@ def page_header(title: str, caption: str, how_it_works: str | None = None) -> No
             st.markdown(how_it_works)
 
 
-def model_settings(*, max_tokens: bool = True, prices: bool = True, embedding: bool = False) -> ModelSettings:
-    """Render the shared ⚙️ Model settings panel in the sidebar and return its values.
+def page_layout():
+    """Split the page into the main column and the right-hand settings column."""
+    main, panel = st.columns(PANEL_RATIO, gap="large")
+    return main, panel
+
+
+def model_settings(panel, *, max_tokens: bool = True, prices: bool = True, embedding: bool = False) -> ModelSettings:
+    """Render the shared ⚙️ Model settings panel in the right column and return its values.
 
     The widget keys are the same on every page, so a model chosen in one week
     carries over to the next. Weeks hide the fields they don't use.
     """
-    with st.sidebar:
-        st.subheader("⚙️ Model settings")
+    with panel.container(border=True):
+        st.markdown("**⚙️ Model settings**")
         model = st.text_input("Model", DEFAULT_MODEL, key="settings_model").strip()
         embedding_model = (
             st.text_input("Embedding model", DEFAULT_EMBEDDING_MODEL, key="settings_embedding_model").strip()
@@ -72,25 +90,15 @@ def model_settings(*, max_tokens: bool = True, prices: bool = True, embedding: b
             output_price = right.number_input("Output $/1M", 0.0, 200.0, DEFAULT_OUTPUT_PRICE, format="%.2f", key="settings_output_price")
         if not has_api_key():
             st.warning("OPENAI_API_KEY is not set. Add it to `.env` and restart.")
-        st.divider()
     return ModelSettings(model=model, max_output_tokens=max_output_tokens, input_price=input_price,
                          output_price=output_price, embedding_model=embedding_model)
 
 
 @contextmanager
-def lab_parameters():
-    """Sidebar section for the week's 🧪 Lab parameters. Use as `with lab_parameters():`."""
-    with st.sidebar:
-        st.subheader("🧪 Lab parameters")
-        yield
-        st.divider()
-
-
-@contextmanager
-def tab_parameters(title: str = "🧪 Lab parameters"):
-    """Bordered parameter panel at the top of a tab, for settings that only apply to that tab."""
-    with st.container(border=True):
-        st.markdown(f"**{title}**")
+def lab_parameters(panel):
+    """The week's 🧪 Lab parameters, under Model settings in the right column."""
+    with panel.container(border=True):
+        st.markdown("**🧪 Lab parameters**")
         yield
 
 
@@ -100,7 +108,7 @@ def can_run(settings: ModelSettings, *required_text: str) -> bool:
         st.error("OPENAI_API_KEY is not configured. Set it in `.env`, then restart Streamlit.")
         return False
     if not settings.model:
-        st.warning("Enter a model in ⚙️ Model settings.")
+        st.warning("Enter a model in ⚙️ Model settings on the right.")
         return False
     if any(not text.strip() for text in required_text):
         st.warning("Fill in the required fields first.")

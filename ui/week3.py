@@ -18,7 +18,7 @@ from core.week3.rag import (
     load_documents,
     retrieve,
 )
-from ui.components import can_run, lab_parameters, metric_row, model_settings, page_header, show_error
+from ui.components import can_run, lab_parameters, metric_row, model_settings, page_header, page_layout, show_error
 
 HOW_IT_WORKS = """
 1. **Load and chunk** — Markdown files from `rag_corpus/` are split into overlapping chunks with source and chunk-number metadata.
@@ -35,8 +35,9 @@ def render() -> None:
     page_header("Week 3 · Build and Evaluate a RAG System",
                 "Documents → chunks → embeddings → FAISS search → grounded answer + sources → evidence evaluation",
                 HOW_IT_WORKS)
-    settings = model_settings(max_tokens=False, prices=False, embedding=True)
-    with lab_parameters():
+    main, panel = page_layout()
+    settings = model_settings(panel, max_tokens=False, prices=False, embedding=True)
+    with lab_parameters(panel):
         dataset_name = st.selectbox("Dataset", list(ev.DATASETS), key="week3_dataset")
         chunk_size = int(st.slider("Chunk size (characters)", 100, 1200, 200, 50, key="week3_chunk_size"))
         overlap = int(st.slider("Chunk overlap (characters)", 0, 250, 50, 10, key="week3_overlap"))
@@ -47,18 +48,18 @@ def render() -> None:
         threshold = float(st.slider("Evidence threshold", 0.0, 1.0, 0.10, 0.01, key="week3_threshold_v2"))
         st.caption("Below the evidence threshold, the app abstains unless keyword or title-linked evidence supports the question. "
                    "0.10 allows multi-hop evidence with modest embedding similarity.")
-    with st.sidebar:
-        st.caption(ev.LOADED_BUILD_STAMP)
+    panel.caption(ev.LOADED_BUILD_STAMP)
 
     params = {"dataset": ev.DATASETS[dataset_name], "chunk_size": chunk_size, "overlap": overlap,
               "top_k": top_k, "threshold": threshold}
-    playground, documents, benchmark = st.tabs(["Playground", "Documents & chunks", "Benchmark"])
-    with playground:
-        _render_playground(settings, **params)
-    with documents:
-        _render_documents(params["dataset"], chunk_size, overlap)
-    with benchmark:
-        _render_benchmark(settings, **params)
+    with main:
+        playground, documents, benchmark = st.tabs(["Playground", "Documents & chunks", "Benchmark"])
+        with playground:
+            _render_playground(settings, **params)
+        with documents:
+            _render_documents(params["dataset"], chunk_size, overlap)
+        with benchmark:
+            _render_benchmark(settings, **params)
 
 
 def _get_index(knowledge_base: Path, chunk_size: int, overlap: int, embedding_model: str):
