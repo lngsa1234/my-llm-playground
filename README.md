@@ -2,6 +2,8 @@
 
 A collection of hands-on agent-engineering labs: a single API-call playground (Week 1), a multi-run context-engineering workflow (Week 2), an inspectable Retrieval-Augmented Generation system (Week 3), and a tool-calling/MCP weather assistant (Week 4).
 
+The circle's weekly plan, knowledge bases and lab guides are in [`circle-notes/`](circle-notes/), including the runnable Week 6 agent evaluation lab.
+
 ## Run locally
 
 1. Create and activate a Python virtual environment.
