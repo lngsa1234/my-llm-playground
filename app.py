@@ -20,7 +20,7 @@ for _name, _module in list(sys.modules.items()):
         if _file and not os.path.exists(_file):
             del sys.modules[_name]
 
-from ui import week1, week2, week3, week4  # noqa: E402
+from ui import week1, week2, week3, week4, week6  # noqa: E402
 from ui.components import apply_page_style
 
 load_dotenv()
@@ -30,6 +30,7 @@ PAGES = {
     "Week 2 · Context Engineering": week2.render,
     "Week 3 · RAG": week3.render,
     "Week 4 · Weather Assistant": week4.render,
+    "Week 6 · Agent Evaluation": week6.render,
 }
 
 st.set_page_config(page_title="Agent Engineering Peer Learning", page_icon="🧭", layout="wide")

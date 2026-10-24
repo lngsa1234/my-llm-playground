@@ -1,6 +1,6 @@
 # Agent Engineering Peer Learning Labs
 
-A collection of hands-on agent-engineering labs: a single API-call playground (Week 1), a multi-run context-engineering workflow (Week 2), an inspectable Retrieval-Augmented Generation system (Week 3), and a tool-calling/MCP weather assistant (Week 4).
+A collection of hands-on agent-engineering labs: a single API-call playground (Week 1), a multi-run context-engineering workflow (Week 2), an inspectable Retrieval-Augmented Generation system (Week 3), a tool-calling/MCP weather assistant (Week 4), and agent evaluation with regression testing (Week 6).
 
 ## Repository layout
 
@@ -8,22 +8,23 @@ A collection of hands-on agent-engineering labs: a single API-call playground (W
 app.py                  Streamlit entry point: navigation only
 ui/                     front end, one page per week
   components.py         shared settings panel and widgets used by every page
-  week1.py … week4.py
+  week1.py … week6.py
 core/                   back-end logic per week (plain Python, no Streamlit)
   common.py             ModelSettings + defaults shared by all weeks
   week1/playground.py   one API call, structured output
   week2/                context strategies, goal workflow, state, controlled replay
   week3/                RAG pipeline (rag.py) and benchmark scoring (evaluation.py)
   week4/weather.py      weather tools, tool-calling loop, live benchmark
+  week6/evals.py        agent evaluation: wraps agent-eval-lab/ and adds an LLM judge
 tests/                  pytest suite for core/
 exercises/week1/        standalone Week 1 API scripts
 weather-agent-lab/      Week 4 command-line tool-calling and MCP demos
-agent-eval-lab/         Week 6 agent evaluation lab
+agent-eval-lab/         Week 6 evaluation lab (also runs from the command line)
 ```
 
 - [`knowledge_base/`](knowledge_base/) — the circle's [8-week plan](knowledge_base/plan.md), weekly concepts and lab guides.
 - [`rag_corpus/`](rag_corpus/) — the documents the Week 3 RAG app searches: ten NovaTech policies and the HotpotQA mini articles.
-- [`agent-eval-lab/`](agent-eval-lab/) — the Week 6 agent evaluation lab (runs offline, standard library only).
+- [`agent-eval-lab/`](agent-eval-lab/) — the Week 6 agent evaluation lab. It is the **Week 6 · Agent Evaluation** page in the app, and also runs offline from the command line with the standard library only.
 - [`benchmark/`](benchmark/) — the Week 3 RAG question sets in `benchmark/rag/`, and public agent-evaluation benchmarks (BFCL, τ²-bench and a download script for others) in `benchmark/public/`.
 
 ## Run locally
@@ -64,7 +65,7 @@ Every week's page has the same layout:
 - **Main area** — the week title, a one-line description, a "How this lab works" explainer, then inputs, a run button and results with the same token, latency and cost metrics.
 - **Right panel** — one box with two sections stacked in a single column:
   - **⚙️ Model settings** — model, max output tokens and $/1M token prices (plus the embedding model in Week 3). The values are shared across weeks, so set them once. The default is `gpt-5.4-mini`, with matching default prices; change both together if you switch models.
-  - **🧪 Lab parameters** — the settings specific to that week, such as output format (Week 1), the demo and its dataset or strategies (Week 2), chunk size and Top-K (Week 3), or max tool-call rounds (Week 4).
+  - **🧪 Lab parameters** — the settings specific to that week, such as output format (Week 1), the demo and its dataset or strategies (Week 2), chunk size and Top-K (Week 3), max tool-call rounds (Week 4), or the evaluation step, agent version, judge and release gates (Week 6).
 
 To add a week: put its logic in `core/weekN/`, add `ui/weekN.py` with a `render()` function that calls `page_layout()` (title, caption, explainer), `model_settings()` and `lab_parameters()` from `ui/components.py`, and register it in `PAGES` in `app.py`.
 

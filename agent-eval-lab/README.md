@@ -33,6 +33,8 @@ Each run prints a **trace**: the tool calls the agent made, what the tools retur
 
 Run everything at once with `python3 run_all.py`, or go step by step below.
 
+Prefer clicking to typing? The same lab is the **Week 6 · Agent Evaluation** page of the repo's Streamlit app (`streamlit run app.py` from the repo root). It reads the same golden dataset and grades the same way, and adds an option to use a real LLM judge with the app's model settings.
+
 ## Project layout
 
 ```
