@@ -38,7 +38,7 @@ Lynn's demo: [lngsa1234/my-llm-playground](https://github.com/lngsa1234/my-llm-p
 
 ## Week 1 — LLM Fundamentals
 
-📘 Notes: [Concepts](week-01-llm-fundamentals/concepts.md) · [Lab](week-01-llm-fundamentals/lab.md)
+📘 Concepts: [LLM concepts](week-01-llm-fundamentals/concepts.md) · Lab: [Build your first LLM application](week-01-llm-fundamentals/lab.md) · [Extension: web demo](week-01-llm-fundamentals/lab-web-demo.md)
 
 **Question:** What actually happens when an application calls an LLM?
 
@@ -80,7 +80,7 @@ Also think about your **8-week project** now and create the first version of its
 
 ## Week 2 — Context Engineering
 
-📘 Notes: [Concepts](week-02-context-engineering/concepts.md) · [Lab](week-02-context-engineering/lab.md)
+📘 Concepts: [Context engineering](week-02-context-engineering/concepts.md) · Lab: [From single-call context to multi-run AI systems](week-02-context-engineering/lab.md)
 
 **Question:** How does an AI system decide what the model needs to know?
 
@@ -112,7 +112,7 @@ Update your architecture diagram with **context + state**.
 
 ## Week 3 — RAG
 
-📘 Notes: [Concepts](week-03-rag/concepts.md) · [Lab](week-03-rag/lab.md)
+📘 Concepts: [Retrieval-augmented generation](week-03-rag/concepts.md) · Lab: [Build a RAG system from scratch](week-03-rag/lab.md)
 
 **Question:** How does the system give the LLM information it doesn't already have?
 
@@ -158,7 +158,7 @@ Use a small real dataset rather than a tutorial dataset if possible.
 
 ## Week 4 — Tool Calling + Catch-up
 
-📘 Notes: [Concepts](week-04-tool-calling/concepts.md) · [Lab](week-04-tool-calling/lab.md)
+📘 Concepts: [Tool calling](week-04-tool-calling/concepts.md) · [MCP](week-04-tool-calling/concepts-mcp.md) · Lab: [Weather assistant with tool calling & MCP](week-04-tool-calling/lab.md)
 
 This is intentionally a **lighter week**.
 
@@ -192,7 +192,7 @@ Use remaining time to catch up on Weeks 1–3.
 
 ## Week 5 — Agent Engineering
 
-📘 Notes: [Concepts](week-05-agent-engineering/concepts.md) · [Lab](week-05-agent-engineering/lab.md)
+📘 Concepts: [State, workflow, control loop, routing](week-05-agent-engineering/concepts.md) · Lab: [Stateful agent workflow in TypeScript](week-05-agent-engineering/lab.md)
 
 Now—and only now—introduce an agent framework.
 
@@ -240,7 +240,7 @@ Demo link: [AI Web Page Builder](https://myagentstarter.vercel.app/)
 
 ## Week 6 — Evals
 
-📘 Notes: [Concepts](week-06-evals/concepts.md) · [Lab](week-06-evals/lab.md)
+📘 Concepts: [Agent evaluation fundamentals](week-06-evals/concepts.md) · [Public benchmarks](week-06-evals/concepts-benchmarks.md) · Lab: [Evaluate and regression-test an agent](week-06-evals/lab.md)
 
 **Question:** How do we know the AI system actually works?
 
@@ -264,7 +264,7 @@ The key mindset change is:
 
 ## Week 7 — Production AI Systems
 
-📘 Notes: not written yet.
+📘 Concepts and lab: not written yet.
 
 **Question:** What happens when the demo meets real users?
 
@@ -282,7 +282,7 @@ Update the architecture with the **production layer**.
 
 ## Week 8 — AI System Design + Demo
 
-📘 Notes: not written yet.
+📘 Concepts and lab: not written yet.
 
 There should be **very little new coding this week**.
 

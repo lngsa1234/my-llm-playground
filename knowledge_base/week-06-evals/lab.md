@@ -1,4 +1,4 @@
-# Week 6 · Evals — Lab: Agent Evaluation
+# Week 6 · Evals — Lab: Evaluate and Regression-Test an Agent
 
 **Golden Datasets → Task Success → Tool Evaluation → LLM-as-a-Judge → Regression Testing**
 

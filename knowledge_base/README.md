@@ -8,12 +8,12 @@ Notes for the Agent Engineering Peer Learning Circle, exported from Notion on 20
 
 | Week | Concepts | Lab |
 | --- | --- | --- |
-| 1 · LLM Fundamentals | [Concepts](week-01-llm-fundamentals/concepts.md) | [Lab](week-01-llm-fundamentals/lab.md) · [Extension: web demo](week-01-llm-fundamentals/lab-web-demo.md) |
-| 2 · Context Engineering | [Concepts](week-02-context-engineering/concepts.md) | [Lab](week-02-context-engineering/lab.md) |
-| 3 · RAG | [Concepts](week-03-rag/concepts.md) | [Lab](week-03-rag/lab.md) |
-| 4 · Tool Calling | [Concepts](week-04-tool-calling/concepts.md) · [MCP](week-04-tool-calling/concepts-mcp.md) | [Lab](week-04-tool-calling/lab.md) |
-| 5 · Agent Engineering | [Concepts](week-05-agent-engineering/concepts.md) | [Lab](week-05-agent-engineering/lab.md) |
-| 6 · Evals | [Concepts](week-06-evals/concepts.md) · [Public benchmarks](week-06-evals/concepts-benchmarks.md) | [Lab](week-06-evals/lab.md) (code in [`agent-eval-lab/`](../agent-eval-lab/)) |
+| 1 · LLM Fundamentals | [LLM concepts](week-01-llm-fundamentals/concepts.md) | [Build your first LLM application](week-01-llm-fundamentals/lab.md) · [Extension: web demo](week-01-llm-fundamentals/lab-web-demo.md) |
+| 2 · Context Engineering | [Context engineering](week-02-context-engineering/concepts.md) | [From single-call context to multi-run AI systems](week-02-context-engineering/lab.md) |
+| 3 · RAG | [Retrieval-augmented generation](week-03-rag/concepts.md) | [Build a RAG system from scratch](week-03-rag/lab.md) |
+| 4 · Tool Calling | [Tool calling](week-04-tool-calling/concepts.md) · [MCP](week-04-tool-calling/concepts-mcp.md) | [Weather assistant with tool calling & MCP](week-04-tool-calling/lab.md) |
+| 5 · Agent Engineering | [State, workflow, control loop, routing](week-05-agent-engineering/concepts.md) | [Stateful agent workflow in TypeScript](week-05-agent-engineering/lab.md) |
+| 6 · Evals | [Agent evaluation fundamentals](week-06-evals/concepts.md) · [Public benchmarks](week-06-evals/concepts-benchmarks.md) | [Evaluate and regression-test an agent](week-06-evals/lab.md) (code in [`agent-eval-lab/`](../agent-eval-lab/)) |
 
 **Naming convention.** Each week has a folder `week-NN-topic/` containing:
 
