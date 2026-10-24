@@ -1,0 +1,19 @@
+# Example CI job: block any pull request that regresses the agent.
+name: agent-evals
+on: [pull_request]
+jobs:
+  evals:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - name: Lint golden dataset
+        run: python lab/step1_golden.py
+      - name: Baseline (last released version)
+        run: python lab/step5_regression.py --baseline v1
+      - name: Regression gate (candidate)
+        run: python lab/step5_regression.py v2   # exits 1 -> PR is blocked
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: { name: regression-report, path: results/regression_report.md }
