@@ -4,6 +4,8 @@ Notes for the Agent Engineering Peer Learning Circle, exported from Notion on 20
 
 **Start here:** [8-week plan](plan.md) — audience, schedule, readings, builds and agendas for every week.
 
+**Course project:** [Mini Muse](mini-muse.md) — the personal-assistant agent the circle builds one component per week, with what to build, try and check each week.
+
 ## Notes in this folder
 
 | Week | Concepts | Lab |
@@ -26,4 +28,4 @@ Page titles follow the same pattern: `Week N · Topic — Concepts` or `Week N �
 
 Also: [Project Pool](project-pool.md) · [AI Engineering Interview Questions](interview-questions.md)
 
-**Elsewhere in the repo:** each lab's code, data and web page live in [`labs/`](../labs/), one folder per week; [`app.py`](../app.py) shows them all as one site; public benchmarks are in [`benchmark/`](../benchmark/).
+**Elsewhere in the repo:** Mini Muse's code is in [`mini_muse/`](../mini_muse/); each lab's code, data and web page live in [`labs/`](../labs/), one folder per week; [`app.py`](../app.py) shows them all as one site; public benchmarks are in [`benchmark/`](../benchmark/).

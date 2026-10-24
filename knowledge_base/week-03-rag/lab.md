@@ -1663,3 +1663,8 @@ Retrieval finds the relevant pages.
 The context window is the material placed on the student's desk.
 
 And the final answer should be grounded in the evidence that was actually retrieved.
+
+
+## 🧩 This week's Mini Muse step
+
+📚 Knowledge: search and answer from your notes. To try it, switch this week's page in the app to **🧩 Build Mini Muse**. The code, what to try and questions to check yourself are in the [Mini Muse guide](../mini-muse.md#week-3---knowledge--rag-over-your-notes).

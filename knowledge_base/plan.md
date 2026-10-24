@@ -36,9 +36,28 @@ Lynn's demo: [lngsa1234/my-llm-playground](https://github.com/lngsa1234/my-llm-p
 | **7** | Production AI | Tracing, observability, retries, fallback, latency, cost, reliability | Add tracing and failure handling |
 | **8** | AI System Design | Architecture, trade-offs, scalability, human-in-loop, system boundaries | Final architecture + demo + peer review |
 
+## Course project: Mini Muse
+
+The circle builds one agent together across the 8 weeks: **Mini Muse**, a small personal assistant. Each week's topic adds one component, and by Week 8 they are wired into one assistant. See the [Mini Muse guide](mini-muse.md) and the code in [`mini_muse/`](../mini_muse/).
+
+| Week | Mini Muse gains |
+| --- | --- |
+| 1 | 🧠 Understand: turn a request into structured fields |
+| 2 | 🗂️ Memory: saved facts, recent turns and compaction |
+| 3 | 📚 Knowledge: search and answer from your notes |
+| 4 | 🛠️ Hands: calendar, contacts, email, weather and calculator tools |
+| 5 | 🔁 Agent loop: plan → act → observe → stop, with approval before sending email |
+| 6 | ✅ Proof: run the golden dataset on the real Mini Muse |
+| 7 | 🛡️ Reliability: tracing, retries, timeouts and fault injection |
+| 8 | 🧩 Assembled: every component in one assistant |
+
+Every week page in the app has a **🧩 Build Mini Muse** part next to the concept demo. From Week 5, teams build their own projects with Mini Muse as the reference implementation.
+
 ## Week 1 — LLM Fundamentals
 
 📘 Concepts: [LLM concepts](week-01-llm-fundamentals/concepts.md) · Lab: [Build your first LLM application](week-01-llm-fundamentals/lab.md) · [Extension: web demo](week-01-llm-fundamentals/lab-web-demo.md)
+
+🧩 Mini Muse: 🧠 Understand: turn a request into structured fields · [guide](mini-muse.md#week-1---understand--structured-output)
 
 **Question:** What actually happens when an application calls an LLM?
 
@@ -82,6 +101,8 @@ Also think about your **8-week project** now and create the first version of its
 
 📘 Concepts: [Context engineering](week-02-context-engineering/concepts.md) · Lab: [From single-call context to multi-run AI systems](week-02-context-engineering/lab.md)
 
+🧩 Mini Muse: 🗂️ Memory: saved facts, recent turns and compaction · [guide](mini-muse.md#week-2---memory--context-engineering)
+
 **Question:** How does an AI system decide what the model needs to know?
 
 Learn prompt vs context, conversation history, context construction, context-window limitations, state vs context, short/long-term memory and summarization/compaction.
@@ -113,6 +134,8 @@ Update your architecture diagram with **context + state**.
 ## Week 3 — RAG
 
 📘 Concepts: [Retrieval-augmented generation](week-03-rag/concepts.md) · Lab: [Build a RAG system from scratch](week-03-rag/lab.md)
+
+🧩 Mini Muse: 📚 Knowledge: search and answer from your notes · [guide](mini-muse.md#week-3---knowledge--rag-over-your-notes)
 
 **Question:** How does the system give the LLM information it doesn't already have?
 
@@ -160,6 +183,8 @@ Use a small real dataset rather than a tutorial dataset if possible.
 
 📘 Concepts: [Tool calling](week-04-tool-calling/concepts.md) · [MCP](week-04-tool-calling/concepts-mcp.md) · Lab: [Weather assistant with tool calling & MCP](week-04-tool-calling/lab.md)
 
+🧩 Mini Muse: 🛠️ Hands: calendar, contacts, email, weather and calculator tools · [guide](mini-muse.md#week-4---hands--tool-calling)
+
 This is intentionally a **lighter week**.
 
 **Question:** How can an LLM interact with external systems?
@@ -193,6 +218,8 @@ Use remaining time to catch up on Weeks 1–3.
 ## Week 5 — Agent Engineering
 
 📘 Concepts: [State, workflow, control loop, routing](week-05-agent-engineering/concepts.md) · Lab: [Stateful agent workflow in TypeScript](week-05-agent-engineering/lab.md)
+
+🧩 Mini Muse: 🔁 Agent loop: plan → act → observe → stop, with approval before sending email · [guide](mini-muse.md#week-5---agent-loop--agent-engineering)
 
 Now—and only now—introduce an agent framework.
 
@@ -242,6 +269,8 @@ Demo link: [AI Web Page Builder](https://myagentstarter.vercel.app/)
 
 📘 Concepts: [Agent evaluation fundamentals](week-06-evals/concepts.md) · [Public benchmarks](week-06-evals/concepts-benchmarks.md) · Lab: [Evaluate and regression-test an agent](week-06-evals/lab.md)
 
+🧩 Mini Muse: ✅ Proof: run the golden dataset on the real Mini Muse · [guide](mini-muse.md#week-6---proof--evals)
+
 **Question:** How do we know the AI system actually works?
 
 Learn evaluation datasets, expected behavior, task completion, retrieval evaluation, tool-selection evaluation, trajectory evaluation, LLM-as-a-judge and regression testing.
@@ -266,6 +295,8 @@ The key mindset change is:
 
 📘 Concepts and lab: not written yet.
 
+🧩 Mini Muse: 🛡️ Reliability: tracing, retries, timeouts and fault injection · [guide](mini-muse.md#week-7---reliability--production)
+
 **Question:** What happens when the demo meets real users?
 
 Learn tracing, logging, observability, token usage, latency, cost, timeout, retries, fallbacks, rate limits, malformed output, tool failure, infinite loops and human approval.
@@ -283,6 +314,8 @@ Update the architecture with the **production layer**.
 ## Week 8 — AI System Design + Demo
 
 📘 Concepts and lab: not written yet.
+
+🧩 Mini Muse: 🧩 Assembled: every component in one assistant · [guide](mini-muse.md#week-8---assembled--system-design)
 
 There should be **very little new coding this week**.
 

@@ -11,3 +11,8 @@ The full lab guide and runnable code are in [`labs/week6_agent_eval/`](../../lab
 - **From the command line:** `python3 labs/week6_agent_eval/run_all.py`
 
 No installs are needed (Python 3.9+, standard library only), and it runs offline. Background reading: [Agent Evaluation Fundamentals](concepts.md) and [Public Benchmarks for Agent Evaluation](concepts-benchmarks.md).
+
+
+## 🧩 This week's Mini Muse step
+
+✅ Proof: run the golden dataset on the real Mini Muse. To try it, switch this week's page in the app to **🧩 Build Mini Muse**. The code, what to try and questions to check yourself are in the [Mini Muse guide](../mini-muse.md#week-6---proof--evals).

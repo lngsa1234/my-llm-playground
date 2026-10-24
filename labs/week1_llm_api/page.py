@@ -17,7 +17,7 @@ import json
 import streamlit as st
 
 from labs.week1_llm_api.playground import run_single_call
-from labs.shared.ui import can_run, lab_parameters, model_settings, page_layout, show_error, usage_metrics, run_standalone
+from labs.shared.ui import mini_muse_part, can_run, lab_parameters, model_settings, page_layout, show_error, usage_metrics, run_standalone
 
 HOW_IT_WORKS = """
 1. Your **system instructions** and **user prompt** are sent in one API request, with the model and max output tokens from ⚙️ Model settings.
@@ -31,6 +31,8 @@ def render() -> None:
     main, panel = page_layout("Week 1 · Single API Call",
                 "Explore one independent API call: its response, token use, latency and estimated cost.",
                 HOW_IT_WORKS)
+    if mini_muse_part(main, panel, 1):
+        return
     settings = model_settings(panel)
     with lab_parameters(panel):
         output_format = st.radio("Output format", ["Text", "Structured output"], horizontal=True, key="week1_format")

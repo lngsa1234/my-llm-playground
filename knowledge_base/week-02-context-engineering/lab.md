@@ -538,3 +538,8 @@ By completing these three demos, participants progress from understanding how co
 - **Demo 3:** Measure how context strategies affect end-to-end goal completion.
 
 This foundation leads naturally into the next Agent Engineering topics: tool calling, agent orchestration, execution state, validation loops, and human-in-the-loop control.
+
+
+## 🧩 This week's Mini Muse step
+
+🗂️ Memory: saved facts, recent turns and compaction. To try it, switch this week's page in the app to **🧩 Build Mini Muse**. The code, what to try and questions to check yourself are in the [Mini Muse guide](../mini-muse.md#week-2---memory--context-engineering).

@@ -756,3 +756,8 @@ Application → API request → Model input and tokens → LLM inference → API
 They should also understand that the application controls the request configuration and constructs the context, while the LLM processes the supplied information to generate a response.
 
 In Week 2, we will build on this foundation by adding context construction, conversation-history management, and persistent application state.
+
+
+## 🧩 This week's Mini Muse step
+
+🧠 Understand: turn a request into structured fields. To try it, switch this week's page in the app to **🧩 Build Mini Muse**. The code, what to try and questions to check yourself are in the [Mini Muse guide](../mini-muse.md#week-1---understand--structured-output).

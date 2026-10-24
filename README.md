@@ -1,11 +1,12 @@
 # Agent Engineering Peer Learning Labs
 
-A collection of hands-on agent-engineering labs: a single API-call playground (Week 1), a multi-run context-engineering workflow (Week 2), an inspectable Retrieval-Augmented Generation system (Week 3), a tool-calling/MCP weather assistant (Week 4), and agent evaluation with regression testing (Week 6).
+Over 8 weeks the circle builds **Mini Muse**, a personal-assistant agent, one component per week ([guide](knowledge_base/mini-muse.md)). Alongside it are hands-on concept labs: a single API-call playground (Week 1), a multi-run context-engineering workflow (Week 2), an inspectable Retrieval-Augmented Generation system (Week 3), a tool-calling/MCP weather assistant (Week 4), and agent evaluation with regression testing (Week 6).
 
 ## Repository layout
 
 ```text
 app.py                         the full site: every lab in one app (streamlit run app.py)
+mini_muse/                     the course project: one file per week, wired together by week 8
 labs/                          one self-contained folder per lab
   shared/                      settings panel and model settings shared by every page
   week1_llm_api/               one API call, structured output, command-line exercises
@@ -16,6 +17,8 @@ labs/                          one self-contained folder per lab
 knowledge_base/                the 8-week plan, weekly concepts and lab guides
 benchmark/                     public benchmarks: BFCL and τ²-bench samples, downloader, scorer
 ```
+
+[`mini_muse/`](mini_muse/) is the agent itself: `week1_understand.py` through `week8_assistant.py`, a fake world its tools act on, and sample notes. See its [README](mini_muse/README.md).
 
 Each lab folder holds everything for that week: its logic, data, tests, a README, and a `page.py`. Every lab runs three ways:
 
@@ -58,7 +61,8 @@ pytest
 
 Every week's page has the same layout:
 
-- **Left sidebar** — choose the week.
+- **Left sidebar** — choose the week, or **🧩 Mini Muse · all weeks** for every Mini Muse component (including Weeks 5, 7 and 8).
+- **Top of each week page** — switch between **🔬 Concept demo** (the week's lab) and **🧩 Build Mini Muse** (the same idea, added to Mini Muse).
 - **Main area** — the week title, a one-line description, a "How this lab works" explainer, then inputs, a run button and results with the same token, latency and cost metrics.
 - **Right panel** — one box with two sections stacked in a single column:
   - **⚙️ Model settings** — model, max output tokens and $/1M token prices (plus the embedding model in Week 3). The values are shared across weeks, so set them once. The default is `gpt-5.4-mini`, with matching default prices; change both together if you switch models.

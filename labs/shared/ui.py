@@ -165,3 +165,27 @@ def run_standalone(render: Callable[[], None], title: str) -> None:
     st.set_page_config(page_title=title, page_icon="🧭", layout="wide")
     apply_page_style()
     render()
+
+
+CONCEPT_PART = "🔬 Concept demo"
+MINI_MUSE_PART = "🧩 Build Mini Muse"
+
+
+def mini_muse_part(main, panel, week: int, **settings_options) -> bool:
+    """The switch at the top of each week page: the week's concept demo, or its Mini Muse step.
+
+    When the Mini Muse step is chosen, this renders it (with its own Model settings and
+    Lab parameters) and returns True, so the page can stop there:
+
+        if mini_muse_part(main, panel, 1):
+            return
+    """
+    with main:
+        part = st.radio("Part", [CONCEPT_PART, MINI_MUSE_PART], horizontal=True, label_visibility="collapsed",
+                        key=f"week{week}_part")
+    if part != MINI_MUSE_PART:
+        return False
+    from mini_muse.page import render_step  # the project's screens live with its code, in mini_muse/
+
+    render_step(week, main, panel, model_settings(panel, **settings_options))
+    return True

@@ -21,3 +21,6 @@ venv/
 .DS_Store
 .vscode/
 .idea/
+
+# Mini Muse's saved command-line memory
+mini_muse/state/

@@ -19,7 +19,7 @@ from labs.week2_context_engineering import goal_replay, goal_workflow, strategy_
 from labs.week2_context_engineering.evaluator import validate_final_output
 from labs.week2_context_engineering.longbench_subset import download_subset, load_cached_cases
 from labs.week2_context_engineering.state_manager import WORKFLOW, load_state
-from labs.shared.ui import can_run, lab_parameters, metric_row, model_settings, page_layout, show_error, run_standalone
+from labs.shared.ui import mini_muse_part, can_run, lab_parameters, metric_row, model_settings, page_layout, show_error, run_standalone
 
 HOW_IT_WORKS = """
 - **Demo 1 · Strategy benchmark** — the same question is answered with five different contexts (none, full history, recent window, summary, keyword retrieval). Compare fact coverage, tokens and cost.
@@ -37,6 +37,8 @@ def render() -> None:
     main, panel = page_layout("Week 2 · Context Engineering",
                 "Choose what the model sees on each call, and measure what that choice costs and changes.",
                 HOW_IT_WORKS)
+    if mini_muse_part(main, panel, 2):
+        return
     settings = model_settings(panel)
     with lab_parameters(panel):
         demo = st.radio("Demo", DEMOS, key="week2_demo")

@@ -26,7 +26,7 @@ from labs.week3_rag.rag import (
     load_documents,
     retrieve,
 )
-from labs.shared.ui import can_run, lab_parameters, metric_row, model_settings, page_layout, show_error, run_standalone
+from labs.shared.ui import mini_muse_part, can_run, lab_parameters, metric_row, model_settings, page_layout, show_error, run_standalone
 
 HOW_IT_WORKS = """
 1. **Load and chunk** — Markdown files from this lab's `documents/` folder are split into overlapping chunks with source and chunk-number metadata.
@@ -43,6 +43,8 @@ def render() -> None:
     main, panel = page_layout("Week 3 · Build and Evaluate a RAG System",
                 "Documents → chunks → embeddings → FAISS search → grounded answer + sources → evidence evaluation",
                 HOW_IT_WORKS)
+    if mini_muse_part(main, panel, 3, embedding=True):
+        return
     settings = model_settings(panel, max_tokens=False, prices=False, embedding=True)
     with lab_parameters(panel):
         dataset_name = st.selectbox("Dataset", list(ev.DATASETS), key="week3_dataset")

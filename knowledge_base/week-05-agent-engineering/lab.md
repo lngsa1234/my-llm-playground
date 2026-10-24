@@ -996,3 +996,8 @@ You have completed Week 5 when you can look at any agent application and identif
 - **Guardrails** — What prevents uncontrolled execution?
 
 The goal of this lab is not simply to build an agent. It is to understand **how to engineer an agent whose behavior you can control, observe, debug and evaluate.**
+
+
+## 🧩 This week's Mini Muse step
+
+🔁 Agent loop: plan → act → observe → stop, with approval before sending email. To try it, open **🧩 Mini Muse · all weeks** in the app and pick Week 5. The code, what to try and questions to check yourself are in the [Mini Muse guide](../mini-muse.md#week-5---agent-loop--agent-engineering).

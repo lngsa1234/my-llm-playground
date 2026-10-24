@@ -828,3 +828,8 @@ The final mental model students should leave with is:
 ```
 
 **LLM decides → Runtime controls → MCP connects → Tool acts → Result returns → LLM continues.**
+
+
+## 🧩 This week's Mini Muse step
+
+🛠️ Hands: calendar, contacts, email, weather and calculator tools. To try it, switch this week's page in the app to **🧩 Build Mini Muse**. The code, what to try and questions to check yourself are in the [Mini Muse guide](../mini-muse.md#week-4---hands--tool-calling).

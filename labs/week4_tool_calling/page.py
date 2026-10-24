@@ -15,7 +15,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 import streamlit as st
 
 from labs.week4_tool_calling import weather
-from labs.shared.ui import can_run, lab_parameters, metric_row, model_settings, page_layout, show_error, run_standalone
+from labs.shared.ui import mini_muse_part, can_run, lab_parameters, metric_row, model_settings, page_layout, show_error, run_standalone
 
 HOW_IT_WORKS = """
 1. The model receives your prompt plus two **tool schemas**: `get_weather` (current conditions) and `get_weekend_forecast` (upcoming Saturday and Sunday).
@@ -30,6 +30,8 @@ def render() -> None:
     main, panel = page_layout("Week 4 · Weather Assistant",
                 "Ask about current conditions or which weekend day is best, and inspect every tool call.",
                 HOW_IT_WORKS)
+    if mini_muse_part(main, panel, 4):
+        return
     settings = model_settings(panel, prices=False)
     with lab_parameters(panel):
         max_rounds = int(st.slider("Max tool-call rounds", 1, 10, 5, key="week4_max_rounds"))
