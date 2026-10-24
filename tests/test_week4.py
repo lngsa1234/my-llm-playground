@@ -1,8 +1,8 @@
 from datetime import date
 from unittest.mock import Mock, patch
 
-import core.week4 as week4
-from core.week4 import get_weekend_forecast, run_direct_agent, system_prompt, upcoming_weekend
+import core.week4.weather as week4
+from core.week4.weather import get_weekend_forecast, run_direct_agent, system_prompt, upcoming_weekend
 
 
 def test_upcoming_weekend_is_the_next_saturday_and_sunday():
@@ -17,7 +17,7 @@ def test_relative_weekend_prompt_does_not_request_dates():
     assert "Do not ask for dates" in prompt
 
 
-@patch("core.week4.requests.get")
+@patch("core.week4.weather.requests.get")
 def test_weekend_forecast_returns_both_days(mock_get):
     geocode = Mock()
     geocode.raise_for_status.return_value = None
@@ -61,7 +61,7 @@ def test_weekend_forecast_returns_both_days(mock_get):
     assert mock_get.call_args_list[1].kwargs["params"]["forecast_days"] == 16
 
 
-@patch("core.week4.OpenAI")
+@patch("core.week4.weather.OpenAI")
 def test_run_without_tools_omits_tool_schema(mock_openai):
     response = Mock()
     response.choices = [Mock()]
@@ -89,7 +89,7 @@ def test_live_benchmark_scores_the_expected_tool_and_location(monkeypatch):
     monkeypatch.setattr(
         week4,
         "run_direct_agent",
-        lambda *_: {"answer": "Saturday", "latency": 0.1, "trace": [{"tool": "get_weekend_forecast", "arguments": '{"location": "Detroit"}', "result": {}}]},
+        lambda *_, **__: {"answer": "Saturday", "latency": 0.1, "trace": [{"tool": "get_weekend_forecast", "arguments": '{"location": "Detroit"}', "result": {}}]},
     )
 
     rows, _ = week4.run_live_benchmark("test-model")

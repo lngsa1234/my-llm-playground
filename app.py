@@ -1,42 +1,31 @@
-"""Context Engineering Lab demos. Start with: streamlit run app.py."""
+"""Agent Engineering Peer Learning labs. Start with: streamlit run app.py
+
+app.py only handles navigation. Each week's page is in ui/weekN.py and its
+logic is in core/weekN/. Shared sidebar panels are in ui/components.py.
+"""
 
 import streamlit as st
 from dotenv import load_dotenv
 
-from core.week1 import render_week1
-from core.week2 import render_week2
-from core.week3 import render_week3
-from core.week4 import render_week4
+from ui import week1, week2, week3, week4
+from ui.components import apply_page_style
 
 load_dotenv()
 
+PAGES = {
+    "Week 1 · Single API Call": week1.render,
+    "Week 2 · Context Engineering": week2.render,
+    "Week 3 · RAG": week3.render,
+    "Week 4 · Weather Assistant": week4.render,
+}
+
 st.set_page_config(page_title="Agent Engineering Peer Learning", page_icon="🧭", layout="wide")
-st.markdown(
-    """
-    <style>
-        .block-container { padding-top: 2rem; }
-        [data-testid="stSidebar"] {
-            min-width: 200px;
-            max-width: 200px;
-        }
-        [data-testid="stSidebar"] > div:first-child {
-            width: 200px;
-        }
-    </style>
-    """,
-    unsafe_allow_html=True,
-)
+apply_page_style()
 st.title("🧭 Agent Engineering Peer Learning")
 
 with st.sidebar:
-    st.header("Lab navigation")
-    selected_week = st.radio("Choose a week", ["Week 1", "Week 2", "Week 3 · RAG", "Week 4 · Weather Assistant"], label_visibility="collapsed")
+    st.subheader("📚 Lab")
+    selected = st.radio("Choose a week", list(PAGES), label_visibility="collapsed", key="nav_week")
+    st.divider()
 
-if selected_week == "Week 1":
-    render_week1()
-elif selected_week == "Week 2":
-    render_week2()
-elif selected_week == "Week 3 · RAG":
-    render_week3()
-else:
-    render_week4()
+PAGES[selected]()

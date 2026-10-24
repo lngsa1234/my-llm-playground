@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from core.rag import (
+from core.week3.rag import (
     ABSTENTION,
     Chunk,
     Document,
@@ -16,7 +16,7 @@ from core.rag import (
     load_documents,
     retrieve,
 )
-from core.week3 import _answer_scores, _expected_found
+from core.week3.evaluation import answer_scores, expected_found
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -152,8 +152,8 @@ def test_hybrid_retrieval_keeps_a_title_linked_second_hop(monkeypatch):
         build_latency_seconds=0.0,
         embedding_tokens=0,
     )
-    monkeypatch.setattr("core.rag.OpenAI", lambda: object())
-    monkeypatch.setattr("core.rag.embed_texts", lambda client, texts, model: ([[0.0]], 1))
+    monkeypatch.setattr("core.week3.rag.OpenAI", lambda: object())
+    monkeypatch.setattr("core.week3.rag.embed_texts", lambda client, texts, model: ([[0.0]], 1))
 
     results, _, _ = retrieve(index, "What position did the woman in Kiss and Tell hold?", top_k=2)
 
@@ -178,8 +178,8 @@ def test_linked_chunk_outside_initial_candidates_has_no_fused_rank(monkeypatch):
         build_latency_seconds=0.0,
         embedding_tokens=0,
     )
-    monkeypatch.setattr("core.rag.OpenAI", lambda: object())
-    monkeypatch.setattr("core.rag.embed_texts", lambda client, texts, model: ([[0.0]], 1))
+    monkeypatch.setattr("core.week3.rag.OpenAI", lambda: object())
+    monkeypatch.setattr("core.week3.rag.embed_texts", lambda client, texts, model: ([[0.0]], 1))
 
     results, _, _ = retrieve(index, "What position did the woman in Kiss and Tell hold?", top_k=3)
 
@@ -191,7 +191,7 @@ def test_low_similarity_abstains_without_calling_the_llm(monkeypatch):
     def unexpected_client():
         raise AssertionError("The LLM should not be called when evidence is insufficient")
 
-    monkeypatch.setattr("core.rag.OpenAI", unexpected_client)
+    monkeypatch.setattr("core.week3.rag.OpenAI", unexpected_client)
     result = generate_with_rag(
         "test-model",
         "Does NovaTech reimburse gym memberships?",
@@ -208,12 +208,12 @@ def test_low_similarity_abstains_without_calling_the_llm(monkeypatch):
 def test_multi_hop_evidence_requires_every_supporting_document():
     item = {"evidence": ["first.md", "second.md"]}
 
-    assert _expected_found(item, [{"source": "first.md"}, {"source": "second.md"}]) is True
-    assert _expected_found(item, [{"source": "first.md"}]) is False
+    assert expected_found(item, [{"source": "first.md"}, {"source": "second.md"}]) is True
+    assert expected_found(item, [{"source": "first.md"}]) is False
 
 
 def test_answer_score_ignores_the_sources_line():
-    exact, f1 = _answer_scores("Chief of Protocol\nSources: kiss-and-tell.md", "Chief of Protocol")
+    exact, f1 = answer_scores("Chief of Protocol\nSources: kiss-and-tell.md", "Chief of Protocol")
 
     assert exact == 1.0
     assert f1 == 1.0

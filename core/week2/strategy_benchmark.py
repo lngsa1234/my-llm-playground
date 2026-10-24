@@ -1,15 +1,14 @@
-"""Demo 1: a reproducible context-strategy benchmark."""
+"""Week 2 Demo 1 core logic: a reproducible context-strategy benchmark."""
 
-import os
 import re
 import time
 from collections import Counter
 
-import streamlit as st
 from openai import OpenAI
 
-from core.context_builder import estimate_tokens
-from core.longbench_subset import download_subset, load_cached_cases
+from core.common import ModelSettings
+from core.week2.context_builder import estimate_tokens
+from core.week2.longbench_subset import download_subset, load_cached_cases
 
 INSTRUCTION = "Summarize the current requirements for the file-processing API. Identify the active timeout, supported file types, authentication requirements, and unresolved issues."
 EXPECTED_FACTS = {
@@ -214,136 +213,62 @@ def _generate_query_summary(model: str, question: str, history: list[tuple[str, 
     }
 
 
-def render_demo1() -> None:
-    st.subheader("Context Strategy Benchmark")
-    st.caption("Run independent calls against one selected synthetic API dataset.")
-    left, right = st.columns([0.9, 1.1], gap="large")
-    with left:
-        model_column, token_column, input_price_column, output_price_column = st.columns(4)
-        with model_column:
-            model = st.text_input("Model", "gpt-5.4-mini", key="demo1_model")
-        with token_column:
-            max_output = st.number_input("Max output tokens", 200, 3000, 700, 100, key="demo1_max_output")
-        with input_price_column:
-            input_price = st.number_input("Input $ / 1M", 0.0, 0.75, format="%.4f", key="demo1_in_price")
-        with output_price_column:
-            output_price = st.number_input("Output $ / 1M", 0.0, 4.50, format="%.4f", key="demo1_out_price")
-        official_name = "Official LongBench · HotpotQA subset"
-        dataset_name = st.selectbox("Dataset", list(DATASETS) + [official_name], key="demo1_dataset")
-        if dataset_name == official_name:
-            cases = load_cached_cases()
-            if cases is None:
-                st.info("This option downloads the official LongBench archive once (about 109 MB), then caches only ten HotpotQA cases locally.")
-                if st.button("Download official LongBench subset", key="demo1_download_longbench"):
-                    try:
-                        with st.spinner("Downloading and preparing the official subset…"):
-                            download_subset()
-                        st.rerun()
-                    except Exception as exc:
-                        st.error(f"LongBench download failed: {exc}")
-                return
-            case_labels = [f"Question {index}: {case['input'][:58]}…" for index, case in enumerate(cases, start=1)]
-            chosen_case = st.selectbox("HotpotQA question", range(len(cases)), format_func=lambda index: case_labels[index], key="demo1_longbench_case")
-            dataset = _longbench_case_dataset(cases[chosen_case])
-            case_key = f"{dataset_name}_{chosen_case}"
-        else:
-            dataset = DATASETS[dataset_name]
-            case_key = dataset_name
-        current_history = dataset["history"]
-        context_budget = 16_000 if dataset.get("official") else 1_800
-        st.markdown("**Strategies**")
-        strategy_options = ["S0 · Baseline", "S1 · Full history", "S2 · Recent window", "S3 · Summary + recent", "S4 · Keyword retrieval"]
-        strategies = [
-            strategy for index, strategy in enumerate(strategy_options)
-            if st.checkbox(strategy, value=strategy in {"S0 · Baseline", "S2 · Recent window", "S4 · Keyword retrieval"}, key=f"demo1_{index}")
-        ]
-        with st.expander("Benchmark Dataset and Expected Facts"):
-            st.markdown("**Conversation history**")
-            for message_id, role, content in current_history:
-                if role == "document":
-                    with st.container(border=True):
-                        st.caption(f"[{message_id}] Document passage")
-                        st.write(content)
-                else:
-                    with st.chat_message(role):
-                        st.write(f"[{message_id}] {role.title()}: {content}")
-            st.markdown("**Expected facts**")
-            st.dataframe(
-                [{"Requirement": name.title(), "Expected terms": ", ".join(words)} for name, words in dataset["expected_facts"].items()],
-                use_container_width=True, hide_index=True,
+OFFICIAL_DATASET = "Official LongBench · HotpotQA subset"
+STRATEGIES = ["S0 · Baseline", "S1 · Full history", "S2 · Recent window", "S3 · Summary + recent", "S4 · Keyword retrieval"]
+DEFAULT_STRATEGIES = {"S0 · Baseline", "S2 · Recent window", "S4 · Keyword retrieval"}
+
+
+def longbench_dataset(case: dict) -> dict:
+    return _longbench_case_dataset(case)
+
+
+def context_budget(dataset: dict) -> int:
+    return 16_000 if dataset.get("official") else 1_800
+
+
+def run_strategy_benchmark(settings: ModelSettings, dataset: dict, instruction: str, strategies: list[str], case_key: str, progress=None) -> list[dict]:
+    """Run one LLM call per strategy against the same dataset and score each answer."""
+    history = dataset["history"]
+    results = []
+    summary = dataset["summary"]
+    summary_metrics = None
+    summary_error = None
+    if "S3 · Summary + recent" in strategies and not summary:
+        try:
+            if progress:
+                progress("Generating query-focused document summary…")
+            summary, summary_metrics = _generate_query_summary(settings.model, instruction, history, settings.max_output_tokens)
+            if not summary or not summary.strip():
+                raise ValueError("The model returned an empty summary.")
+        except Exception as exc:  # noqa: BLE001
+            summary_error = str(exc)
+    for strategy in strategies:
+        if strategy == "S3 · Summary + recent" and summary_error:
+            results.append({"case_key": case_key, "strategy": strategy, "error": f"Summary generation failed; this strategy was not run: {summary_error}", "context": None, "evidence_recall": None})
+            continue
+        built = build_benchmark_context(strategy, instruction, history, summary, context_budget(dataset))
+        evidence = set(built["source_ids"]) & set(dataset["evidence_ids"])
+        evidence_recall = len(evidence) / len(dataset["evidence_ids"]) if dataset["evidence_ids"] else None
+        try:
+            if progress:
+                progress(f"Running {strategy}…")
+            started = time.perf_counter()
+            response_instruction = (
+                "Answer only from the supplied context. Return only the short final answer; do not include reasoning, explanation, or citations. "
+                "If the answer is absent, return exactly: Insufficient information."
+                if dataset.get("official")
+                else "Answer only from supplied context. Clearly identify missing information."
             )
+            response = OpenAI().responses.create(model=settings.model, instructions=response_instruction, input=built["context"], max_output_tokens=settings.max_output_tokens)
             if dataset.get("official"):
-                st.caption(f"Official LongBench reference answer: {dataset['reference_answer']}")
-    if "demo1_results" not in st.session_state:
-        st.session_state.demo1_results = []
-    with right:
-        instruction = st.text_area("Benchmark instruction", dataset["instruction"], key=f"demo1_instruction_{case_key}", height=95)
-        if st.button("Run benchmark", type="primary", disabled=not strategies, key="demo1_run", use_container_width=True):
-            if not os.getenv("OPENAI_API_KEY"):
-                st.error("OPENAI_API_KEY is not configured.")
+                accuracy, facts = _longbench_f1(response.output_text, dataset["reference_answers"])
             else:
-                results = []
-                summary = dataset["summary"]
-                summary_metrics = None
-                summary_error = None
-                if "S3 · Summary + recent" in strategies and not summary:
-                    try:
-                        with st.spinner("Generating query-focused document summary…"):
-                            summary, summary_metrics = _generate_query_summary(model, instruction, current_history, int(max_output))
-                        if not summary or not summary.strip():
-                            raise ValueError("The model returned an empty summary.")
-                    except Exception as exc:
-                        summary_error = str(exc)
-                for strategy in strategies:
-                    if strategy == "S3 · Summary + recent" and summary_error:
-                        results.append({"dataset": dataset_name, "case_key": case_key, "strategy": strategy, "error": f"Summary generation failed; this strategy was not run: {summary_error}", "context": None, "evidence_recall": None})
-                        continue
-                    built = build_benchmark_context(strategy, instruction, current_history, summary, context_budget)
-                    evidence = set(built["source_ids"]) & set(dataset["evidence_ids"])
-                    evidence_recall = len(evidence) / len(dataset["evidence_ids"]) if dataset["evidence_ids"] else None
-                    try:
-                        with st.spinner(f"Running {strategy}…"):
-                            started = time.perf_counter()
-                            response_instruction = (
-                                "Answer only from the supplied context. Return only the short final answer; do not include reasoning, explanation, or citations. "
-                                "If the answer is absent, return exactly: Insufficient information."
-                                if dataset.get("official")
-                                else "Answer only from supplied context. Clearly identify missing information."
-                            )
-                            response = OpenAI().responses.create(model=model, instructions=response_instruction, input=built["context"], max_output_tokens=int(max_output))
-                        if dataset.get("official"):
-                            accuracy, facts = _longbench_f1(response.output_text, dataset["reference_answers"])
-                        else:
-                            correct, total, facts = _score(response.output_text, dataset["expected_facts"])
-                            accuracy = correct / total
-                        cost = (response.usage.input_tokens * input_price + response.usage.output_tokens * output_price) / 1_000_000
-                        if strategy == "S3 · Summary + recent" and summary_metrics:
-                            cost += (summary_metrics["input_tokens"] * input_price + summary_metrics["output_tokens"] * output_price) / 1_000_000
-                        results.append({"dataset": dataset_name, "case_key": case_key, "strategy": strategy, "response": response.output_text, "context": built, "input_tokens": response.usage.input_tokens, "output_tokens": response.usage.output_tokens, "latency": time.perf_counter() - started, "accuracy": accuracy, "facts": facts, "evidence_recall": evidence_recall, "cost": cost, "summary_metrics": summary_metrics if strategy == "S3 · Summary + recent" else None})
-                    except Exception as exc:
-                        results.append({"dataset": dataset_name, "case_key": case_key, "strategy": strategy, "error": str(exc), "context": built, "evidence_recall": evidence_recall})
-                st.session_state.demo1_results = results
-        results = [result for result in st.session_state.demo1_results if result.get("dataset") == dataset_name and result.get("case_key") == case_key]
-        st.subheader("Benchmark results")
-        if not results:
-            st.info("Select one or more strategies, then run the benchmark.")
-        else:
-            metric_label = "Answer F1" if dataset.get("official") else "Fact coverage"
-            table = [{"Strategy": r["strategy"], metric_label: f"{r.get('accuracy', 0):.0%}", "Evidence recall": f"{r['evidence_recall']:.0%}" if r.get("evidence_recall") is not None else "N/A", "Input": r.get("input_tokens", "—"), "Output": r.get("output_tokens", "—"), "Latency": f"{r.get('latency', 0):.2f}s", "Cost": f"${r.get('cost', 0):.5f}"} for r in results]
-            st.dataframe(table, use_container_width=True, hide_index=True)
-            tabs = st.tabs([r["strategy"] for r in results])
-            for tab, result in zip(tabs, results):
-                with tab:
-                    if "error" in result:
-                        st.error(result["error"])
-                    else:
-                        evidence_label = f"{result['evidence_recall']:.0%}" if result["evidence_recall"] is not None else "N/A for this official record"
-                        st.caption(f"Reference facts found: {', '.join(result['facts']) or 'none'} · Evidence recall: {evidence_label}")
-                        if result.get("summary_metrics"):
-                            metrics = result["summary_metrics"]
-                            st.caption(f"Generated summary: {metrics['input_tokens']} input tokens, {metrics['output_tokens']} output tokens, {metrics['latency']:.2f}s. Its cost is included above.")
-                        st.info(result["response"] or "No visible response returned.")
-                    if result["context"]:
-                        with st.expander("Constructed Context to LLM"):
-                            st.caption(f"{result['context']['provenance']} · IDs: {', '.join(result['context']['source_ids']) or 'none'} · Estimated: {result['context']['estimated_tokens']} tokens")
-                            st.code(result["context"]["context"], language="text")
+                correct, total, facts = _score(response.output_text, dataset["expected_facts"])
+                accuracy = correct / total
+            cost = settings.cost(response.usage.input_tokens, response.usage.output_tokens)
+            if strategy == "S3 · Summary + recent" and summary_metrics:
+                cost += settings.cost(summary_metrics["input_tokens"], summary_metrics["output_tokens"])
+            results.append({"case_key": case_key, "strategy": strategy, "response": response.output_text, "context": built, "input_tokens": response.usage.input_tokens, "output_tokens": response.usage.output_tokens, "latency": time.perf_counter() - started, "accuracy": accuracy, "facts": facts, "evidence_recall": evidence_recall, "cost": cost, "summary_metrics": summary_metrics if strategy == "S3 · Summary + recent" else None})
+        except Exception as exc:  # noqa: BLE001
+            results.append({"case_key": case_key, "strategy": strategy, "error": str(exc), "context": built, "evidence_recall": evidence_recall})
+    return results

@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from core.state_manager import RUNS_DIRECTORY, load_state, new_goal_state, save_state
+from core.week2.state_manager import RUNS_DIRECTORY, load_state, new_goal_state, save_state
 
 
 def test_state_round_trips(tmp_path):

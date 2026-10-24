@@ -1,15 +1,13 @@
-"""Week 4 Streamlit lab: a weather assistant with a real weather integration."""
+"""Week 4 core logic: a tool-calling weather assistant using live Open-Meteo data."""
 
 from __future__ import annotations
 
 import json
-import os
 import time
 from datetime import date, timedelta
 from typing import Any
 
 import requests
-import streamlit as st
 from openai import OpenAI
 
 
@@ -199,7 +197,8 @@ def get_weekend_forecast(location: str, today: date | None = None) -> dict[str, 
         }
 
 
-def run_direct_agent(prompt: str, model: str, use_tools: bool = True) -> dict[str, Any]:
+def run_direct_agent(prompt: str, model: str, use_tools: bool = True, max_tool_rounds: int = 5,
+                     max_output_tokens: int | None = None) -> dict[str, Any]:
     """Run the agent with optional weather tools and retain its trace for the lab UI."""
     instructions = system_prompt()
     if not use_tools:
@@ -214,8 +213,10 @@ def run_direct_agent(prompt: str, model: str, use_tools: bool = True) -> dict[st
     ]
     trace: list[dict[str, Any]] = []
     start = time.perf_counter()
-    for _ in range(5):
+    for _ in range(max_tool_rounds):
         request: dict[str, Any] = {"model": model, "messages": messages}
+        if max_output_tokens:
+            request["max_completion_tokens"] = max_output_tokens
         if use_tools:
             request.update({"tools": [WEATHER_TOOL, WEEKEND_FORECAST_TOOL], "tool_choice": "auto"})
         response = OpenAI().chat.completions.create(**request)
@@ -312,12 +313,12 @@ LIVE_BENCHMARKS = [
 ]
 
 
-def run_live_benchmark(model: str) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+def run_live_benchmark(model: str, max_tool_rounds: int = 5, max_output_tokens: int | None = None) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     """Score a small live set for tool selection and location arguments."""
     rows: list[dict[str, Any]] = []
     details: list[dict[str, Any]] = []
     for case in LIVE_BENCHMARKS:
-        result = run_direct_agent(case["prompt"], model)
+        result = run_direct_agent(case["prompt"], model, max_tool_rounds=max_tool_rounds, max_output_tokens=max_output_tokens)
         actual_calls = []
         for entry in result["trace"]:
             try:
@@ -342,87 +343,3 @@ def run_live_benchmark(model: str) -> tuple[list[dict[str, Any]], list[dict[str,
         )
         details.append({"prompt": case["prompt"], **result})
     return rows, details
-
-
-def render_week4() -> None:
-    """Render the Week 4 weather assistant and its benchmark results."""
-    st.header("Week 4 · Weather Assistant")
-    st.caption("Ask about current conditions or which upcoming-weekend day is best, and inspect the live data.")
-
-    st.markdown(
-        "The assistant can look up current weather and the upcoming Saturday/Sunday forecast for named "
-        "locations. For example: *I want to take my kids hiking this weekend in Detroit. Which day is better? "
-        "I don't like rain and ideally it should be above 60°F.*"
-    )
-    left, right = st.columns([3, 1])
-    with left:
-        # Streamlit retains keyed widget values between reruns. Upgrade only the old
-        # stock value so a user's own in-progress question is never overwritten.
-        if st.session_state.get("week4_prompt") == LEGACY_DEFAULT_PROMPT:
-            st.session_state.week4_prompt = DEFAULT_PROMPT
-        prompt = st.text_area(
-            "Try a prompt",
-            DEFAULT_PROMPT,
-            key="week4_prompt",
-            height=90,
-        )
-    with right:
-        model = st.text_input("Model", os.getenv("OPENAI_MODEL", "gpt-4o-mini"), key="week4_model")
-        run_with_tools = st.button("Run with tools", type="primary", use_container_width=True)
-        run_without_tools = st.button("Run without tools", use_container_width=True)
-    if run_with_tools or run_without_tools:
-        if not os.getenv("OPENAI_API_KEY"):
-            st.error("OPENAI_API_KEY is not configured.")
-        elif not prompt.strip() or not model.strip():
-            st.warning("Enter both a prompt and model.")
-        else:
-            try:
-                use_tools = run_with_tools
-                spinner_message = "Model deciding; runtime executing any requested tools…" if use_tools else "Running model without weather tools…"
-                with st.spinner(spinner_message):
-                    st.session_state.week4_result = run_direct_agent(prompt, model.strip(), use_tools=use_tools)
-            except Exception as exc:
-                st.error(f"Agent request failed: {type(exc).__name__}: {exc}")
-    result = st.session_state.get("week4_result")
-    if result:
-        st.subheader("Final answer")
-        st.caption(result.get("mode", "With tools"))
-        st.write(result["answer"])
-        count, latency = st.columns(2)
-        count.metric("Tool calls", len(result["trace"]))
-        latency.metric("Runtime latency", f"{result['latency']:.2f}s")
-        with st.expander("Inspect runtime trace", expanded=True):
-            if result["trace"]:
-                st.json(result["trace"])
-            else:
-                st.info("No tool requested: this is the expected outcome for conceptual questions.")
-    with st.expander("Tool schemas supplied to the model"):
-        st.json([WEATHER_TOOL, WEEKEND_FORECAST_TOOL])
-
-    st.divider()
-    st.subheader("Benchmark results")
-    st.caption(
-        f"Run {len(LIVE_BENCHMARKS)} prompts against the selected model to measure tool selection and "
-        "location arguments. This makes OpenAI and weather-provider requests."
-    )
-    if st.button("Run live benchmark", use_container_width=True):
-        if not os.getenv("OPENAI_API_KEY"):
-            st.error("OPENAI_API_KEY is not configured.")
-        elif not model.strip():
-            st.warning("Enter a model first.")
-        else:
-            try:
-                with st.spinner(f"Running {len(LIVE_BENCHMARKS)} benchmark prompts…"):
-                    rows, details = run_live_benchmark(model.strip())
-                st.session_state.week4_benchmark = {"rows": rows, "details": details}
-            except Exception as exc:
-                st.error(f"Benchmark failed: {type(exc).__name__}: {exc}")
-    benchmark = st.session_state.get("week4_benchmark")
-    if benchmark:
-        rows = benchmark["rows"]
-        total = len(rows) * 2
-        passed = sum(row["Tool selection"] == "PASS" for row in rows) + sum(row["Arguments"] == "PASS" for row in rows)
-        st.metric("Live benchmark checks", f"{passed} / {total} passed")
-        st.dataframe(rows, use_container_width=True, hide_index=True)
-        with st.expander("Inspect benchmark responses"):
-            st.json(benchmark["details"])

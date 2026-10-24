@@ -11,7 +11,7 @@ from uuid import uuid4
 
 # Resolve storage from this module rather than the terminal directory that
 # launched Streamlit, so Demo 2 always writes inside this repository.
-RUNS_DIRECTORY = Path(__file__).resolve().parent.parent / "runs"
+RUNS_DIRECTORY = Path(__file__).resolve().parents[2] / "runs"
 
 WORKFLOW = [
     ("Understand", "Extract the goal's requirements, constraints, assumptions, and open questions."),

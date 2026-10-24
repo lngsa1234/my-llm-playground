@@ -1,5 +1,5 @@
-from core.context_builder import build_goal_context
-from core.state_manager import add_feedback, new_goal_state
+from core.week2.context_builder import build_goal_context
+from core.week2.state_manager import add_feedback, new_goal_state
 
 
 def test_feedback_is_preserved_as_approved_requirement():
