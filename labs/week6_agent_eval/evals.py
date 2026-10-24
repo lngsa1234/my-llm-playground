@@ -54,6 +54,18 @@ def run_suite(version: str) -> list[tuple[dict, dict]]:
     return lab_common.run_suite(version)
 
 
+def grade_case(case: dict, version: str) -> dict:
+    """Run one golden case and grade it the way steps 2 and 3 do."""
+    trace = run_agent(case["input"], version)
+    task = task_step.evaluate_task(case, trace)
+    tools = tool_step.evaluate_tools(case, trace)
+    tool_problems = tools["arg_errors"] + [f"forbidden tool called: {f}" for f in tools["forbidden_calls"]]
+    if not tools["order_ok"] and not tool_problems:
+        tool_problems.append(f"expected path {' → '.join(tools['expected']) or '(no tools)'}")
+    return {"trace": trace, "task_passed": task["passed"], "task_failed": task["failed"],
+            "tools_passed": tools["passed"], "tool_problems": tool_problems}
+
+
 # ------------------------------------------------------- step 1: dataset
 def dataset_report(cases: list[dict]) -> dict:
     problems, warnings = golden.lint(cases)
