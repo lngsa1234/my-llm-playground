@@ -7,7 +7,7 @@ import json
 import streamlit as st
 
 from core.week1.playground import run_single_call
-from ui.components import can_run, lab_parameters, model_settings, page_header, page_layout, show_error, usage_metrics
+from ui.components import can_run, lab_parameters, model_settings, page_layout, show_error, usage_metrics
 
 HOW_IT_WORKS = """
 1. Your **system instructions** and **user prompt** are sent in one API request, with the model and max output tokens from ⚙️ Model settings.
@@ -18,10 +18,9 @@ HOW_IT_WORKS = """
 
 
 def render() -> None:
-    page_header("Week 1 · Single API Call",
+    main, panel = page_layout("Week 1 · Single API Call",
                 "Explore one independent API call: its response, token use, latency and estimated cost.",
                 HOW_IT_WORKS)
-    main, panel = page_layout()
     settings = model_settings(panel)
     with lab_parameters(panel):
         output_format = st.radio("Output format", ["Text", "Structured output"], horizontal=True, key="week1_format")

@@ -61,12 +61,12 @@ pytest
 Every week's page has the same layout:
 
 - **Left sidebar** — choose the week.
-- **Main area** — a one-line description, a "How this lab works" explainer, then inputs, a run button and results with the same token, latency and cost metrics.
+- **Main area** — the week title, a one-line description, a "How this lab works" explainer, then inputs, a run button and results with the same token, latency and cost metrics.
 - **Right panel** — one box with two sections stacked in a single column:
   - **⚙️ Model settings** — model, max output tokens and $/1M token prices (plus the embedding model in Week 3). The values are shared across weeks, so set them once. The default is `gpt-5.4-mini`, with matching default prices; change both together if you switch models.
   - **🧪 Lab parameters** — the settings specific to that week, such as output format (Week 1), the demo and its dataset or strategies (Week 2), chunk size and Top-K (Week 3), or max tool-call rounds (Week 4).
 
-To add a week: put its logic in `core/weekN/`, add `ui/weekN.py` with a `render()` function that calls `page_layout()`, `model_settings()` and `lab_parameters()` from `ui/components.py`, and register it in `PAGES` in `app.py`.
+To add a week: put its logic in `core/weekN/`, add `ui/weekN.py` with a `render()` function that calls `page_layout()` (title, caption, explainer), `model_settings()` and `lab_parameters()` from `ui/components.py`, and register it in `PAGES` in `app.py`.
 
 The standalone Week 1 API scripts are in [`exercises/week1/`](exercises/week1/).
 

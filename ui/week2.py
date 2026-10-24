@@ -9,7 +9,7 @@ from core.week2 import goal_replay, goal_workflow, strategy_benchmark as bench
 from core.week2.evaluator import validate_final_output
 from core.week2.longbench_subset import download_subset, load_cached_cases
 from core.week2.state_manager import WORKFLOW, load_state
-from ui.components import can_run, lab_parameters, metric_row, model_settings, page_header, page_layout, show_error
+from ui.components import can_run, lab_parameters, metric_row, model_settings, page_layout, show_error
 
 HOW_IT_WORKS = """
 - **Demo 1 · Strategy benchmark** — the same question is answered with five different contexts (none, full history, recent window, summary, keyword retrieval). Compare fact coverage, tokens and cost.
@@ -24,10 +24,9 @@ DEMOS = ["Demo 1 · Strategy benchmark", "Demo 2 · Multi-run builder", "Demo 3 
 
 
 def render() -> None:
-    page_header("Week 2 · Context Engineering",
+    main, panel = page_layout("Week 2 · Context Engineering",
                 "Choose what the model sees on each call, and measure what that choice costs and changes.",
                 HOW_IT_WORKS)
-    main, panel = page_layout()
     settings = model_settings(panel)
     with lab_parameters(panel):
         demo = st.radio("Demo", DEMOS, key="week2_demo")

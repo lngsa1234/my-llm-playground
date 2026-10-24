@@ -5,7 +5,7 @@ from __future__ import annotations
 import streamlit as st
 
 from core.week4 import weather
-from ui.components import can_run, lab_parameters, metric_row, model_settings, page_header, page_layout, show_error
+from ui.components import can_run, lab_parameters, metric_row, model_settings, page_layout, show_error
 
 HOW_IT_WORKS = """
 1. The model receives your prompt plus two **tool schemas**: `get_weather` (current conditions) and `get_weekend_forecast` (upcoming Saturday and Sunday).
@@ -17,10 +17,9 @@ HOW_IT_WORKS = """
 
 
 def render() -> None:
-    page_header("Week 4 · Weather Assistant",
+    main, panel = page_layout("Week 4 · Weather Assistant",
                 "Ask about current conditions or which weekend day is best, and inspect every tool call.",
                 HOW_IT_WORKS)
-    main, panel = page_layout()
     settings = model_settings(panel, prices=False)
     with lab_parameters(panel):
         max_rounds = int(st.slider("Max tool-call rounds", 1, 10, 5, key="week4_max_rounds"))

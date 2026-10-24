@@ -10,8 +10,7 @@ Page layout used by every week:
 
 Usage in a page:
 
-    page_header(...)
-    main, panel = page_layout()
+    main, panel = page_layout(title, caption, how_it_works)
     settings = model_settings(panel)
     with lab_parameters(panel):
         ...widgets...
@@ -61,12 +60,16 @@ def page_header(title: str, caption: str, how_it_works: str | None = None) -> No
             st.markdown(how_it_works)
 
 
-def page_layout():
-    """Split the page into the main column and a single right-hand settings panel.
+def page_layout(title: str, caption: str, how_it_works: str | None = None):
+    """Split the page into the main column and a full-height right-hand settings panel.
 
-    Model settings and lab parameters share one bordered box, stacked in one column.
+    The header and "How this lab works" go inside the main column, so the settings
+    panel starts at the top of the page. Model settings and lab parameters share
+    one bordered box, stacked in one column.
     """
     main, column = st.columns(PANEL_RATIO, gap="large")
+    with main:
+        page_header(title, caption, how_it_works)
     return main, column.container(border=True)
 
 
