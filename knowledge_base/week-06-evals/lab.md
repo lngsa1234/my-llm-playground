@@ -1,4 +1,4 @@
-# Week 6 Agent Evaluation Lab
+# Week 6 · Evals — Lab: Agent Evaluation
 
 **Golden Datasets → Task Success → Tool Evaluation → LLM-as-a-Judge → Regression Testing**
 
@@ -9,4 +9,4 @@ The full lab guide and runnable code are in [`agent-eval-lab/`](../../agent-eval
 - **Lab guide:** [agent-eval-lab/README.md](../../agent-eval-lab/README.md)
 - **Run everything:** `cd agent-eval-lab && python3 run_all.py`
 
-No installs are needed (Python 3.9+, standard library only), and it runs offline. Background reading: [Agent Evaluation Fundamentals](fundamentals.md) and [Public Benchmarks for Agent Evaluation](benchmarks.md).
+No installs are needed (Python 3.9+, standard library only), and it runs offline. Background reading: [Agent Evaluation Fundamentals](concepts.md) and [Public Benchmarks for Agent Evaluation](concepts-benchmarks.md).

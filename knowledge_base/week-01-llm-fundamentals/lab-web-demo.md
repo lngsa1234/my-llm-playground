@@ -1,6 +1,6 @@
-# Week 1 Option — Build a web demo
+# Week 1 · LLM Fundamentals — Lab Extension: Build a Web Demo
 
-An optional extension of the [Week 1 Lab](lab.md): turn the terminal experiments into a two-column Streamlit "LLM Playground".
+An optional extension of the [Week 1 lab](lab.md): turn the terminal experiments into a two-column Streamlit "LLM Playground".
 
 ## Step 1 — Install the web dependencies
 

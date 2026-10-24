@@ -1,4 +1,4 @@
-# Week 3 — Retrieval-Augmented Generation (RAG)
+# Week 3 · RAG — Concepts
 
 **Learning goal:** Understand why RAG exists, how a basic RAG pipeline works, and how retrieval quality affects the final LLM answer.
 

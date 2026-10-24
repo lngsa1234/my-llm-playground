@@ -1,4 +1,4 @@
-# Week 5 | Agent Engineering
+# Week 5 · Agent Engineering — Concepts
 
 **Topics:** State · Workflow · Control Loop · Routing · Agent Orchestration
 

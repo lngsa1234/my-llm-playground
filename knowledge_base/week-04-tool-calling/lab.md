@@ -1,4 +1,4 @@
-# Week 4 Lab: Tool Calling & MCP — Weather Assistant
+# Week 4 · Tool Calling — Lab: Weather Assistant with Tool Calling & MCP
 
 > The repository's own implementation of this lab lives in [`weather-agent-lab/`](../../weather-agent-lab/) and the **Week 4 · Weather Assistant** tab of [`app.py`](../../app.py).
 

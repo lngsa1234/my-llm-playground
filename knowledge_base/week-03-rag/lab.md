@@ -1,4 +1,4 @@
-# Week 3 Lab — Build a RAG System from Scratch
+# Week 3 · RAG — Lab: Build a RAG System from Scratch
 
 ## Retrieval-Augmented Generation: From Documents → Retrieval → Grounded Answers
 

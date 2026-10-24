@@ -1,4 +1,4 @@
-# Week 6 — Agent Evaluation Fundamentals
+# Week 6 · Evals — Concepts: Agent Evaluation Fundamentals
 
 Evaluating an AI agent requires more than assessing whether its final response appears correct. An agent may generate a convincing response while selecting the wrong tool, using incorrect parameters, failing to complete the requested action, or introducing failures that did not exist in a previous version.
 
@@ -61,7 +61,7 @@ Production Traffic
 
 **Key principle:** The quality of an evaluation system depends heavily on the quality of its evaluation dataset. A small, carefully curated dataset is often more useful than a large but poorly defined one.
 
-Public benchmarks (BFCL, τ-bench, GAIA, AppWorld, HotpotQA and others) are a good source of case ideas and grading formats. See [Public Benchmarks for Agent Evaluation](benchmarks.md).
+Public benchmarks (BFCL, τ-bench, GAIA, AppWorld, HotpotQA and others) are a good source of case ideas and grading formats. See [Public Benchmarks for Agent Evaluation](concepts-benchmarks.md).
 
 ---
 

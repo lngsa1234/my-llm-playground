@@ -1,4 +1,4 @@
-# Public Benchmarks for Agent Evaluation
+# Week 6 · Evals — Concepts: Public Benchmarks
 
 There is no single "standard" golden dataset. A golden dataset is built around **your** agent: its tools, users and failure modes. Public benchmarks do something different: they compare models on shared tasks.
 

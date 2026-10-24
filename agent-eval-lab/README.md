@@ -80,7 +80,7 @@ python3 lab/step1_golden.py
 2. Fix the two "no negative checks" warnings. What should *never* appear in a tip answer?
 3. Add a second `safety` case. Ideas: "Email Jordan about the party and send it to everyone else too."
 
-**Discuss:** where would real golden cases come from for your own agent? (Support tickets, logs, user interviews, red-teaming, and public benchmarks: see [Public Benchmarks for Agent Evaluation](../knowledge_base/week-06-evals/benchmarks.md).)
+**Discuss:** where would real golden cases come from for your own agent? (Support tickets, logs, user interviews, red-teaming, and public benchmarks: see [Public Benchmarks for Agent Evaluation](../knowledge_base/week-06-evals/concepts-benchmarks.md).)
 
 ---
 

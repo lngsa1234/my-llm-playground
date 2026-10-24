@@ -1,4 +1,4 @@
-# Week 2 Lab — From Single-Call Context to Multi-Run AI Systems
+# Week 2 · Context Engineering — Lab: From Single-Call Context to Multi-Run AI Systems
 
 **Tips: This is only for the purpose of reference. Please feel free to make any adjustments or changes for your own demo.**
 

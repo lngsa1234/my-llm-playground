@@ -27,7 +27,7 @@ The documents the RAG questions are asked about live in [`rag_corpus/`](../rag_c
 
 ## `public/` — Public agent-evaluation benchmarks
 
-For what each benchmark tests and how it's graded, see [Public Benchmarks for Agent Evaluation](../knowledge_base/week-06-evals/benchmarks.md).
+For what each benchmark tests and how it's graded, see [Public Benchmarks for Agent Evaluation](../knowledge_base/week-06-evals/concepts-benchmarks.md).
 
 ### Committed samples
 

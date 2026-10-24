@@ -1,4 +1,4 @@
-# Week 4 — MCP Knowledge Base
+# Week 4 · Tool Calling — Concepts: MCP
 
 ## 1. What is MCP?
 

@@ -1,4 +1,4 @@
-# Week 4 — Tool Calling Knowledge Base
+# Week 4 · Tool Calling — Concepts
 
 ## 1. What is Tool Calling?
 
@@ -368,7 +368,7 @@ MCP Server
  └── Filesystem
 ```
 
-MCP is therefore **not a replacement for tool calling**. It can be part of the infrastructure through which tools are discovered and invoked. See the [MCP knowledge base](mcp-knowledge-base.md).
+MCP is therefore **not a replacement for tool calling**. It can be part of the infrastructure through which tools are discovered and invoked. See the [MCP knowledge base](concepts-mcp.md).
 
 ---
 

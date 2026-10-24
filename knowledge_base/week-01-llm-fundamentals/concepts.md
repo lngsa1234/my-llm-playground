@@ -1,4 +1,4 @@
-# Week 1 Basics — Learning LLM Concepts
+# Week 1 · LLM Fundamentals — Concepts
 
 Since we're learning LLM basics with the goal of building AI agents, I would organize the concepts into three layers:
 

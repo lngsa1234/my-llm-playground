@@ -1,4 +1,4 @@
-# Week 1 Lab — Build Your First LLM Application
+# Week 1 · LLM Fundamentals — Lab: Build Your First LLM Application
 
 **A quick note: This is a voluntary, self-paced learning circle. There's no pressure to complete every exercise or keep up with everyone else. Do what you can, learn at your own pace, and most importantly, have fun exploring AI together! 😊**
 
@@ -29,7 +29,7 @@ A simple LLM Playground with configurable inputs and measurable outputs.
 
 Interface mockup with illustrative metrics, not a live API connection.
 
-The basic version will display these results in the terminal. Participants who want an additional challenge can build the web version ([Week 1 Option — Build a web demo](web-demo.md)).
+The basic version will display these results in the terminal. Participants who want an additional challenge can build the web version ([Lab extension: Build a web demo](lab-web-demo.md)).
 
 ## Part 1 — Understand the architecture
 

@@ -1,4 +1,4 @@
-# Week 5 Lab — Agent Engineering
+# Week 5 · Agent Engineering — Lab: Stateful Agent Workflow in TypeScript
 
 ## Building a Stateful Agent Workflow in TypeScript
 
