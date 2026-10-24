@@ -22,7 +22,7 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("rows_file", type=Path)
     parser.add_argument("--count", type=int, default=50)
-    parser.add_argument("--output", type=Path, default=Path("knowledge_base/rag/hotpotqa_mini"))
+    parser.add_argument("--output", type=Path, default=Path("rag_corpus/hotpotqa_mini"))
     parser.add_argument("--benchmark", type=Path, default=Path("benchmark/rag/hotpotqa_mini_questions.json"))
     args = parser.parse_args()
 

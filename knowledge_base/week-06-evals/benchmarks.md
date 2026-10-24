@@ -15,7 +15,7 @@ Use them for two things:
 
 ## Tool calling
 
-Closest to **Step 2 (task success)** and **Step 3 (tool evaluation)** of the [evaluation lab](agent-eval-lab/README.md).
+Closest to **Step 2 (task success)** and **Step 3 (tool evaluation)** of the [evaluation lab](../../agent-eval-lab/README.md).
 
 | Benchmark | What it tests | How it's graded | Borrow for your golden set |
 | --- | --- | --- | --- |
@@ -49,7 +49,7 @@ For the [Week 3 RAG lab](../week-03-rag/lab.md).
 
 ## LLM-as-a-judge calibration
 
-For **Step 4** of the [evaluation lab](agent-eval-lab/README.md): check that a judge agrees with humans before trusting it.
+For **Step 4** of the [evaluation lab](../../agent-eval-lab/README.md): check that a judge agrees with humans before trusting it.
 
 | Benchmark | What it gives you |
 | --- | --- |

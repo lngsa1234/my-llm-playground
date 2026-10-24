@@ -22,8 +22,8 @@ from core.week3 import _answer_scores, _expected_found
 ROOT = Path(__file__).resolve().parents[1]
 
 
-def test_knowledge_base_loads_all_novatech_documents():
-    documents = load_documents(ROOT / "knowledge_base" / "rag" / "novatech")
+def test_rag_corpus_loads_all_novatech_documents():
+    documents = load_documents(ROOT / "rag_corpus" / "novatech")
 
     assert len(documents) == 10
     assert {document.source for document in documents} >= {

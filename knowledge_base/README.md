@@ -11,11 +11,11 @@
 | 3 · RAG | [Retrieval-Augmented Generation](week-03-rag/knowledge-base.md) | [Build a RAG System from Scratch](week-03-rag/lab.md) |
 | 4 · Tool Calling + MCP | [Tool Calling](week-04-tool-calling/tool-calling-knowledge-base.md) · [MCP](week-04-tool-calling/mcp-knowledge-base.md) | [Weather Assistant](week-04-tool-calling/lab-weather-assistant.md) |
 | 5 · Agent Engineering | [Agent Engineering](week-05-agent-engineering/knowledge-base.md) | [Stateful Agent Workflow in TypeScript](week-05-agent-engineering/lab.md) |
-| 6 · Evals | [Agent Evaluation Fundamentals](week-06-evals/fundamentals.md) · [Public benchmarks](week-06-evals/benchmarks.md) | [Agent Evaluation Lab](week-06-evals/lab.md) (runnable code in [`agent-eval-lab/`](week-06-evals/agent-eval-lab/)) |
+| 6 · Evals | [Agent Evaluation Fundamentals](week-06-evals/fundamentals.md) · [Public benchmarks](week-06-evals/benchmarks.md) | [Agent Evaluation Lab](week-06-evals/lab.md) (runnable code in [`agent-eval-lab/`](../agent-eval-lab/)) |
 
 Also: [Project Pool](project-pool.md) · [AI Engineering Interview Questions](interview-questions.md)
 
-**RAG documents:** [`rag/`](rag/) holds the document collections the Week 3 app searches: [`rag/novatech/`](rag/novatech/) (ten fictional company policies) and [`rag/hotpotqa_mini/`](rag/hotpotqa_mini/) (198 Wikipedia articles). Their question sets and the public evaluation benchmarks are in [`benchmark/`](../benchmark/).
+**Elsewhere in the repo:** lab code lives at the top level ([`agent-eval-lab/`](../agent-eval-lab/), [`weather-agent-lab/`](../weather-agent-lab/), [`app.py`](../app.py)); the Week 3 RAG documents are in [`rag_corpus/`](../rag_corpus/); question sets and public benchmarks are in [`benchmark/`](../benchmark/).
 
 ---
 

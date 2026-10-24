@@ -4,9 +4,9 @@
 
 A hands-on lab (about 2 hours) where you evaluate a small personal-assistant agent called **Muse**, then catch a sneaky "upgrade" that breaks it before it ships.
 
-The full lab guide and runnable code are in [`agent-eval-lab/`](agent-eval-lab/):
+The full lab guide and runnable code are in [`agent-eval-lab/`](../../agent-eval-lab/) at the top of the repo:
 
-- **Lab guide:** [agent-eval-lab/README.md](agent-eval-lab/README.md)
-- **Run everything:** `cd knowledge_base/week-06-evals/agent-eval-lab && python3 run_all.py`
+- **Lab guide:** [agent-eval-lab/README.md](../../agent-eval-lab/README.md)
+- **Run everything:** `cd agent-eval-lab && python3 run_all.py`
 
 No installs are needed (Python 3.9+, standard library only), and it runs offline. Background reading: [Agent Evaluation Fundamentals](fundamentals.md) and [Public Benchmarks for Agent Evaluation](benchmarks.md).

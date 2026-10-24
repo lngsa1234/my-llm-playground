@@ -16,14 +16,14 @@ benchmark/
         └── tau2-bench/          # 10 retail tasks + the retail agent policy
 ```
 
-The documents the RAG questions are asked about live in [`knowledge_base/rag/`](../knowledge_base/rag/).
+The documents the RAG questions are asked about live in [`rag_corpus/`](../rag_corpus/).
 
 ---
 
 ## `rag/` — Week 3 question sets
 
-- `questions.json` — questions about the ten fictional NovaTech documents in [`knowledge_base/rag/novatech/`](../knowledge_base/rag/novatech/).
-- `hotpotqa_mini_questions.json` — 50 HotpotQA development questions plus unanswerable checks, over the articles in [`knowledge_base/rag/hotpotqa_mini/`](../knowledge_base/rag/hotpotqa_mini/). Rebuild both with [`tools/build_hotpotqa_mini.py`](../tools/build_hotpotqa_mini.py).
+- `questions.json` — questions about the ten fictional NovaTech documents in [`rag_corpus/novatech/`](../rag_corpus/novatech/).
+- `hotpotqa_mini_questions.json` — 50 HotpotQA development questions plus unanswerable checks, over the articles in [`rag_corpus/hotpotqa_mini/`](../rag_corpus/hotpotqa_mini/). Rebuild both with [`tools/build_hotpotqa_mini.py`](../tools/build_hotpotqa_mini.py).
 
 ## `public/` — Public agent-evaluation benchmarks
 
@@ -49,7 +49,7 @@ export ANTHROPIC_API_KEY=sk-ant-...
 python3 benchmark/public/run_bfcl.py --model claude   # a real model (CLAUDE_MODEL to change it)
 ```
 
-It reports **tool selection** (right function?) and **fully correct** (right function and arguments) per category, the same levels as Step 3 of the [Week 6 eval lab](../knowledge_base/week-06-evals/agent-eval-lab/README.md). The `none` baseline scores 29%: it passes every irrelevance case and nothing else, which is a good reminder of why a benchmark needs both kinds of case.
+It reports **tool selection** (right function?) and **fully correct** (right function and arguments) per category, the same levels as Step 3 of the [Week 6 eval lab](../agent-eval-lab/README.md). The `none` baseline scores 29%: it passes every irrelevance case and nothing else, which is a good reminder of why a benchmark needs both kinds of case.
 
 The checker is simplified for teaching. For official scores, use the [BFCL harness](https://github.com/ShishirPatil/gorilla/tree/main/berkeley-function-call-leaderboard).
 
