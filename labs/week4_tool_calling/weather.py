@@ -224,11 +224,12 @@ def run_direct_agent(prompt: str, model: str, use_tools: bool = True, max_tool_r
         {"role": "user", "content": prompt},
     ]
     trace: list[dict[str, Any]] = []
+    calls: list[dict[str, Any]] = []  # one entry per model call: what was sent, tokens, what came back
     usage = {"model_calls": 0, "input_tokens": 0, "output_tokens": 0}
     start = time.perf_counter()
 
     def finish(answer: str) -> dict[str, Any]:
-        return {"answer": answer, "trace": trace, "latency": time.perf_counter() - start,
+        return {"answer": answer, "trace": trace, "calls": calls, "latency": time.perf_counter() - start,
                 "mode": "With tools" if use_tools else "Without tools", **usage}
 
     for round_number in range(1, max_tool_rounds + 1):
@@ -237,6 +238,8 @@ def run_direct_agent(prompt: str, model: str, use_tools: bool = True, max_tool_r
             request["max_completion_tokens"] = max_output_tokens
         if use_tools:
             request.update({"tools": offered, "tool_choice": "auto"})
+        sent = json.loads(json.dumps(messages, default=str))  # a snapshot: the list keeps growing
+        call_started = time.perf_counter()
         response = OpenAI().chat.completions.create(**request)
         usage["model_calls"] += 1
         tokens_in = getattr(getattr(response, "usage", None), "prompt_tokens", 0)
@@ -244,6 +247,13 @@ def run_direct_agent(prompt: str, model: str, use_tools: bool = True, max_tool_r
         usage["input_tokens"] += tokens_in if isinstance(tokens_in, int) else 0
         usage["output_tokens"] += tokens_out if isinstance(tokens_out, int) else 0
         assistant_message = response.choices[0].message
+        requested = [{"tool": c.function.name, "arguments": c.function.arguments} for c in (assistant_message.tool_calls or [])]
+        calls.append({"call": round_number, "messages": sent,
+                      "tools": [t["function"]["name"] for t in offered] if use_tools else [],
+                      "input_tokens": tokens_in if isinstance(tokens_in, int) else 0,
+                      "output_tokens": tokens_out if isinstance(tokens_out, int) else 0,
+                      "seconds": time.perf_counter() - call_started,
+                      "returned": {"tool_calls": requested} if requested else {"answer": assistant_message.content or ""}})
         messages.append(assistant_message.model_dump(exclude_none=True))
         if not assistant_message.tool_calls:
             return finish(assistant_message.content or "No visible answer was returned.")
