@@ -142,13 +142,13 @@ def _model_call(call: dict) -> None:
         st.caption("The body of the API request, as sent: `messages` (the conversation so far) and `tools` "
                    "(the full definition of each tool on offer). The API key travels in a header and isn't shown.")
         st.json(call.get("request") or {"messages": call["messages"]}, expanded=2)
-    if call.get("response"):
-        with st.expander(f"Output of model call {call['call']}"):
-            asked = "tool_calls" in call["returned"]
-            st.caption("What the model sent back: "
-                       + ("no text, only `tool_calls`: the tool name and its inputs as JSON. The app runs them next."
-                          if asked else "the answer, in `content`. No `tool_calls`, so the loop stops here."))
-            st.json(call["response"], expanded=3)
+    with st.expander(f"Output of model call {call['call']}"):
+        asked = "tool_calls" in call["returned"]
+        st.caption("What the model sent back: "
+                   + ("no text, only `tool_calls`: the tool name and its inputs as JSON. The app runs them next."
+                      if asked else "the answer, in `content`. No `tool_calls`, so the loop stops here."))
+        # Runs saved before the full response was recorded still have the summary in "returned".
+        st.json(call.get("response") or call["returned"], expanded=3)
 
 
 def _tool_run(entry: dict) -> None:
