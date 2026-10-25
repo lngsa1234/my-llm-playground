@@ -1,6 +1,6 @@
 # Agent Engineering Peer Learning Labs
 
-Over 8 weeks the circle builds **Mini Muse**, a personal-assistant agent, one component per week ([guide](knowledge_base/mini-muse.md)). Alongside it are hands-on concept labs: a single API-call playground (Week 1), a multi-run context-engineering workflow (Week 2), an inspectable Retrieval-Augmented Generation system (Week 3), a tool-calling/MCP weather assistant (Week 4), a stateful workflow agent (Week 5), agent evaluation with regression testing (Week 6), and a production reliability drill (Week 7).
+Over 8 weeks the circle builds **Mini Muse**, a personal-assistant agent, one component per week ([guide](knowledge_base/mini-muse.md)). Alongside it are hands-on concept labs: a single API-call playground (Week 1), a context-strategy explorer (Week 2), an inspectable Retrieval-Augmented Generation system (Week 3), a tool-calling/MCP weather assistant (Week 4), a stateful workflow agent (Week 5), agent evaluation with regression testing (Week 6), and a production reliability drill (Week 7).
 
 ## Repository layout
 
@@ -10,7 +10,7 @@ mini_muse/                     the course project: one file per week, wired toge
 labs/                          one self-contained folder per lab
   shared/                      settings panel and model settings shared by every page
   week1_llm_api/               one API call, structured output, command-line exercises
-  week2_context_engineering/   context strategies, multi-run goal builder, controlled replay
+  week2_context_engineering/   what the model sees: five context strategies on one question
   week3_rag/                   RAG pipeline, its documents/ and questions/, benchmark scoring
   week4_tool_calling/          weather tools, command-line agent, MCP server and client
   week5_agent_workflow/        stateful workflow agent: state, router, repair budget, bounded loop
@@ -69,6 +69,6 @@ Every week's page has the same layout:
 - **Main area** — the week title, then the switch between **🔬 Concept demo** and **🧩 Build Mini Muse**. Each part has its own one-line description and explainer (**How this lab works** or **How this step works**), then inputs, a run button and results with the same token, latency and cost metrics.
 - **Right panel** — one box with two sections stacked in a single column:
   - **⚙️ Model settings** — model, max output tokens and $/1M token prices (plus the embedding model in Week 3). The values are shared across weeks, so set them once. The default is `gpt-5.4-mini`, with matching default prices; change both together if you switch models.
-  - **🧪 Lab parameters** — the settings specific to that week, such as output format (Week 1), the demo and its dataset or strategies (Week 2), chunk size and Top-K (Week 3), max tool-call rounds (Week 4), steps, repair budget and router (Week 5), the evaluation step, agent version, judge and release gates (Week 6), or failure rates and the hardened policy (Week 7).
+  - **🧪 Lab parameters** — the settings specific to that week, such as output format (Week 1), the scenario (Week 2), chunk size and Top-K (Week 3), max tool-call rounds (Week 4), steps, repair budget and router (Week 5), the evaluation step, agent version, judge and release gates (Week 6), or failure rates and the hardened policy (Week 7).
 
 To add a lab: create `labs/weekN_topic/` with its logic, a README, `tests/`, and a `page.py` whose `render()` calls `page_layout()`, `model_settings()` and `lab_parameters()` from `labs/shared/ui.py` (copy the first lines and the `__main__` block of an existing `page.py` so it also runs alone). Then register it in `PAGES` in `app.py`.
