@@ -203,3 +203,28 @@ def mini_muse_part(main, panel, week: int, caption: str | None = None, how_it_wo
 
     render_step(week, main, panel, model_settings(panel, **settings_options))
     return True
+
+
+OWN_TEXT = "(write your own)"
+
+
+def example_text_area(label: str, examples: list[str], key: str, height: int = 70) -> str:
+    """An "Examples" picker that fills a text box, and survives leaving the page.
+
+    Streamlit forgets a widget's value when that widget is not drawn (another week,
+    or the other part of this page), but keeps plain session values. So the picked
+    example and the box's text are also saved under plain keys, and restored on return.
+    """
+    pick_key, text_key, saved_key, last_key = f"{key}_example", f"{key}_text", f"{key}_saved", f"{key}_last_example"
+    options = examples + [OWN_TEXT]
+    if pick_key not in st.session_state and st.session_state.get(last_key) in options:
+        st.session_state[pick_key] = st.session_state[last_key]
+    choice = st.selectbox("Examples", options, key=pick_key)
+    if st.session_state.get(last_key) != choice:  # a different example was picked: fill the box with it
+        st.session_state[text_key] = "" if choice == OWN_TEXT else choice
+        st.session_state[last_key] = choice
+    elif text_key not in st.session_state:  # back on the page: restore what the box held
+        st.session_state[text_key] = st.session_state.get(saved_key, "" if choice == OWN_TEXT else choice)
+    text = st.text_area(label, key=text_key, height=height)
+    st.session_state[saved_key] = text
+    return text

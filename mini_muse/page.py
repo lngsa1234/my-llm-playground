@@ -21,7 +21,7 @@ import time
 
 import streamlit as st
 
-from labs.shared.ui import (can_run, lab_parameters, metric_row, model_settings, page_layout, run_standalone,
+from labs.shared.ui import (can_run, example_text_area, lab_parameters, metric_row, model_settings, page_layout, run_standalone,
                             show_error, usage_metrics)
 from mini_muse import week1_understand, week2_memory, week3_knowledge, week4_tools, week5_agent, week6_eval
 from mini_muse.llm import LLM
@@ -77,12 +77,7 @@ def _step_header(week: int, try_this: list[str]) -> None:
 
 
 def _example(key: str, label: str, examples: list[str], height: int = 70) -> str:
-    choice = st.selectbox("Examples", examples + ["(write your own)"], key=f"{key}_example")
-    default = "" if choice == "(write your own)" else choice
-    if st.session_state.get(f"{key}_last_example") != choice:
-        st.session_state[f"{key}_text"] = default
-        st.session_state[f"{key}_last_example"] = choice
-    return st.text_area(label, key=f"{key}_text", height=height)
+    return example_text_area(label, examples, key, height)
 
 
 def _usage(llm: LLM, seconds: float | None) -> None:

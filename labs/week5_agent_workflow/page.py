@@ -16,7 +16,7 @@ import time
 
 import streamlit as st
 
-from labs.shared.ui import (can_run, lab_parameters, metric_row, mini_muse_part, model_settings, page_layout,
+from labs.shared.ui import (can_run, example_text_area, lab_parameters, metric_row, mini_muse_part, model_settings, page_layout,
                             run_standalone, show_error, usage_metrics)
 from labs.week5_agent_workflow import workflow_agent as wf
 
@@ -67,11 +67,7 @@ def render() -> None:
                                  help="Experiment C: watch the repair budget end the run.")
 
     with main:
-        choice = st.selectbox("Examples", wf.EXAMPLES + ["(write your own)"], key="week5_example")
-        if st.session_state.get("week5_last_example") != choice:
-            st.session_state.week5_request = "" if choice == "(write your own)" else choice
-            st.session_state.week5_last_example = choice
-        request = st.text_area("Request", key="week5_request", height=90)
+        request = example_text_area("Request", wf.EXAMPLES, "week5", height=90)
 
         if st.button("Run the agent", type="primary", key="week5_run") and can_run(settings, request):
             model = wf.Model(settings)
