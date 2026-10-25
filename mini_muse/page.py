@@ -185,9 +185,9 @@ def step1(main, panel, settings) -> None:
                 st.markdown("**What Mini Muse can do with it**")
                 st.markdown(f"Intent **{req['intent']}** → {NEXT_ACTION[req['intent']]}")
                 if req["missing_info"]:
-                    st.warning("Needs before acting: " + ", ".join(req["missing_info"]))
+                    st.warning(f"Missing: {', '.join(req['missing_info'])}. Mini Muse would ask you for this first.")
                 else:
-                    st.success("Has everything it needs.")
+                    st.success("Nothing missing (`missing_info` is empty), so Mini Muse could act right away.")
                 st.caption("Tools arrive in Week 4. Code can already route on `intent` because it is a fixed field, "
                            "not free text.")
             _usage(result["llm"], result["seconds"])
