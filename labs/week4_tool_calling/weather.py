@@ -249,7 +249,12 @@ def run_direct_agent(prompt: str, model: str, use_tools: bool = True, max_tool_r
         usage["output_tokens"] += tokens_out if isinstance(tokens_out, int) else 0
         assistant_message = response.choices[0].message
         requested = [{"tool": c.function.name, "arguments": c.function.arguments} for c in (assistant_message.tool_calls or [])]
+        returned_message = json.loads(json.dumps(assistant_message.model_dump(exclude_none=True), default=str))
         calls.append({"call": round_number, "messages": sent, "request": sent_request,
+                      "response": {"message": returned_message,
+                                   "finish_reason": str(getattr(response.choices[0], "finish_reason", "") or ""),
+                                   "usage": {"prompt_tokens": tokens_in if isinstance(tokens_in, int) else 0,
+                                             "completion_tokens": tokens_out if isinstance(tokens_out, int) else 0}},
                       "tools": [t["function"]["name"] for t in offered] if use_tools else [],
                       "input_tokens": tokens_in if isinstance(tokens_in, int) else 0,
                       "output_tokens": tokens_out if isinstance(tokens_out, int) else 0,
