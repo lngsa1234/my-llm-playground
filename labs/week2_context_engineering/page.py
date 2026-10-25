@@ -31,7 +31,7 @@ SHORT = {code: short for short, (code, _) in STRATEGIES.items()}
 HOW_IT_WORKS = """
 The model remembers nothing between calls. Everything it knows about the conversation has to be **put into the context** on each call, and **context engineering** is deciding what goes in.
 
-1. Pick a **scenario**: a conversation where some facts changed along the way (for example, a timeout corrected from 30 to 60 seconds).
+1. Choose a **sample conversation** in 🧪 Lab parameters: a past chat between a user and an assistant, with a question asked at the end. Some facts change along the way (for example, a timeout corrected from 30 to 60 seconds), and some messages are off-topic.
 2. Pick a **strategy**. The page shows at once which messages it keeps (✅) and which it drops. ⭐ marks the messages that hold the facts the question needs. This part is free: nothing is sent yet.
 3. **Ask** with that strategy, or **compare all five**. Each answer is checked against the expected facts, with its tokens and cost.
 
@@ -51,7 +51,8 @@ def render() -> None:
         return
     settings = model_settings(panel)
     with lab_parameters(panel):
-        scenario = st.selectbox("Scenario", list(bench.DATASETS), format_func=_label, key="week2_scenario")
+        scenario = st.selectbox("Sample conversation", list(bench.DATASETS), format_func=_label, key="week2_scenario",
+                                help="A past chat, plus a question asked at the end of it.")
     dataset = bench.DATASETS[scenario]
     history, needed, facts = dataset["history"], set(dataset["evidence_ids"]), list(dataset["expected_facts"])
 
