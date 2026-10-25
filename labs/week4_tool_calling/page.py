@@ -138,10 +138,10 @@ def _model_call(call: dict) -> None:
     st.markdown(f"**Model call {call['call']}** · {call['input_tokens']:,} in / {call['output_tokens']:,} out tokens "
                 f"· {call['seconds']:.2f} s")
     st.markdown(f"Sent: {_describe_sent(call['messages'], call['tools'])}. The model {outcome}.")
-    with st.expander(f"Messages sent in model call {call['call']}"):
-        st.json(call["messages"], expanded=False)
-        if call["tools"]:
-            st.caption("Plus the definitions of: " + ", ".join(call["tools"]))
+    with st.expander(f"Request sent in model call {call['call']}"):
+        st.caption("The body of the API request, as sent: `messages` (the conversation so far) and `tools` "
+                   "(the full definition of each tool on offer). The API key travels in a header and isn't shown.")
+        st.json(call.get("request") or {"messages": call["messages"]}, expanded=2)
 
 
 def _tool_run(entry: dict) -> None:

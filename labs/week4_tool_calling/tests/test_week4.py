@@ -121,6 +121,8 @@ def test_agent_counts_tokens_records_rounds_and_offers_only_chosen_tools(mock_op
     assert first["returned"] == {"tool_calls": [{"tool": "get_weather", "arguments": '{"location": "Detroit"}'}]}
     assert [m["role"] for m in second["messages"]][-1] == "tool" and second["returned"] == {"answer": "48°F in Detroit."}
     assert first["input_tokens"] == 100 and first["tools"] == ["get_weather"]
+    assert [t["function"]["name"] for t in first["request"]["tools"]] == ["get_weather"]
+    assert first["request"]["messages"] == first["messages"] and first["request"]["tool_choice"] == "auto"
     assert [t["function"]["name"] for t in create.call_args_list[0].kwargs["tools"]] == ["get_weather"]
     create.side_effect = [message("I can't check live weather.")]
     no_tools = run_direct_agent("Weather in Detroit?", "m", tools=[])

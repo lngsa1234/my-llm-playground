@@ -239,6 +239,7 @@ def run_direct_agent(prompt: str, model: str, use_tools: bool = True, max_tool_r
         if use_tools:
             request.update({"tools": offered, "tool_choice": "auto"})
         sent = json.loads(json.dumps(messages, default=str))  # a snapshot: the list keeps growing
+        sent_request = json.loads(json.dumps(request, default=str))  # the whole body: messages + tools
         call_started = time.perf_counter()
         response = OpenAI().chat.completions.create(**request)
         usage["model_calls"] += 1
@@ -248,7 +249,7 @@ def run_direct_agent(prompt: str, model: str, use_tools: bool = True, max_tool_r
         usage["output_tokens"] += tokens_out if isinstance(tokens_out, int) else 0
         assistant_message = response.choices[0].message
         requested = [{"tool": c.function.name, "arguments": c.function.arguments} for c in (assistant_message.tool_calls or [])]
-        calls.append({"call": round_number, "messages": sent,
+        calls.append({"call": round_number, "messages": sent, "request": sent_request,
                       "tools": [t["function"]["name"] for t in offered] if use_tools else [],
                       "input_tokens": tokens_in if isinstance(tokens_in, int) else 0,
                       "output_tokens": tokens_out if isinstance(tokens_out, int) else 0,
