@@ -115,36 +115,32 @@ def _world_viewer(world: dict | None = None) -> None:
 
 # ------------------------------------------------------------------ week 1
 NEXT_ACTION = {
-    "weather": "Look up the weather (`get_weather`).",
-    "calendar": "Read the calendar for that day (`check_calendar`).",
-    "schedule": "Check the calendar for a clash, then book it (`check_calendar` → `create_event`).",
-    "email": "Find the contact's address, then draft the email for you to approve (`lookup_contact`).",
-    "notes": "Search your notes for the answer (Week 3).",
-    "math": "Work it out with the calculator (`calculator`).",
-    "other": "Say politely that it can't help with this.",
+    "weather": "look up the weather (`get_weather`)",
+    "calendar": "read the calendar for that day (`check_calendar`)",
+    "schedule": "check the calendar for a clash, then book it (`check_calendar` → `create_event`)",
+    "email": "find the contact, then draft the email for approval (`lookup_contact`)",
+    "notes": "search your notes for the answer (Week 3)",
+    "math": "work it out with the calculator (`calculator`)",
+    "other": "explain that it can't help with this",
 }
+W1_EXAMPLES = [
+    "Book lunch with Maya on Tuesday at noon",
+    "What's the weather in Chicago?",
+    "Email Jordan about the offsite venue",
+    "Schedule a call with the team next week",
+    "What did Jordan say about the offsite budget?",
+    "Can you book me a flight to Beijing?",
+]
 
 
 def step1(main, panel, settings) -> None:
     with lab_parameters(panel):
-        technical = st.checkbox("Show technical details", key="muse_w1_technical",
-                                help="The raw JSON schema and the exact instructions text.")
+        st.caption("No extra parameters this week. The model and token limit come from ⚙️ Model settings.")
     with main:
-        _step_header(1, ["A request with a relative date: **Tuesday** becomes a real date only because today's "
-                         "date is in the instructions.",
-                         "A vague request: watch **missing_info** list what Mini Muse would have to ask you.",
-                         "Something it can't do: the intent should be **other**."])
-
-        # ① input
-        st.markdown("#### ① Your request")
-        text = _example("muse_w1", "Request", [
-            "Book lunch with Maya on Tuesday at noon",
-            "What's the weather in Chicago?",
-            "Email Jordan about the offsite venue",
-            "Schedule a call with the team next week",
-            "What did Jordan say about the offsite budget?",
-            "Can you book me a flight to Beijing?",
-        ])
+        _step_header(1, ["A relative date (\"Tuesday\") becomes a real date because today's date is in the instructions.",
+                         "A vague request fills **missing_info** with what Mini Muse would have to ask.",
+                         "A request it can't handle gets the intent **other**."])
+        text = _example("muse_w1", "Request", W1_EXAMPLES, height=68)
         if st.button("Understand", type="primary", key="muse_w1_run") and (llm := _run(settings, text)):
             try:
                 started = time.perf_counter()
@@ -154,69 +150,42 @@ def step1(main, panel, settings) -> None:
                                                    "seconds": time.perf_counter() - started}
             except Exception as exc:  # noqa: BLE001
                 show_error("Structured output", exc)
+
         result = st.session_state.get("muse_w1_result")
-        llm = result["llm"] if result else None
+        sent_col, back_col = st.columns(2, gap="large")
+        with sent_col, st.container(border=True):
+            st.markdown("**Sent to the model**")
+            form, api_request = st.tabs(["Output form", "API request"])
+            with form:
+                st.dataframe(week1_understand.output_form(), width="stretch", hide_index=True)
+            with api_request:
+                body = (result or {}).get("sent")
+                if body:
+                    st.json(body, expanded=2)
+                else:
+                    st.caption("Shown after you run a request.")
 
-        # ② what is sent
-        tokens_in = f" · {llm.usage.input_tokens} input tokens" if llm else ""
-        st.markdown(f"#### ② What is sent to the model{tokens_in}")
-        st.caption("Three things go in every call. The model remembers nothing between calls, so all three are "
-                   "sent (and paid for) every time.")
-        sent = st.columns(3, gap="medium")
-        with sent[0], st.container(border=True):
-            st.markdown("**Instructions**")
-            st.caption(f"What the job is, the list of intents, and today's date ({TODAY:%A}, {TODAY.isoformat()}) "
-                       "so that \"Tuesday\" can become a real date.")
-        with sent[1], st.container(border=True):
-            st.markdown("**Your request**")
-            st.caption((result.get("text") if result else None) or text or "(empty)")
-        with sent[2], st.container(border=True):
-            st.markdown("**The output form**")
-            st.caption("The fields the model must fill in, and the values it may use. Structured output "
-                       "enforces it: no missing fields, no made-up intents, no chatty prose.")
-        with st.expander("Exactly what was sent: the API request", expanded=bool(result)):
-            sent_body = result.get("sent") if result else None
-            if sent_body:
-                st.caption("The body of the HTTP request to the OpenAI Responses API, copied as it left the app. "
-                           "`instructions`, `input` and `text.format.schema` are the three cards above. "
-                           "The API key travels in a request header and is not shown.")
-                st.json(sent_body, expanded=2)
+        with back_col, st.container(border=True):
+            st.markdown("**Returned by the model**")
+            if not result:
+                st.caption("Run a request to see the model's output.")
             else:
-                st.caption("Click **Understand** to see the request exactly as it is sent.")
-        with st.expander("See the output form"):
-            st.dataframe(week1_understand.output_form(), width="stretch", hide_index=True)
-            if technical:
-                st.markdown("**As sent: JSON schema**")
-                st.json(week1_understand.UnderstoodRequest.model_json_schema(), expanded=False)
-        if technical:
-            with st.expander("See the instructions, word for word"):
-                st.code(week1_understand.instructions(), language=None, wrap_lines=True)
+                req = result["request"]
+                fields, raw_output = st.tabs(["Fields", "Raw output"])
+                with fields:
+                    st.dataframe([{"Field": k, "Value": (", ".join(v) or "—") if isinstance(v, list) else ("—" if v is None else str(v))}
+                                  for k, v in req.items()], width="stretch", hide_index=True)
+                with raw_output:
+                    raw = result.get("raw")
+                    st.code(raw if raw is not None else json.dumps(req), language="json", wrap_lines=True)
 
-        # ③ what comes back
-        tokens_out = f" · {llm.usage.output_tokens} output tokens" if llm else ""
-        st.markdown(f"#### ③ What comes back{tokens_out}")
-        if not result:
-            st.info("Click **Understand** to see the model's answer: the output form, filled in.")
-            return
-        req = result["request"]
-        st.caption("The model's output, exactly as it returned it: the form above, filled in. That's all it sends.")
-        raw = result.get("raw")  # results saved by an older version of the page have no raw text
-        st.code(raw if raw is not None else json.dumps(req), language="json", wrap_lines=True)
-
-        # ④ what Mini Muse does with it
-        st.markdown("#### ④ What Mini Muse does with it")
-        st.caption("Because the answer always has the same fields, plain code can read them. No guessing from sentences.")
-        facts = {"Intent": req["intent"], "Date": req["date"], "Time": req["time"], "City": req["city"],
-                 "People": ", ".join(req["people"])}
-        metric_row({k: v or "—" for k, v in facts.items()})
-        if req["missing_info"]:
-            st.warning(f"**Next:** ask you for {', '.join(req['missing_info'])} before doing anything.")
-        else:
-            st.success(f"**Next:** {NEXT_ACTION[req['intent']]}")
-        st.caption("Mini Muse gets its tools in Week 4. In Week 1 it can already decide *what* it would do.")
-
-        st.markdown("#### What this call cost")
-        _usage(llm, result["seconds"])
+        if result:
+            req = result["request"]
+            if req["missing_info"]:
+                st.warning(f"**Next step:** ask for {', '.join(req['missing_info'])} before acting.")
+            else:
+                st.success(f"**Next step:** {NEXT_ACTION[req['intent']]}. Tools arrive in Week 4.")
+            _usage(result["llm"], result["seconds"])
 
 
 # ------------------------------------------------------------------ week 2
