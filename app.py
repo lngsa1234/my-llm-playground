@@ -22,7 +22,7 @@ for _name, _module in list(sys.modules.items()):
         if _file and not os.path.exists(_file):
             del sys.modules[_name]
 
-from labs.shared.ui import apply_page_style  # noqa: E402
+from labs.shared.ui import api_key_notice, apply_page_style  # noqa: E402
 from labs.week1_llm_api import page as week1  # noqa: E402
 from labs.week2_context_engineering import page as week2  # noqa: E402
 from labs.week3_rag import page as week3  # noqa: E402
@@ -35,14 +35,14 @@ from mini_muse import page as mini_muse  # noqa: E402
 load_dotenv()
 
 PAGES = {
-    "Week 1 · Single API Call": week1.render,
-    "Week 2 · Context Engineering": week2.render,
+    "Week 1 · Single API call": week1.render,
+    "Week 2 · Context engineering": week2.render,
     "Week 3 · RAG": week3.render,
-    "Week 4 · Weather Assistant": week4.render,
-    "Week 5 · Agent Workflow": week5.render,
-    "Week 6 · Agent Evaluation": week6.render,
-    "Week 7 · Production Reliability": week7.render,
-    "🧩 Mini Muse · all weeks": mini_muse.render,
+    "Week 4 · Tool calling": week4.render,
+    "Week 5 · Agent workflow": week5.render,
+    "Week 6 · Evaluation": week6.render,
+    "Week 7 · Reliability": week7.render,
+    "Mini Muse · all weeks": mini_muse.render,
 }
 
 st.set_page_config(page_title="Agent Engineering Peer Learning", page_icon="🧭", layout="wide")
@@ -52,5 +52,6 @@ with st.sidebar:
     st.subheader("🧭 Agent Engineering Peer Learning")
     selected = st.radio("Choose a week", list(PAGES), label_visibility="collapsed", key="nav_week")
     st.divider()
+    api_key_notice()
 
 PAGES[selected]()

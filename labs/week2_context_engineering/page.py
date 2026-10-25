@@ -31,7 +31,7 @@ SHORT = {code: short for short, (code, _) in STRATEGIES.items()}
 HOW_IT_WORKS = """
 The model remembers nothing between calls. Everything it knows about the conversation has to be **put into the context** on each call, and **context engineering** is deciding what goes in.
 
-1. Choose a **sample conversation** in 🧪 Lab parameters: a past chat between a user and an assistant, with a question asked at the end. Some facts change along the way (for example, a timeout corrected from 30 to 60 seconds), and some messages are off-topic.
+1. Choose a **sample conversation** in Lab parameters: a past chat between a user and an assistant, with a question asked at the end. Some facts change along the way (for example, a timeout corrected from 30 to 60 seconds), and some messages are off-topic.
 2. Pick a **strategy**. The page shows at once which messages it keeps (✅) and which it drops. ⭐ marks the messages that hold the facts the question needs. This part is free: nothing is sent yet.
 3. **Ask** with that strategy, or **compare all five**. Each answer is checked against the expected facts, with its tokens and cost.
 
@@ -44,7 +44,7 @@ def _label(name: str) -> str:
 
 
 def render() -> None:
-    main, panel = page_layout("Week 2 · Context Engineering")
+    main, panel = page_layout("Week 2 · Context engineering")
     if mini_muse_part(main, panel, 2,
                       caption="The model only knows what you put in its context. Choose what goes in, and see what it changes.",
                       how_it_works=HOW_IT_WORKS):
@@ -141,4 +141,4 @@ def _scoreboard(results: list[dict], facts: list[str]) -> None:
 
 
 if __name__ == "__main__":
-    run_standalone(render, "Week 2 · Context Engineering")
+    run_standalone(render, "Week 2 · Context engineering")

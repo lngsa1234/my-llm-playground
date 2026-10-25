@@ -1,0 +1,20 @@
+# One look for every page. Blueprint ink as the single accent; red, yellow and green are
+# left to Streamlit's status messages, so they only ever mean error, warning or pass.
+[theme]
+base = "light"
+primaryColor = "#1F5E8C"
+backgroundColor = "#FFFFFF"
+secondaryBackgroundColor = "#F2F5F8"
+textColor = "#1B2733"
+borderColor = "#D6DEE6"
+linkColor = "#1F5E8C"
+baseRadius = "0.4rem"
+font = "IBM Plex Sans:https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap"
+codeFont = "IBM Plex Mono:https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&display=swap"
+baseFontSize = 15
+headingFontWeights = [600, 600, 600, 600, 600, 600]
+headingFontSizes = ["1.9rem", "1.35rem", "1.1rem", "1rem", "0.95rem", "0.9rem"]
+metricValueFontSize = "1.5rem"
+
+[theme.sidebar]
+backgroundColor = "#F2F5F8"

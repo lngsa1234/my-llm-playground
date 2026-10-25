@@ -65,10 +65,12 @@ pytest
 
 Every week's page has the same layout:
 
-- **Left sidebar** — choose the week, or **🧩 Mini Muse · all weeks** for every Mini Muse component in one place (Week 8, the assembled assistant, lives only there).
-- **Main area** — the week title, then the switch between **🔬 Concept demo** and **🧩 Build Mini Muse**. Each part has its own one-line description and explainer (**How this lab works** or **How this step works**), then inputs, a run button and results with the same token, latency and cost metrics.
-- **Right panel** — one box with two sections stacked in a single column:
-  - **⚙️ Model settings** — model, max output tokens and $/1M token prices (plus the embedding model in Week 3). The values are shared across weeks, so set them once. The default is `gpt-5.4-mini`, with matching default prices; change both together if you switch models.
-  - **🧪 Lab parameters** — the settings specific to that week, such as output format (Week 1), the scenario (Week 2), chunk size and Top-K (Week 3), max tool-call rounds (Week 4), steps, repair budget and router (Week 5), the evaluation step, agent version, judge and release gates (Week 6), or failure rates and the hardened policy (Week 7).
+- **Left sidebar** — choose the week, or **Mini Muse · all weeks** for every Mini Muse component in one place (Week 8, the assembled assistant, lives only there). A note appears here if no API key is set.
+- **Main area** — the week title, then a switch between **Concept demo** and **Build Mini Muse**. Each part has a one-line description and an explainer (**How this lab works** or **How this step works**), then inputs, one primary button, and results in labelled boxes with tokens, latency and cost.
+- **Right panel** — one box:
+  - **Model settings** — the model. Token limit, prices and (in Week 3) the embedding model are under **Model options**. The values are shared across weeks, so set them once. The default is `gpt-5.4-mini`, with matching default prices; change both together if you switch models.
+  - **Lab parameters** — the settings specific to that week, such as output format (Week 1), the sample conversation (Week 2), chunk size and Top-K (Week 3), max tool-call rounds (Week 4), steps, repair budget and router (Week 5), the evaluation step, agent version, judge and release gates (Week 6), or failure rates and the hardened policy (Week 7).
+
+The look (colors, fonts, heading sizes) is set once in [`.streamlit/config.toml`](.streamlit/config.toml).
 
 To add a lab: create `labs/weekN_topic/` with its logic, a README, `tests/`, and a `page.py` whose `render()` calls `page_layout()`, `model_settings()` and `lab_parameters()` from `labs/shared/ui.py` (copy the first lines and the `__main__` block of an existing `page.py` so it also runs alone). Then register it in `PAGES` in `app.py`.

@@ -1,7 +1,7 @@
-"""Mini Muse screens: one "🧩 Build Mini Muse" step per week, plus the Mini Muse page.
+"""Mini Muse screens: one "Build Mini Muse" step per week, plus the Mini Muse page.
 
 Run alone:   streamlit run mini_muse/page.py
-In the site: streamlit run app.py → 🧩 Mini Muse, or any week → 🧩 Build Mini Muse
+In the site: streamlit run app.py → 🧩 Mini Muse, or any week → Build Mini Muse
 
 Week pages call `render_step(week, main, panel, settings)`. The Mini Muse page lets
 you pick any week, including Week 8, which has no page of its own.
@@ -41,7 +41,7 @@ COMPONENTS = {
 ICONS = {1: "🧠", 2: "🗂️", 3: "📚", 4: "🛠️", 5: "🔁", 6: "✅", 7: "🛡️", 8: "🧩"}
 
 ROADMAP = "\n".join(
-    f"| {week} | {ICONS[week]} {name} | {what} | `mini_muse/{module}.py` |"
+    f"| {week} | {name} | {what} | `mini_muse/{module}.py` |"
     for week, (name, module, what) in COMPONENTS.items())
 HOW_IT_WORKS = f"""
 Mini Muse is the personal assistant the circle builds over the 8 weeks. Each week's topic becomes one of its components:
@@ -58,16 +58,14 @@ Every tool acts on a **fake world**: a calendar, two contacts, an outbox, weathe
 def _progress(week: int) -> None:
     parts = []
     for w, (name, _, _) in COMPONENTS.items():
-        label = f"{ICONS[w]} {name}"
-        parts.append(f"**{label}**" if w == week else label if w < week else f":gray[{label}]")
-    st.markdown(" → ".join(parts))
+        parts.append(f"**{name}**" if w == week else name if w < week else f":gray[{name}]")
+    st.caption("Built so far: " + " → ".join(parts))
 
 
 def _step_header(week: int, try_this: list[str]) -> None:
     name, module, what = COMPONENTS[week]
-    st.subheader(f"🧩 Mini Muse · Week {week}: {name}")
+    st.subheader(f"Mini Muse: {name}")
     st.caption(what)
-    _progress(week)
     with st.expander("How this step works"):
         doc = (importlib.import_module(f"mini_muse.{module}").__doc__ or "").strip()
         st.code(doc, language=None)
@@ -135,7 +133,7 @@ W1_EXAMPLES = [
 
 def step1(main, panel, settings) -> None:
     with lab_parameters(panel):
-        st.caption("No extra parameters this week. The model and token limit come from ⚙️ Model settings.")
+        st.caption("No extra parameters this week. The model and token limit come from Model settings.")
     with main:
         _step_header(1, ["A relative date (\"Tuesday\") becomes a real date because today's date is in the instructions.",
                          "A vague request fills **missing_info** with what Mini Muse would have to ask.",
@@ -210,12 +208,16 @@ def step2(main, panel, settings) -> None:
                          "“Make it an hour later.”: only works because the last turn is in the context.",
                          "Set **Recent turns kept** to 0 and ask the follow-up again."])
         chat, state = st.columns([3, 2], gap="large")
-        with chat:
+        with chat, st.container(border=True):
+            st.markdown("**Conversation**")
+            if not memory.history:
+                st.caption("Tell Mini Muse something about yourself, then ask something that depends on it.")
             for m in memory.history:
                 with st.chat_message(m["role"]):
                     st.write(m["content"])
             with st.form("muse_w2_form", clear_on_submit=True, border=False):
-                text = st.text_input("Message", placeholder="Tell Mini Muse something about yourself…", key="muse_w2_input")
+                text = st.text_input("Message", placeholder="For example: I prefer morning meetings.",
+                                     key="muse_w2_input", label_visibility="collapsed")
                 sent = st.form_submit_button("Send", type="primary")
             if sent and (llm := _run(settings, text)):
                 try:
@@ -228,24 +230,34 @@ def step2(main, panel, settings) -> None:
                     st.rerun()
                 except Exception as exc:  # noqa: BLE001
                     show_error("Chat", exc)
-        with state:
-            st.markdown("**🗂️ Saved facts**")
-            st.write("\n".join(f"- {f}" for f in memory.facts) or "_None yet._")
-            st.markdown("**Summary of older turns**")
-            st.write(memory.summary or "_Nothing compacted yet._")
-            if st.button("Reset memory", key="muse_w2_reset"):
+        last = st.session_state.get("muse_w2_last")
+        with state, st.container(border=True):
+            st.markdown("**Memory**")
+            st.markdown("Saved facts")
+            st.markdown("\n".join(f"- {f}" for f in memory.facts) or ":gray[None yet.]")
+            if last and last["facts"]:
+                st.caption("Just learned: " + "; ".join(last["facts"]))
+            st.markdown("Summary of older turns")
+            st.markdown(memory.summary or ":gray[Nothing compacted yet.]")
+            if st.button("Clear memory", key="muse_w2_reset"):
                 st.session_state.pop("muse_w2_memory", None)
                 st.session_state.pop("muse_w2_last", None)
                 st.rerun()
-        last = st.session_state.get("muse_w2_last")
-        if last:
-            if last["facts"]:
-                st.success("Remembered: " + "; ".join(last["facts"]))
-            if last["compacted"]:
-                st.info("Older turns were compacted into the summary.")
-            _usage(last["llm"], last["seconds"])
-            with st.expander(f"Context sent on the last call ({len(last['context'])} messages)"):
-                st.json(last["context"])
+
+        with st.container(border=True):
+            st.markdown("**Sent to the model on the last call**")
+            if not last:
+                st.caption("Send a message to see exactly which memory went into the call.")
+            else:
+                rows = []
+                for i, m in enumerate(last["context"]):
+                    part = ("System: persona, today's date, saved facts, summary" if m["role"] == "system"
+                            else "New message" if i == len(last["context"]) - 1 else "Recent turn")
+                    rows.append({"Part": part, "Role": m["role"], "Content": m["content"]})
+                st.dataframe(rows, width="stretch", hide_index=True)
+                if last["compacted"]:
+                    st.caption("Older turns were folded into the summary after this call.")
+                _usage(last["llm"], last["seconds"])
 
 
 # ------------------------------------------------------------------ week 3
@@ -635,17 +647,18 @@ STEPS = {1: step1, 2: step2, 3: step3, 4: step4, 5: step5, 6: step6, 7: step7, 8
 
 
 def render_step(week: int, main, panel, settings) -> None:
-    """The 🧩 Build Mini Muse part of a week page."""
+    """The Build Mini Muse part of a week page."""
     STEPS[week](main, panel, settings)
 
 
 def render() -> None:
     """The Mini Muse page: every component in one place, including Week 8."""
-    main, panel = page_layout("🧩 Mini Muse", "The personal-assistant agent the circle builds, one component per week.",
+    main, panel = page_layout("Mini Muse", "The personal-assistant agent the circle builds, one component per week.",
                               HOW_IT_WORKS, how_label="The 8-week roadmap")
-    labels = {w: f"Week {w} · {ICONS[w]} {name}" for w, (name, _, _) in COMPONENTS.items()}
+    labels = {w: f"Week {w} · {name}" for w, (name, _, _) in COMPONENTS.items()}
     with main:
         week = st.selectbox("Component", list(labels), index=7, format_func=labels.get, key="muse_component")
+        _progress(week)
     settings = model_settings(panel, embedding=week in (3, 8))
     render_step(week, main, panel, settings)
 

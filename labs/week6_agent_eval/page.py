@@ -28,7 +28,7 @@ You evaluate **Muse**, a small personal-assistant agent that checks weather, rea
 4. **LLM-as-a-judge** — a rubric scores faithfulness, helpfulness, safety and tone, then the judge is checked against human labels.
 5. **Regression** — run everything on v1 and v2, diff case by case, and apply release gates.
 
-Muse is rule-based, so the agent itself makes no API calls. Only the optional **LLM judge** uses the model in ⚙️ Model settings. The same lab runs from the command line: `python3 labs/week6_agent_eval/run_all.py`.
+Muse is rule-based, so the agent itself makes no API calls. Only the optional **LLM judge** uses the model in Model settings. The same lab runs from the command line: `python3 labs/week6_agent_eval/run_all.py`.
 """
 
 STEPS = ["0 · Explore the agent (no grading)", "1 · Golden dataset", "2 · Task success", "3 · Tool evaluation",

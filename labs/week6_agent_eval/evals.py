@@ -4,7 +4,7 @@ The command-line lab in this folder (lab/, data/, run_all.py) stays a standalone
 project that learners can run from the command line. This module loads its
 code (the Muse agent, golden dataset and the five evaluation steps) so the app
 and the command line always grade the same way, and adds an LLM judge that
-uses the app's ⚙️ Model settings.
+uses the app's Model settings.
 """
 
 from __future__ import annotations
@@ -115,7 +115,7 @@ def heuristic_judge(trace: dict) -> dict:
 
 
 def llm_judge(settings: ModelSettings, usage: dict | None = None) -> Judge:
-    """A judge that sends the lab's rubric prompt to the model in ⚙️ Model settings."""
+    """A judge that sends the lab's rubric prompt to the model in Model settings."""
     client = OpenAI()
 
     def judge(trace: dict) -> dict:
