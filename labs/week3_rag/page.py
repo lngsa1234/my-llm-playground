@@ -41,6 +41,16 @@ A model can't answer from documents it has never seen. **RAG** (retrieval-augmen
 
 Both include a few questions with no answer in the documents, to check that the system says so instead of guessing.
 
+**Reading the metrics** (Compare settings)
+
+| Metric | What it measures | Example |
+|---|---|---|
+| Right documents found | Share of questions where **every** document that holds the answer is among the Top-K chunks sent to the model. This scores search alone. | 58% on HotpotQA: in 42% of questions at least one of the two articles was missing. |
+| Correct answers | Share of generated answers whose **whole text** equals the expected answer, ignoring case, punctuation and the cited sources. Strict: a right answer in a full sentence, or with extra words, counts as wrong. For questions with no answer in the documents, "correct" means the system said it didn't know. | Expected "Chief of Protocol": "chief of protocol" is correct; "Chief of Protocol of the United States" and "She served as Chief of Protocol." are not. |
+| Word overlap | Partial credit: how many words the answer shares with the expected one (token F1). The gap above *Correct answers* is mostly right answers worded differently. | The same answer still gets about 60%. |
+
+Answers can't beat search: when a needed document is missing, the model can only say it doesn't know or guess, so *Right documents found* is roughly a ceiling for *Correct answers*. Fix search first, then answers.
+
 **Try this**
 - Ask "How many remote days are employees allowed?" Without RAG the model can only guess; with RAG it quotes NovaTech's policy.
 - Switch **Chunk strategy** to *By heading*, then open **See the chunks**: each policy becomes a single chunk. Ask again and compare the input tokens.
