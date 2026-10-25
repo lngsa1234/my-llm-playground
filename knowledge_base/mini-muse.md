@@ -25,7 +25,7 @@ Every week page in the app has two parts, switched at the top of the page:
 - **🔬 Concept demo** — the week's existing lab (the playground, the RAG system, the weather assistant…). Use it to learn the idea.
 - **🧩 Build Mini Muse** — the same idea, applied to Mini Muse.
 
-Weeks 5, 7 and 8 have no concept page yet. Open **🧩 Mini Muse · all weeks** in the sidebar and pick the component.
+Week 8, the assembled assistant, has no week page. Open **🧩 Mini Muse · all weeks** in the sidebar to see it, or to see every component in one place.
 
 From Week 5, teams build their own projects. Mini Muse is the **reference implementation**: each team's project should have the same components, so you can compare your design with Mini Muse's one piece at a time.
 
@@ -140,7 +140,7 @@ goal → decide → run tools → observe results → decide again …
   - `RULES` is the agent's policy.
   - `run()` is the loop.
   - `approve()` runs an action you approved.
-- **Run it:** 🧩 Mini Muse · all weeks → Week 5, or `python -m mini_muse.week5_agent "Book a haircut on 2026-10-27 at 14:00"`.
+- **Run it:** Week 5 page → 🧩 Build Mini Muse, or `python -m mini_muse.week5_agent "Book a haircut on 2026-10-27 at 14:00"`.
 - **Try:**
   - The haircut again. This time the calendar is checked first, and the 14:00 dentist appointment stops the booking.
   - A chain: "Am I free on 2026-10-28 at 18:00? If so, book yoga and tell me the weather in Detroit." Then set **Max steps** to 1.
@@ -176,7 +176,7 @@ goal → decide → run tools → observe results → decide again …
 - `slow` takes longer than the timeout.
 
 - **Code:** [`week7_reliability.py`](../mini_muse/week7_reliability.py).
-- **Run it:** 🧩 Mini Muse · all weeks → Week 7. **Run the drill** is free and needs no model.
+- **Run it:** Week 7 page → 🧩 Build Mini Muse. **Run the drill** is free and needs no model.
 - **Try:**
   - Make `get_weather` flaky with 0 retries, then with 2.
   - Make it down. Does the answer admit the weather is unavailable, or invent a temperature?

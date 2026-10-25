@@ -27,7 +27,9 @@ from labs.week1_llm_api import page as week1  # noqa: E402
 from labs.week2_context_engineering import page as week2  # noqa: E402
 from labs.week3_rag import page as week3  # noqa: E402
 from labs.week4_tool_calling import page as week4  # noqa: E402
+from labs.week5_agent_workflow import page as week5  # noqa: E402
 from labs.week6_agent_eval import page as week6  # noqa: E402
+from labs.week7_production import page as week7  # noqa: E402
 from mini_muse import page as mini_muse  # noqa: E402
 
 load_dotenv()
@@ -37,7 +39,9 @@ PAGES = {
     "Week 2 · Context Engineering": week2.render,
     "Week 3 · RAG": week3.render,
     "Week 4 · Weather Assistant": week4.render,
+    "Week 5 · Agent Workflow": week5.render,
     "Week 6 · Agent Evaluation": week6.render,
+    "Week 7 · Production Reliability": week7.render,
     "🧩 Mini Muse · all weeks": mini_muse.render,
 }
 

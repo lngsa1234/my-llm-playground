@@ -4,7 +4,7 @@ Run alone:   streamlit run mini_muse/page.py
 In the site: streamlit run app.py → 🧩 Mini Muse, or any week → 🧩 Build Mini Muse
 
 Week pages call `render_step(week, main, panel, settings)`. The Mini Muse page lets
-you pick any week, including Weeks 5, 7 and 8, which have no page of their own.
+you pick any week, including Week 8, which has no page of its own.
 """
 
 from __future__ import annotations
@@ -614,7 +614,7 @@ def render_step(week: int, main, panel, settings) -> None:
 
 
 def render() -> None:
-    """The Mini Muse page: every component, including Weeks 5, 7 and 8."""
+    """The Mini Muse page: every component in one place, including Week 8."""
     main, panel = page_layout("🧩 Mini Muse", "The personal-assistant agent the circle builds, one component per week.",
                               HOW_IT_WORKS)
     labels = {w: f"Week {w} · {ICONS[w]} {name}" for w, (name, _, _) in COMPONENTS.items()}

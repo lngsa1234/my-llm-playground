@@ -49,7 +49,7 @@ Every week page in the lab app has a switch at the top with two parts:
 - **Concept demo:** the week's lab on its own (the API playground, the RAG system, the weather assistant). Use it to learn the idea.
 - **Build Mini Muse:** the same idea, added to Mini Muse. Use it to see where the idea fits in a real agent.
 
-Weeks 5, 7 and 8 don't have a week page yet. Open **Mini Muse · all weeks** in the sidebar and pick the component.
+Week 8, the assembled assistant, has no week page. Open **Mini Muse · all weeks** in the sidebar to see it, or any other component.
 
 **A fake world, so nothing real happens.** Mini Muse's tools act on a pretend calendar, two contacts (Maya and Jordan), an outbox, weather for three cities and five sample notes. Nothing is ever really booked or sent. In that world, "today" is Monday, October 26, 2026, so dates work out the same for everyone.
 

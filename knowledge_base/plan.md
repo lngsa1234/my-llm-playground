@@ -217,7 +217,7 @@ Use remaining time to catch up on Weeks 1–3.
 
 ## Week 5 — Agent Engineering
 
-📘 Concepts: [State, workflow, control loop, routing](week-05-agent-engineering/concepts.md) · Lab: [Stateful agent workflow in TypeScript](week-05-agent-engineering/lab.md)
+📘 Concepts: [State, workflow, control loop, routing](week-05-agent-engineering/concepts.md) · Lab: [Stateful agent workflow in TypeScript](week-05-agent-engineering/lab.md) · App: [Python workflow agent](../labs/week5_agent_workflow/README.md)
 
 🧩 Mini Muse: 🔁 Agent loop: plan → act → observe → stop, with approval before sending email · [guide](mini-muse.md#week-5---agent-loop--agent-engineering)
 
@@ -293,7 +293,7 @@ The key mindset change is:
 
 ## Week 7 — Production AI Systems
 
-📘 Concepts and lab: not written yet.
+📘 Concepts: not written yet · Lab: [Production reliability drill](../labs/week7_production/README.md)
 
 🧩 Mini Muse: 🛡️ Reliability: tracing, retries, timeouts and fault injection · [guide](mini-muse.md#week-7---reliability--production)
 
