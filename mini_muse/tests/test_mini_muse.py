@@ -362,3 +362,18 @@ def test_llm_wrapper_talks_to_the_real_openai_sdk():
     assert sent[1][1]["messages"][-2]["tool_calls"][0]["id"] == "c1"
     assert llm.usage.calls == 2 and llm.usage.input_tokens == 40
     assert llm.embed(["a", "b"]) == [[0.1, 0.2], [0.1, 0.2]]
+
+
+def test_parse_keeps_the_raw_model_output():
+    from types import SimpleNamespace
+
+    from labs.shared.settings import ModelSettings
+    from mini_muse.llm import LLM
+
+    raw = '{"new_facts": ["Prefers mornings"]}'
+    response = SimpleNamespace(usage=SimpleNamespace(input_tokens=40, output_tokens=9), output_text=raw,
+                               output_parsed=week2_memory.LearnedFacts(new_facts=["Prefers mornings"]))
+    client = SimpleNamespace(responses=SimpleNamespace(parse=lambda **_: response))
+    llm = LLM(ModelSettings(), client=client)
+    assert llm.parse("x", "y", week2_memory.LearnedFacts).new_facts == ["Prefers mornings"]
+    assert llm.last_output == raw and llm.usage.output_tokens == 9

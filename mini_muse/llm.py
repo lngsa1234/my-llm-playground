@@ -62,6 +62,7 @@ class LLM:
         self.client = client
         self.settings = settings
         self.usage = Usage()
+        self.last_output = ""  # the exact text the model returned on the latest call, before parsing
 
     @property
     def model(self) -> str:
@@ -75,6 +76,7 @@ class LLM:
             model=self.settings.model, instructions=instructions, input=text, text_format=schema,
             max_output_tokens=self.settings.max_output_tokens)
         self.usage.add(response.usage.input_tokens, response.usage.output_tokens)
+        self.last_output = response.output_text or ""
         if response.output_parsed is None:
             raise ValueError("The model did not return the requested structure.")
         return response.output_parsed

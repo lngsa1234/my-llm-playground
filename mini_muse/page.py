@@ -133,18 +133,25 @@ def step1(main, panel, settings) -> None:
             try:
                 started = time.perf_counter()
                 request = week1_understand.understand(llm, text)
-                st.session_state.muse_w1_result = {"request": request.model_dump(), "llm": llm,
-                                                   "seconds": time.perf_counter() - started}
+                st.session_state.muse_w1_result = {"request": request.model_dump(), "llm": llm, "text": text,
+                                                   "raw": llm.last_output, "seconds": time.perf_counter() - started}
             except Exception as exc:  # noqa: BLE001
                 show_error("Structured output", exc)
         result = st.session_state.get("muse_w1_result")
         if result:
+            llm, req = result["llm"], result["request"]
+            _usage(llm, result["seconds"])
+            st.markdown(f"**Model output**: the exact text the model returned, "
+                        f"{llm.usage.output_tokens} output tokens")
+            st.code(result["raw"] or "(no text returned)", language="json", wrap_lines=True)
+            st.caption("Structured output forced it to be JSON that matches the schema, so code can read it "
+                       "without guessing. Below, the same JSON parsed into fields.")
             left, right = st.columns(2, gap="large")
             with left:
-                st.markdown("**Structured request**")
-                st.code(json.dumps(result["request"], indent=2), language="json")
+                st.markdown("**Parsed into `MuseRequest`**")
+                st.dataframe([{"Field": k, "Value": json.dumps(v) if isinstance(v, list) or v is None else str(v)}
+                              for k, v in req.items()], width="stretch", hide_index=True)
             with right:
-                req = result["request"]
                 st.markdown("**What Mini Muse can do with it**")
                 route = {"weather": "→ `get_weather`", "calendar": "→ `check_calendar`",
                          "schedule": "→ `check_calendar`, then `create_event`", "email": "→ `lookup_contact`, then a draft",
@@ -157,11 +164,16 @@ def step1(main, panel, settings) -> None:
                     st.success("Has everything it needs.")
                 st.caption("Tools arrive in Week 4. Code can already route on `intent` because it is a fixed field, "
                            "not free text.")
-            _usage(result["llm"], result["seconds"])
+            with st.expander(f"What was sent to the model ({llm.usage.input_tokens} input tokens)"):
+                st.markdown("**Instructions**")
+                st.code(week1_understand.instructions(), language=None, wrap_lines=True)
+                st.markdown("**Your request**")
+                st.code(result.get("text", ""), language=None, wrap_lines=True)
+                st.caption("The JSON schema for `MuseRequest` is sent too, which is why the input tokens are more "
+                           "than these words alone. Tick **Show the JSON schema** to see it.")
         if show_schema:
+            st.markdown("**JSON schema sent with every request**")
             st.json(week1_understand.MuseRequest.model_json_schema(), expanded=False)
-            with st.expander("Instructions sent with every request"):
-                st.code(week1_understand.instructions(), language=None)
 
 
 # ------------------------------------------------------------------ week 2
