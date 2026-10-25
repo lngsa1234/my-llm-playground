@@ -29,16 +29,16 @@ A model can't answer from documents it has never seen. **RAG** (retrieval-augmen
 
 | Step | What happens | You control | See it in |
 |---|---|---|---|
-| 1. Chunk | Each document is cut into small pieces that can be searched | Chunk strategy, size, overlap | **Documents & chunks** tab |
+| 1. Chunk | Each document is cut into small pieces that can be searched | Chunk strategy, size, overlap | **See the chunks** |
 | 2. Index | Each chunk becomes an embedding: numbers that capture its meaning | Embedding model | Built once per setting |
-| 3. Search | The question is matched against every chunk; the best are kept | Search method, Top-K | **Ask** → What the model sees with RAG |
-| 4. Answer | The kept chunks go into the context; the model answers from them and cites the files, or says it doesn't know | Model, Evidence threshold (Advanced) | **Ask** → With RAG |
-| 5. Measure | Every benchmark question is searched: were the right documents found? | — | **Benchmark** tab |
+| 3. Search | The question is matched against every chunk; the best are kept | Search method, Top-K | **Ask a question** → What the model sees with RAG |
+| 4. Answer | The kept chunks go into the context; the model answers from them and cites the files, or says it doesn't know | Model, Evidence threshold (Advanced) | **Ask a question** → With RAG |
+| 5. Measure | Every benchmark question is searched: were the right documents found? | — | **Compare settings** |
 
 **Try this**
 - Ask "How many remote days are employees allowed?" Without RAG the model can only guess; with RAG it quotes NovaTech's policy.
-- Switch **Chunk strategy** to *By heading*, then open **Documents & chunks**: each policy becomes a single chunk. Ask again and compare the input tokens.
-- In **Benchmark**, run once with *Keywords*, once with *Meaning*, once with *Hybrid*, and compare recall in "Your runs so far".
+- Switch **Chunk strategy** to *By heading*, then open **See the chunks**: each policy becomes a single chunk. Ask again and compare the input tokens.
+- In **Compare settings**, run once with *Keywords*, once with *Meaning*, once with *Hybrid*, and compare recall in "Your runs so far".
 - Switch **Documents** to HotpotQA. Each answer needs two articles, so watch whether both ⭐ documents are found, and try a higher Top-K.
 """
 
@@ -92,7 +92,7 @@ def render() -> None:
     params = {"dataset": dataset, "chunk_size": chunk_size, "overlap": overlap, "top_k": top_k, "threshold": threshold,
               "strategy": strategy, "method": method}
     with main:
-        ask, documents, benchmark = st.tabs(["Ask", "Documents & chunks", "Benchmark"])
+        ask, documents, benchmark = st.tabs(["Ask a question", "See the chunks", "Compare settings"])
         with ask:
             _render_ask(settings, **params)
         with documents:

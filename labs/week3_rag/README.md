@@ -8,7 +8,7 @@ Lab guide: [knowledge_base/week-03-rag/lab.md](../../knowledge_base/week-03-rag/
 
 ```text
 week3_rag/
-├── page.py          the web page: Ask, Documents & chunks, Benchmark
+├── page.py          the web page: Ask a question, See the chunks, Compare settings
 ├── rag.py           loading, chunk strategies, embeddings, search methods, grounded generation
 ├── evaluation.py    datasets and benchmark scoring (Evidence Recall@K, exact match, token F1)
 ├── documents/
@@ -32,7 +32,7 @@ The app indexes every `.md` file directly inside a `documents/` subfolder, so ke
 | Embedding model | text-embedding-3-small · text-embedding-3-large (or type another) | The vectors used by meaning search; not used by keyword search |
 | Top-K | 1–8 | How many chunks go into the context |
 
-Change one setting, run the **Benchmark** tab, and compare in its "Your runs so far" table.
+Change one setting, run **Compare settings**, and compare in its "Your runs so far" table.
 
 ## Run it
 
