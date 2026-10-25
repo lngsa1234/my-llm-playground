@@ -34,8 +34,13 @@ INTENTS = {
 }
 
 
-class MuseRequest(BaseModel):
-    """What the user wants, in fields. Every field is present; unknown values are null."""
+class UnderstoodRequest(BaseModel):
+    """The model's OUTPUT: what Mini Muse understood the user asked for, as fixed fields.
+
+    This class is also the "output form" (JSON schema) sent with every call. Structured
+    output makes the model fill in exactly these fields, so code can read them directly.
+    Every field is always present; anything the user didn't say is null.
+    """
 
     intent: Intent = Field(description="The kind of request.")
     summary: str = Field(description="The request restated in under 12 words.")
@@ -58,9 +63,23 @@ def instructions() -> str:
     )
 
 
-def understand(llm, text: str) -> MuseRequest:
+def output_form() -> list[dict]:
+    """The output form in plain words: one row per field the model must fill in."""
+    rows = []
+    for name, spec in UnderstoodRequest.model_json_schema()["properties"].items():
+        allowed = ", ".join(INTENTS) if name == "intent" else ""
+        kinds = {t.get("type") for t in spec.get("anyOf", [spec])}
+        kind = "list of text" if "array" in kinds else "text"
+        if "null" in kinds:
+            kind += " or empty"
+        rows.append({"Field": name, "The model fills in": spec.get("description", ""), "Type": kind,
+                     "Allowed values": allowed})
+    return rows
+
+
+def understand(llm, text: str) -> UnderstoodRequest:
     """One structured-output call. `llm` is a mini_muse.llm.LLM (or a test fake)."""
-    return llm.parse(instructions(), text, MuseRequest)
+    return llm.parse(instructions(), text, UnderstoodRequest)
 
 
 if __name__ == "__main__":

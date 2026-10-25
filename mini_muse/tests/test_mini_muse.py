@@ -95,9 +95,9 @@ def test_every_schema_is_strict_and_named():
 
 # ------------------------------------------------------------------ week 1
 def test_understand_sends_today_and_returns_structure():
-    req = week1_understand.MuseRequest(intent="schedule", summary="Lunch with Maya", title="Lunch",
+    req = week1_understand.UnderstoodRequest(intent="schedule", summary="Lunch with Maya", title="Lunch",
                                        date="2026-10-27", time="12:00", city=None, people=["Maya"], missing_info=[])
-    llm = FakeLLM(parsed={"MuseRequest": req})
+    llm = FakeLLM(parsed={"UnderstoodRequest": req})
     assert week1_understand.understand(llm, "Lunch with Maya Tuesday noon").date == "2026-10-27"
     assert "2026-10-26" in week1_understand.instructions()
 
@@ -302,13 +302,13 @@ def test_golden_grade_counts_held_back_actions():
 
 # ------------------------------------------------------------------ week 8
 def test_assistant_uses_every_component_and_remembers():
-    req = week1_understand.MuseRequest(intent="notes", summary="Offsite budget", title=None, date=None,
+    req = week1_understand.UnderstoodRequest(intent="notes", summary="Offsite budget", title=None, date=None,
                                        time=None, city=None, people=["Jordan"], missing_info=[])
     llm = FakeLLM(
         replies=[tools_reply(call("search_notes", query="offsite budget")), "Jordan capped it at $4,000.",
                  lambda messages: "You asked about the budget." if any(
                      "Jordan capped" in m.get("content", "") for m in messages) else "?"],
-        parsed={"MuseRequest": req, "LearnedFacts": week2_memory.LearnedFacts(new_facts=[])})
+        parsed={"UnderstoodRequest": req, "LearnedFacts": week2_memory.LearnedFacts(new_facts=[])})
     muse = MiniMuse(llm)
     trace = muse.ask("What did Jordan say about the offsite budget?")
     assert trace["request"]["intent"] == "notes"

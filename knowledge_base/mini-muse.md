@@ -49,7 +49,7 @@ From Week 5, teams build their own projects. Mini Muse is the **reference implem
      "people": ["Maya"], "missing_info": []}
 ```
 
-- **Code:** [`week1_understand.py`](../mini_muse/week1_understand.py). The `MuseRequest` Pydantic model is the schema, and `understand()` makes the call.
+- **Code:** [`week1_understand.py`](../mini_muse/week1_understand.py). The `UnderstoodRequest` Pydantic model is the output form (the schema), and `understand()` makes the call.
 - **Run it:** Week 1 page → 🧩 Build Mini Muse, or `python -m mini_muse.week1_understand "Book lunch with Maya Tuesday at noon"`.
 - **Try:**
   - A relative date ("Tuesday"). It resolves only because today's date is put into the instructions.

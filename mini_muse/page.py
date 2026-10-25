@@ -26,7 +26,7 @@ from labs.shared.ui import (can_run, example_text_area, lab_parameters, metric_r
 from mini_muse import week1_understand, week2_memory, week3_knowledge, week4_tools, week5_agent, week6_eval
 from mini_muse.llm import LLM
 from mini_muse.week7_reliability import FAULTS, Runtime
-from mini_muse.world import NOTES_DIR, WORLD_TEMPLATE, new_world, today_line
+from mini_muse.world import NOTES_DIR, TODAY, WORLD_TEMPLATE, new_world, today_line
 
 COMPONENTS = {
     1: ("Understand", "week1_understand", "Turn a request into structured fields with one API call."),
@@ -114,13 +114,32 @@ def _world_viewer(world: dict | None = None) -> None:
 
 
 # ------------------------------------------------------------------ week 1
+NEXT_ACTION = {
+    "weather": "Look up the weather (`get_weather`).",
+    "calendar": "Read the calendar for that day (`check_calendar`).",
+    "schedule": "Check the calendar for a clash, then book it (`check_calendar` → `create_event`).",
+    "email": "Find the contact's address, then draft the email for you to approve (`lookup_contact`).",
+    "notes": "Search your notes for the answer (Week 3).",
+    "math": "Work it out with the calculator (`calculator`).",
+    "other": "Say politely that it can't help with this.",
+}
+
+
 def step1(main, panel, settings) -> None:
     with lab_parameters(panel):
-        show_schema = st.checkbox("Show the JSON schema", key="muse_w1_schema")
+        technical = st.checkbox("Show technical details", key="muse_w1_technical",
+                                help="The raw JSON schema and the exact instructions text.")
     with main:
-        _step_header(1, ["A request with a relative date: **Tuesday** resolves against today.",
-                         "A vague request: watch `missing_info` list what Mini Muse would have to ask.",
-                         "Something it can't do: the intent should be `other`."])
+        _step_header(1, ["A request with a relative date: **Tuesday** becomes a real date only because today's "
+                         "date is in the instructions.",
+                         "A vague request: watch **missing_info** list what Mini Muse would have to ask you.",
+                         "Something it can't do: the intent should be **other**."])
+        st.markdown("One API call reads your request and returns a filled-in form. "
+                    "Follow it from top to bottom: **① your request → ② what is sent → ③ what comes back → "
+                    "④ what Mini Muse does with it.**")
+
+        # ① input
+        st.markdown("#### ① Your request")
         text = _example("muse_w1", "Request", [
             "Book lunch with Maya on Tuesday at noon",
             "What's the weather in Chicago?",
@@ -138,44 +157,59 @@ def step1(main, panel, settings) -> None:
             except Exception as exc:  # noqa: BLE001
                 show_error("Structured output", exc)
         result = st.session_state.get("muse_w1_result")
-        if result:
-            llm, req = result["llm"], result["request"]
-            _usage(llm, result["seconds"])
-            st.markdown(f"**Model output**: the exact text the model returned, "
-                        f"{llm.usage.output_tokens} output tokens")
-            raw = result.get("raw")  # results saved by an older version of the page have no raw text
-            st.code(raw if raw is not None else "(click Understand again to see the raw output)", language="json",
-                    wrap_lines=True)
-            st.caption("Structured output forced it to be JSON that matches the schema, so code can read it "
-                       "without guessing. Below, the same JSON parsed into fields.")
-            left, right = st.columns(2, gap="large")
-            with left:
-                st.markdown("**Parsed into `MuseRequest`**")
-                st.dataframe([{"Field": k, "Value": json.dumps(v) if isinstance(v, list) or v is None else str(v)}
-                              for k, v in req.items()], width="stretch", hide_index=True)
-            with right:
-                st.markdown("**What Mini Muse can do with it**")
-                route = {"weather": "→ `get_weather`", "calendar": "→ `check_calendar`",
-                         "schedule": "→ `check_calendar`, then `create_event`", "email": "→ `lookup_contact`, then a draft",
-                         "notes": "→ search your notes (Week 3)", "math": "→ `calculator`",
-                         "other": "→ politely say it can't help"}[req["intent"]]
-                st.markdown(f"Intent **{req['intent']}** {route}")
-                if req["missing_info"]:
-                    st.warning("Needs before acting: " + ", ".join(req["missing_info"]))
-                else:
-                    st.success("Has everything it needs.")
-                st.caption("Tools arrive in Week 4. Code can already route on `intent` because it is a fixed field, "
-                           "not free text.")
-            with st.expander(f"What was sent to the model ({llm.usage.input_tokens} input tokens)"):
-                st.markdown("**Instructions**")
+        llm = result["llm"] if result else None
+
+        # ② what is sent
+        tokens_in = f" · {llm.usage.input_tokens} input tokens" if llm else ""
+        st.markdown(f"#### ② What is sent to the model{tokens_in}")
+        st.caption("Three things go in every call. The model remembers nothing between calls, so all three are "
+                   "sent (and paid for) every time.")
+        sent = st.columns(3, gap="medium")
+        with sent[0], st.container(border=True):
+            st.markdown("**Instructions**")
+            st.caption(f"What the job is, the list of intents, and today's date ({TODAY:%A}, {TODAY.isoformat()}) "
+                       "so that \"Tuesday\" can become a real date.")
+        with sent[1], st.container(border=True):
+            st.markdown("**Your request**")
+            st.caption((result.get("text") if result else None) or text or "(empty)")
+        with sent[2], st.container(border=True):
+            st.markdown("**The output form**")
+            st.caption("The fields the model must fill in, and the values it may use. Structured output "
+                       "enforces it: no missing fields, no made-up intents, no chatty prose.")
+        with st.expander("See the output form"):
+            st.dataframe(week1_understand.output_form(), width="stretch", hide_index=True)
+            if technical:
+                st.markdown("**As sent: JSON schema**")
+                st.json(week1_understand.UnderstoodRequest.model_json_schema(), expanded=False)
+        if technical:
+            with st.expander("See the instructions, word for word"):
                 st.code(week1_understand.instructions(), language=None, wrap_lines=True)
-                st.markdown("**Your request**")
-                st.code(result.get("text", ""), language=None, wrap_lines=True)
-                st.caption("The JSON schema for `MuseRequest` is sent too, which is why the input tokens are more "
-                           "than these words alone. Tick **Show the JSON schema** to see it.")
-        if show_schema:
-            st.markdown("**JSON schema sent with every request**")
-            st.json(week1_understand.MuseRequest.model_json_schema(), expanded=False)
+
+        # ③ what comes back
+        tokens_out = f" · {llm.usage.output_tokens} output tokens" if llm else ""
+        st.markdown(f"#### ③ What comes back{tokens_out}")
+        if not result:
+            st.info("Click **Understand** to see the model's answer: the output form, filled in.")
+            return
+        req = result["request"]
+        st.caption("The model's output, exactly as it returned it: the form above, filled in. That's all it sends.")
+        raw = result.get("raw")  # results saved by an older version of the page have no raw text
+        st.code(raw if raw is not None else json.dumps(req), language="json", wrap_lines=True)
+
+        # ④ what Mini Muse does with it
+        st.markdown("#### ④ What Mini Muse does with it")
+        st.caption("Because the answer always has the same fields, plain code can read them. No guessing from sentences.")
+        facts = {"Intent": req["intent"], "Date": req["date"], "Time": req["time"], "City": req["city"],
+                 "People": ", ".join(req["people"])}
+        metric_row({k: v or "—" for k, v in facts.items()})
+        if req["missing_info"]:
+            st.warning(f"**Next:** ask you for {', '.join(req['missing_info'])} before doing anything.")
+        else:
+            st.success(f"**Next:** {NEXT_ACTION[req['intent']]}")
+        st.caption("Mini Muse gets its tools in Week 4. In Week 1 it can already decide *what* it would do.")
+
+        st.markdown("#### What this call cost")
+        _usage(llm, result["seconds"])
 
 
 # ------------------------------------------------------------------ week 2
