@@ -294,6 +294,10 @@ def _render_benchmark(settings: ModelSettings, dataset: dict, chunk_size: int, o
             show_error("Benchmark", exc)
 
     runs = st.session_state.get("week3_runs", [])
+    if runs and any("Recall@K" not in r for r in runs):  # recorded before Recall@K / Precision@K existed
+        st.session_state.week3_runs = runs = [r for r in runs if "Recall@K" in r]
+        st.session_state.pop("week3_benchmark_rows", None)
+        st.info("Earlier runs used the old metrics and were cleared. Run again to compare with Recall@K and Precision@K.")
     if not runs:
         st.caption("Run once to start a comparison table.")
         return
@@ -306,7 +310,7 @@ def _render_benchmark(settings: ModelSettings, dataset: dict, chunk_size: int, o
                    "sent was needed?). Answers, when generated: **Exact match** and **F1**. Hover a column for details.")
 
     saved = st.session_state.get("week3_benchmark_rows")
-    if saved:
+    if saved and saved["rows"] and "Recall@K" in saved["rows"][0]:
         with st.expander(f"Question by question · run #{saved['run']}"):
             misses_only = st.checkbox("Show only misses", key="week3_misses")
             table = []
