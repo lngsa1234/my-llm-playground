@@ -55,7 +55,7 @@ Every week page in the app has a **🧩 Build Mini Muse** part next to the conce
 
 ## Week 1 — LLM Fundamentals
 
-📘 Concepts: [LLM concepts](week-01-llm-fundamentals/concepts.md) · Lab: [Build your first LLM application](week-01-llm-fundamentals/lab.md) · [Extension: web demo](week-01-llm-fundamentals/lab-web-demo.md)
+📘 Concepts: [LLM concepts](week-01-llm-fundamentals/concepts.md) · Lab: [Build your first LLM application](week-01-llm-fundamentals/lab.md) · [Extension: web demo](week-01-llm-fundamentals/lab-web-demo.md) · Handout: [Mini Muse, the course project](week-01-llm-fundamentals/handout-mini-muse.md)
 
 🧩 Mini Muse: 🧠 Understand: turn a request into structured fields · [guide](mini-muse.md#week-1---understand--structured-output)
 

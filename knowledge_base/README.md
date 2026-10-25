@@ -10,7 +10,7 @@ Notes for the Agent Engineering Peer Learning Circle, exported from Notion on 20
 
 | Week | Concepts | Lab |
 | --- | --- | --- |
-| 1 · LLM Fundamentals | [LLM concepts](week-01-llm-fundamentals/concepts.md) | [Build your first LLM application](week-01-llm-fundamentals/lab.md) · [Extension: web demo](week-01-llm-fundamentals/lab-web-demo.md) |
+| 1 · LLM Fundamentals | [LLM concepts](week-01-llm-fundamentals/concepts.md) | [Build your first LLM application](week-01-llm-fundamentals/lab.md) · [Extension: web demo](week-01-llm-fundamentals/lab-web-demo.md) · [Handout: Mini Muse](week-01-llm-fundamentals/handout-mini-muse.md) |
 | 2 · Context Engineering | [Context engineering](week-02-context-engineering/concepts.md) | [From single-call context to multi-run AI systems](week-02-context-engineering/lab.md) |
 | 3 · RAG | [Retrieval-augmented generation](week-03-rag/concepts.md) | [Build a RAG system from scratch](week-03-rag/lab.md) |
 | 4 · Tool Calling | [Tool calling](week-04-tool-calling/concepts.md) · [MCP](week-04-tool-calling/concepts-mcp.md) | [Weather assistant with tool calling & MCP](week-04-tool-calling/lab.md) |
@@ -23,6 +23,7 @@ Notes for the Agent Engineering Peer Learning Circle, exported from Notion on 20
 - `concepts-<subtopic>.md` — extra knowledge pages (e.g. `concepts-mcp.md`)
 - `lab.md` — the week's lab guide
 - `lab-<extension>.md` — optional lab extensions (e.g. `lab-web-demo.md`)
+- `handout-<topic>.md` — handouts for the session (e.g. `handout-mini-muse.md`)
 
 Page titles follow the same pattern: `Week N · Topic — Concepts` or `Week N · Topic — Lab: …`. Lab code lives outside this folder (see below).
 
