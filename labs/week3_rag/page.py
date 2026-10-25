@@ -35,6 +35,12 @@ A model can't answer from documents it has never seen. **RAG** (retrieval-augmen
 | 4. Answer | The kept chunks go into the context; the model answers from them and cites the files, or says it doesn't know | Model, Evidence threshold (Advanced) | **Ask a question** → With RAG |
 | 5. Measure | Every benchmark question is searched: were the right documents found? | — | **Compare settings** |
 
+**The two document sets** (Documents, in Lab parameters)
+- **NovaTech** (start here): 10 short policies from a made-up company. The model can't know them, so without RAG it can only guess. Each answer sits in **one** document.
+- **HotpotQA**: 198 real Wikipedia articles from a research benchmark. Each answer needs **two** articles (find who played a role, then what she did later), so search often finds only one of them. The model may already know some answers from training.
+
+Both include a few questions with no answer in the documents, to check that the system says so instead of guessing.
+
 **Try this**
 - Ask "How many remote days are employees allowed?" Without RAG the model can only guess; with RAG it quotes NovaTech's policy.
 - Switch **Chunk strategy** to *By heading*, then open **See the chunks**: each policy becomes a single chunk. Ask again and compare the input tokens.
