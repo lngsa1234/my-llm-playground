@@ -1,6 +1,6 @@
-# Week 3 Lab · Build and Evaluate a RAG System
+# Week 3 Lab · Retrieval-augmented generation
 
-Documents → chunks → embeddings → FAISS search → grounded answer with sources → evidence evaluation.
+Documents → chunks → embeddings → search → grounded answer with sources → evidence evaluation.
 
 Lab guide: [knowledge_base/week-03-rag/lab.md](../../knowledge_base/week-03-rag/lab.md)
 
@@ -8,8 +8,8 @@ Lab guide: [knowledge_base/week-03-rag/lab.md](../../knowledge_base/week-03-rag/
 
 ```text
 week3_rag/
-├── page.py          the web page: playground, documents & chunks, benchmark
-├── rag.py           loading, chunking, embeddings, hybrid retrieval, grounded generation
+├── page.py          the web page: Ask, Documents & chunks, Benchmark
+├── rag.py           loading, chunk strategies, embeddings, search methods, grounded generation
 ├── evaluation.py    datasets and benchmark scoring (Evidence Recall@K, exact match, token F1)
 ├── documents/
 │   ├── novatech/        ten fictional company-policy documents
@@ -22,6 +22,17 @@ week3_rag/
 ```
 
 The app indexes every `.md` file directly inside a `documents/` subfolder, so keep notes and other Markdown out of those folders.
+
+## Lab parameters
+
+| Setting | Options | What changes |
+| --- | --- | --- |
+| Chunk strategy | Fixed size (size + overlap) · By paragraph · By heading | Where documents are cut, and so whether a fact stays in one piece |
+| Search method | Hybrid · Meaning · Keywords | Meaning finds paraphrases, keywords find exact names and numbers, hybrid merges both |
+| Embedding model | text-embedding-3-small · text-embedding-3-large (or type another) | The vectors used by meaning search; not used by keyword search |
+| Top-K | 1–8 | How many chunks go into the context |
+
+Change one setting, run the **Benchmark** tab, and compare in its "Your runs so far" table.
 
 ## Run it
 

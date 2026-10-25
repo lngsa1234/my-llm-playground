@@ -25,6 +25,20 @@ from openai import OpenAI
 
 
 DEFAULT_EMBEDDING_MODEL = "text-embedding-3-small"
+EMBEDDING_MODELS = ["text-embedding-3-small", "text-embedding-3-large"]
+
+# How documents are cut into chunks.
+CHUNK_STRATEGIES = {
+    "fixed": "Fixed size",       # every N characters, with overlap
+    "paragraph": "By paragraph",  # at blank lines; a heading stays with the paragraph after it
+    "heading": "By heading",      # at Markdown headings: one chunk per section
+}
+# How chunks are found for a question.
+SEARCH_METHODS = {
+    "hybrid": "Hybrid",       # meaning and keywords, merged by reciprocal-rank fusion
+    "dense": "Meaning",       # embeddings only
+    "keyword": "Keywords",    # BM25 only; no embedding call for the question
+}
 ABSTENTION = "I don't have enough information in the provided knowledge base."
 MAX_LINKED_CHUNKS = 3
 
@@ -92,12 +106,50 @@ def chunk_text(text: str, chunk_size: int = 500, overlap: int = 50) -> list[str]
     return chunks
 
 
-def chunk_documents(documents: Iterable[Document], chunk_size: int, overlap: int) -> list[Chunk]:
+def split_paragraphs(text: str) -> list[str]:
+    """One chunk per paragraph (blank-line separated). A heading joins the paragraph after it."""
+    chunks, heading = [], ""
+    for block in re.split(r"\n\s*\n", text):
+        block = " ".join(block.split())
+        if not block:
+            continue
+        if block.startswith("#") and len(block.splitlines()) == 1 and len(block) < 120 and "." not in block[-1:]:
+            heading = f"{heading} {block}".strip()
+            continue
+        chunks.append(f"{heading} {block}".strip() if heading else block)
+        heading = ""
+    if heading:
+        chunks.append(heading)
+    return chunks
+
+
+def split_sections(text: str) -> list[str]:
+    """One chunk per Markdown section: a heading line and everything up to the next heading."""
+    sections, current = [], []
+    for line in text.splitlines():
+        if re.match(r"\s*#{1,6}\s", line) and any(part.strip() for part in current):
+            sections.append(current)
+            current = []
+        current.append(line)
+    if any(part.strip() for part in current):
+        sections.append(current)
+    return [" ".join(" ".join(lines).split()) for lines in sections]
+
+
+def chunk_document_text(text: str, strategy: str = "fixed", chunk_size: int = 500, overlap: int = 50) -> list[str]:
+    if strategy == "paragraph":
+        return split_paragraphs(text)
+    if strategy == "heading":
+        return split_sections(text)
+    return chunk_text(text, chunk_size, overlap)
+
+
+def chunk_documents(documents: Iterable[Document], chunk_size: int, overlap: int, strategy: str = "fixed") -> list[Chunk]:
     chunks: list[Chunk] = []
     for document in documents:
         chunks.extend(
             Chunk(source=document.source, text=text, chunk_number=number)
-            for number, text in enumerate(chunk_text(document.text, chunk_size, overlap), start=1)
+            for number, text in enumerate(chunk_document_text(document.text, strategy, chunk_size, overlap), start=1)
         )
     return chunks
 
@@ -126,13 +178,14 @@ def build_index(
     chunk_size: int,
     overlap: int,
     embedding_model: str = DEFAULT_EMBEDDING_MODEL,
+    strategy: str = "fixed",
 ) -> RagIndex:
-    """Load, chunk, embed, and add NovaTech knowledge to a FAISS index."""
+    """Load, chunk, embed, and add the documents to a FAISS index."""
     if faiss is None or np is None:
         raise RuntimeError("FAISS is not installed. Run `pip install -r requirements.txt` and restart Streamlit.")
     started = time.perf_counter()
     documents = load_documents(knowledge_base)
-    chunks = chunk_documents(documents, chunk_size, overlap)
+    chunks = chunk_documents(documents, chunk_size, overlap, strategy)
     if not chunks:
         raise ValueError("No markdown chunks were found in the knowledge base.")
     matrix, tokens = embed_texts(OpenAI(), [chunk.text for chunk in chunks], embedding_model)
@@ -205,28 +258,40 @@ def _linked_source_positions(rag_index: RagIndex, primary_positions: list[int]) 
     return linked[:MAX_LINKED_CHUNKS]
 
 
-def retrieve(rag_index: RagIndex, question: str, top_k: int) -> tuple[list[dict], float, int]:
-    """Hybrid, multi-hop retrieval using dense search, BM25, RRF, and title links."""
+def retrieve(rag_index: RagIndex, question: str, top_k: int, method: str = "hybrid") -> tuple[list[dict], float, int]:
+    """Find the chunks for a question by meaning, by keywords, or both; then follow title links (multi-hop)."""
     if not question.strip():
         raise ValueError("Enter a question first.")
+    if method not in SEARCH_METHODS:
+        raise ValueError(f"Unknown search method: {method}")
     started = time.perf_counter()
-    vector, tokens = embed_texts(OpenAI(), [question], rag_index.embedding_model)
     candidate_limit = min(max(top_k * 4, 12), len(rag_index.chunks))
-    scores, positions = rag_index.index.search(vector, candidate_limit)
-    dense_scores = {int(position): float(score) for score, position in zip(scores[0], positions[0]) if position != -1}
-    lexical_scores = _bm25_scores(question, rag_index.chunks)
+    dense_scores: dict[int, float] = {}
+    tokens = 0
+    if method in {"hybrid", "dense"}:
+        vector, tokens = embed_texts(OpenAI(), [question], rag_index.embedding_model)
+        scores, positions = rag_index.index.search(vector, candidate_limit)
+        dense_scores = {int(position): float(score) for score, position in zip(scores[0], positions[0]) if position != -1}
+    lexical_scores = (_bm25_scores(question, rag_index.chunks) if method in {"hybrid", "keyword"}
+                      else [0.0] * len(rag_index.chunks))
     dense_positions = list(dense_scores)
-    lexical_positions = _ranked_positions(lexical_scores, candidate_limit)
+    lexical_positions = [p for p in _ranked_positions(lexical_scores, candidate_limit) if lexical_scores[p] > 0]
     candidates = set(dense_positions) | set(lexical_positions)
     fused_scores = {position: 0.0 for position in candidates}
     for rank, position in enumerate(dense_positions, start=1):
         fused_scores[position] = fused_scores.get(position, 0.0) + 1 / (60 + rank)
     for rank, position in enumerate(lexical_positions, start=1):
         fused_scores[position] = fused_scores.get(position, 0.0) + 1 / (60 + rank)
-    primary_positions = sorted(candidates, key=lambda position: fused_scores[position], reverse=True)
+    if method == "dense":
+        primary_positions = dense_positions
+    elif method == "keyword":
+        primary_positions = lexical_positions
+    else:
+        primary_positions = sorted(candidates, key=lambda position: fused_scores[position], reverse=True)
     dense_ranks = {position: rank for rank, position in enumerate(dense_positions, start=1)}
     lexical_ranks = {position: rank for rank, position in enumerate(lexical_positions, start=1)}
     fused_ranks = {position: rank for rank, position in enumerate(primary_positions, start=1)}
+    found_by = {"hybrid": "meaning + keywords", "dense": "meaning", "keyword": "keywords"}[method]
 
     # A title named in a retrieved chunk is an explicit, corpus-grounded bridge
     # to another document. Reserve room for these second-hop evidence chunks.
@@ -249,7 +314,7 @@ def retrieve(rag_index: RagIndex, question: str, top_k: int) -> tuple[list[dict]
             "dense_rank": dense_ranks.get(position),
             "lexical_rank": lexical_ranks.get(position),
             "fused_rank": fused_ranks.get(position, "linked"),
-            "retrieval_method": "title-linked second hop" if position in linked_positions else "dense + BM25 + RRF",
+            "retrieval_method": "title-linked second hop" if position in linked_positions else found_by,
         }
         for position in selected_positions
     ]

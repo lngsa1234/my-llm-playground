@@ -217,3 +217,62 @@ def test_answer_score_ignores_the_sources_line():
 
     assert exact == 1.0
     assert f1 == 1.0
+
+
+# ------------------------------------------------------------------ chunk strategies and search methods
+from labs.week3_rag.rag import chunk_document_text, split_paragraphs, split_sections  # noqa: E402
+
+DOC = "# Refund Policy\n\nPro customers get 14 days.\n\nEnterprise is non-refundable.\n\n## Exceptions\n\nOutages extend the window."
+
+
+def test_paragraph_chunks_keep_a_heading_with_the_next_paragraph():
+    assert split_paragraphs(DOC) == ["# Refund Policy Pro customers get 14 days.", "Enterprise is non-refundable.",
+                                     "## Exceptions Outages extend the window."]
+
+
+def test_heading_chunks_are_whole_sections():
+    assert split_sections(DOC) == ["# Refund Policy Pro customers get 14 days. Enterprise is non-refundable.",
+                                   "## Exceptions Outages extend the window."]
+
+
+def test_fixed_strategy_is_the_original_chunker():
+    assert chunk_document_text(DOC, "fixed", 40, 10) == chunk_text(DOC, 40, 10)
+
+
+def _toy_index():
+    import faiss
+    import numpy as np
+
+    chunks = [Chunk("a.md", "refund window fourteen days", 1), Chunk("b.md", "remote work three days", 1),
+              Chunk("c.md", "money back period for subscriptions", 1)]
+    vectors = np.asarray([[1, 0, 0], [0, 1, 0], [0.9, 0, 0.1]], dtype="float32")
+    faiss.normalize_L2(vectors)
+    index = faiss.IndexFlatIP(3)
+    index.add(vectors)
+    return RagIndex(index, chunks, {"a.md": "A", "b.md": "B", "c.md": "C"}, "fake", 0.0, 0)
+
+
+def test_keyword_search_makes_no_embedding_call(monkeypatch):
+    def fail(*_):
+        raise AssertionError("keyword search must not embed")
+
+    monkeypatch.setattr("labs.week3_rag.rag.embed_texts", fail)
+    results, _, tokens = retrieve(_toy_index(), "refund window", 2, "keyword")
+    assert [r["source"] for r in results] == ["a.md"] and tokens == 0
+    assert results[0]["retrieval_method"] == "keywords"
+
+
+def test_meaning_search_finds_a_paraphrase_keywords_miss(monkeypatch):
+    import numpy as np
+
+    from labs.week3_rag.rag import _normalized_matrix
+
+    monkeypatch.setattr("labs.week3_rag.rag.OpenAI", lambda: object())
+    monkeypatch.setattr("labs.week3_rag.rag.embed_texts",
+                        lambda client, texts, model: (_normalized_matrix([[0.95, 0, 0.05]]), 3))
+    dense, _, _ = retrieve(_toy_index(), "money back", 2, "dense")
+    assert {r["source"] for r in dense} == {"a.md", "c.md"} and all(r["lexical_score"] == 0 for r in dense)
+    keyword, _, _ = retrieve(_toy_index(), "how long to get a reimbursement", 2, "keyword")
+    assert keyword == []
+    with pytest.raises(ValueError):
+        retrieve(_toy_index(), "x", 1, "magic")

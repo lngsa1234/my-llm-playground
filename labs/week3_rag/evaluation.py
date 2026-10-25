@@ -12,7 +12,7 @@ from pathlib import Path
 from labs.week3_rag.rag import ABSTENTION, generate_with_rag, retrieve
 
 LAB = Path(__file__).resolve().parent  # this lab folder: documents/, questions/
-RETRIEVAL_PIPELINE_VERSION = "hybrid-title-neighbors-v7"
+RETRIEVAL_PIPELINE_VERSION = "strategies-and-methods-v8"
 
 DATASETS = {
     "HotpotQA mini · multi-hop": {
@@ -88,11 +88,11 @@ def answer_scores(answer: str, expected: str) -> tuple[float, float]:
 
 
 def run_rag_benchmark(index, questions: list[dict], model: str, top_k: int, threshold: float,
-                      generate_answers: bool, progress=None) -> list[dict]:
+                      generate_answers: bool, progress=None, method: str = "hybrid") -> list[dict]:
     """Retrieve (and optionally answer) every benchmark question; return one row per question."""
     rows = []
     for position, item in enumerate(questions, start=1):
-        results, latency, _ = retrieve(index, item["question"], top_k)
+        results, latency, _ = retrieve(index, item["question"], top_k, method)
         answer = generate_with_rag(model, item["question"], results, threshold) if generate_answers else None
         evidence_found = expected_found(item, results)
         exact_match = f1 = None

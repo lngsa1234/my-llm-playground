@@ -74,6 +74,17 @@ def _step_header(week: int, try_this: list[str]) -> None:
             st.markdown("**Try:**\n" + "\n".join(f"- {t}" for t in try_this))
 
 
+def _with_embedding(settings, key: str, disabled: bool):
+    """The embedding model, as a search setting in Lab parameters (it decides what search finds)."""
+    from dataclasses import replace
+
+    from labs.week3_rag.rag import EMBEDDING_MODELS
+
+    chosen = st.selectbox("Embedding model", EMBEDDING_MODELS, key=key, accept_new_options=True, disabled=disabled,
+                          help="Turns notes and questions into vectors for semantic search. Not used by keyword search.")
+    return replace(settings, embedding_model=chosen or settings.embedding_model)
+
+
 def _example(key: str, label: str, examples: list[str], height: int = 70) -> str:
     return example_text_area(label, examples, key, height)
 
@@ -273,6 +284,7 @@ def step3(main, panel, settings) -> None:
     with lab_parameters(panel):
         mode = st.radio("Search", week3_knowledge.MODES, key="muse_w3_mode", horizontal=True,
                         help="keyword is offline and free; semantic and hybrid embed your notes once.")
+        settings = _with_embedding(settings, "week3_embedding_model", disabled=mode == "keyword")
         top_k = st.slider("Top-K sections", 1, 6, 3, key="muse_w3_k")
     with main:
         _step_header(3, ["**Search only** is free: compare keyword with hybrid for “How much is the venue Jordan likes?”.",
@@ -576,6 +588,7 @@ def step8(main, panel, settings) -> None:
         learn = st.checkbox("🗂️ Learn facts (Week 2)", True, key="muse_w8_learn")
         max_turns = st.slider("🗂️ Recent turns kept", 0, 10, 4, key="muse_w8_turns")
         mode = st.radio("📚 Notes search (Week 3)", week3_knowledge.MODES, key="muse_w8_mode", horizontal=True)
+        settings = _with_embedding(settings, "muse_w8_embedding", disabled=mode == "keyword")
         max_steps = st.slider("🔁 Max agent steps (Week 5)", 1, 10, week5_agent.DEFAULT_MAX_STEPS, key="muse_w8_steps")
         retries = st.slider("🛡️ Retries (Week 7)", 0, 3, 2, key="muse_w8_retries")
     session = st.session_state.setdefault("muse_w8", {"memory": {}, "world": new_world(), "turns": [], "approved": []})
@@ -670,7 +683,7 @@ def render() -> None:
     with main:
         week = st.selectbox("Component", list(labels), index=7, format_func=labels.get, key="muse_component")
         _progress(week)
-    settings = model_settings(panel, embedding=week in (3, 8))
+    settings = model_settings(panel)
     render_step(week, main, panel, settings)
 
 
