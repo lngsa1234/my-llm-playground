@@ -55,14 +55,23 @@ class Reply:
 
 class LLM:
     def __init__(self, settings: ModelSettings, client=None):
+        self.last_request: dict | None = None  # the exact JSON body of the latest API request
+        self.last_output = ""  # the exact text the model returned on the latest call, before parsing
         if client is None:
-            from openai import OpenAI
+            from openai import DefaultHttpxClient, OpenAI
 
-            client = OpenAI()
+            # The SDK's own HTTP client, plus a hook that keeps a copy of each request body so the
+            # app can show exactly what was sent. Headers (which hold the API key) are not kept.
+            client = OpenAI(http_client=DefaultHttpxClient(event_hooks={"request": [self._keep_request]}))
         self.client = client
         self.settings = settings
         self.usage = Usage()
-        self.last_output = ""  # the exact text the model returned on the latest call, before parsing
+
+    def _keep_request(self, request) -> None:
+        try:
+            self.last_request = json.loads(request.content or b"{}")
+        except ValueError:
+            self.last_request = None
 
     @property
     def model(self) -> str:

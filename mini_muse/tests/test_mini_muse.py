@@ -377,3 +377,33 @@ def test_parse_keeps_the_raw_model_output():
     llm = LLM(ModelSettings(), client=client)
     assert llm.parse("x", "y", week2_memory.LearnedFacts).new_facts == ["Prefers mornings"]
     assert llm.last_output == raw and llm.usage.output_tokens == 9
+
+
+def test_llm_keeps_a_copy_of_the_exact_request_body(monkeypatch):
+    import httpx2
+    from openai import DefaultHttpxClient, OpenAI
+
+    from labs.shared.settings import ModelSettings
+    from mini_muse.llm import LLM
+
+    monkeypatch.setenv("OPENAI_API_KEY", "test-key")
+    llm = LLM(ModelSettings())
+    body = '{"intent":"other","summary":"x","title":null,"date":null,"time":null,"city":null,"people":[],"missing_info":[]}'
+
+    def handler(request):
+        return httpx2.Response(200, json={
+            "id": "r", "object": "response", "created_at": 0, "model": "m", "status": "completed",
+            "parallel_tool_calls": True, "tool_choice": "auto", "tools": [],
+            "output": [{"type": "message", "id": "m1", "role": "assistant", "status": "completed",
+                        "content": [{"type": "output_text", "annotations": [], "text": body}]}],
+            "usage": {"input_tokens": 5, "output_tokens": 3, "total_tokens": 8,
+                      "input_tokens_details": {"cached_tokens": 0}, "output_tokens_details": {"reasoning_tokens": 0}}})
+
+    llm.client = OpenAI(api_key="test-key", http_client=DefaultHttpxClient(
+        transport=httpx2.MockTransport(handler), event_hooks={"request": [llm._keep_request]}))
+    week1_understand.understand(llm, "Book lunch with Maya")
+    sent = llm.last_request
+    assert sent["input"] == "Book lunch with Maya" and "Today is Monday, 2026-10-26" in sent["instructions"]
+    assert sent["text"]["format"]["name"] == "UnderstoodRequest" and sent["text"]["format"]["strict"] is True
+    assert "test-key" not in json.dumps(sent)
+    assert llm.last_output == body

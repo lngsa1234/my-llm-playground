@@ -150,7 +150,8 @@ def step1(main, panel, settings) -> None:
                 started = time.perf_counter()
                 request = week1_understand.understand(llm, text)
                 st.session_state.muse_w1_result = {"request": request.model_dump(), "llm": llm, "text": text,
-                                                   "raw": llm.last_output, "seconds": time.perf_counter() - started}
+                                                   "raw": llm.last_output, "sent": llm.last_request,
+                                                   "seconds": time.perf_counter() - started}
             except Exception as exc:  # noqa: BLE001
                 show_error("Structured output", exc)
         result = st.session_state.get("muse_w1_result")
@@ -173,6 +174,15 @@ def step1(main, panel, settings) -> None:
             st.markdown("**The output form**")
             st.caption("The fields the model must fill in, and the values it may use. Structured output "
                        "enforces it: no missing fields, no made-up intents, no chatty prose.")
+        with st.expander("Exactly what was sent: the API request", expanded=bool(result)):
+            sent_body = result.get("sent") if result else None
+            if sent_body:
+                st.caption("The body of the HTTP request to the OpenAI Responses API, copied as it left the app. "
+                           "`instructions`, `input` and `text.format.schema` are the three cards above. "
+                           "The API key travels in a request header and is not shown.")
+                st.json(sent_body, expanded=2)
+            else:
+                st.caption("Click **Understand** to see the request exactly as it is sent.")
         with st.expander("See the output form"):
             st.dataframe(week1_understand.output_form(), width="stretch", hide_index=True)
             if technical:

@@ -34,13 +34,12 @@ INTENTS = {
 }
 
 
+# The model's OUTPUT: what Mini Muse understood you asked for, as fixed fields. This class is
+# also the "output form" (a JSON schema) sent with every call, and structured output makes the
+# model fill in exactly these fields. Its docstring and field descriptions are sent too, so they
+# are written for the model.
 class UnderstoodRequest(BaseModel):
-    """The model's OUTPUT: what Mini Muse understood the user asked for, as fixed fields.
-
-    This class is also the "output form" (JSON schema) sent with every call. Structured
-    output makes the model fill in exactly these fields, so code can read them directly.
-    Every field is always present; anything the user didn't say is null.
-    """
+    """What the user is asking for, as fixed fields. Anything the user did not state is null."""
 
     intent: Intent = Field(description="The kind of request.")
     summary: str = Field(description="The request restated in under 12 words.")
