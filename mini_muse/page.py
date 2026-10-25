@@ -21,7 +21,7 @@ import time
 
 import streamlit as st
 
-from labs.shared.ui import (can_run, example_text_area, lab_parameters, metric_row, model_settings, page_layout, run_standalone,
+from labs.shared.ui import (can_run, example_text_area, usage_line, lab_parameters, metric_row, model_settings, page_layout, run_standalone,
                             show_error, usage_metrics)
 from mini_muse import week1_understand, week2_memory, week3_knowledge, week4_tools, week5_agent, week6_eval
 from mini_muse.llm import LLM
@@ -286,8 +286,9 @@ def step3(main, panel, settings) -> None:
             "lodging in Chicago",
             "What's my dentist's phone number?",
         ], height=60)
-        search_col, answer_col = st.columns(2)
-        do_search = search_col.button("Search only (free)", width="stretch", key="muse_w3_search")
+        search_col, answer_col, _ = st.columns([1, 1, 2])
+        do_search = search_col.button("Search only", width="stretch", key="muse_w3_search",
+                                      help="Free with keyword search: no model call.")
         do_answer = answer_col.button("Answer from notes", type="primary", width="stretch", key="muse_w3_answer")
         needs_model = mode != "keyword" or do_answer
         try:
@@ -300,26 +301,36 @@ def step3(main, panel, settings) -> None:
                     result = week3_knowledge.answer(llm, index, question, top_k, mode)
                 else:
                     result = {"results": week3_knowledge.search(index, question, top_k, mode, llm), "answer": None}
-                st.session_state.muse_w3_result = {**result, "llm": llm, "seconds": time.perf_counter() - started}
+                st.session_state.muse_w3_result = {**result, "llm": llm, "question": question,
+                                                   "seconds": time.perf_counter() - started}
         except Exception as exc:  # noqa: BLE001
             show_error("Notes search", exc)
+
         result = st.session_state.get("muse_w3_result")
-        if result:
-            if result["answer"] is not None:
+        if not result or result.get("question", question) != question:
+            st.caption("Search to see which sections of your notes match, or answer to have Mini Muse reply from them.")
+        else:
+            found, answer_box = st.columns(2, gap="large")
+            with found, st.container(border=True):
+                st.markdown(f"**Sections found** · {result['results'][0]['mode'] if result['results'] else mode} search")
+                if not result["results"]:
+                    st.caption("No section shares words with the question. Try semantic or hybrid search.")
+                for r in result["results"]:
+                    with st.expander(f"#{r['rank']} · {r['source']} · score {r['score']:.2f}", expanded=r["rank"] == 1):
+                        st.code(r["text"], language=None, wrap_lines=True)
+            with answer_box, st.container(border=True):
                 st.markdown("**Answer**")
-                st.info(result["answer"])
-            st.markdown("**Retrieved sections**")
-            if result["results"]:
-                st.dataframe([{"#": r["rank"], "Source": r["source"], "Score": str(r["score"]), "Mode": r["mode"],
-                               "Text": r["text"]} for r in result["results"]], width="stretch", hide_index=True)
-            else:
-                st.warning("No section matched these words. Try semantic or hybrid search.")
-            if result["llm"]:
-                _usage(result["llm"], result["seconds"])
+                if result["answer"] is None:
+                    st.caption("Search only: no answer was generated. Click **Answer from notes** to get one.")
+                else:
+                    st.markdown(result["answer"])
+                if result["llm"]:
+                    llm = result["llm"]
+                    usage_line(llm.usage.input_tokens, llm.usage.output_tokens, result["seconds"], llm.cost())
         with st.expander("Your notes"):
             for path in sorted(NOTES_DIR.glob("*.md")):
                 st.markdown(f"**{path.name}**")
-                st.code(path.read_text(encoding="utf-8"), language="markdown")
+                st.code(path.read_text(encoding="utf-8"), language=None, wrap_lines=True)
 
 
 # ------------------------------------------------------------------ week 4

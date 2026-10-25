@@ -1,6 +1,6 @@
 # Agent Engineering Peer Learning Labs
 
-Over 8 weeks the circle builds **Mini Muse**, a personal-assistant agent, one component per week ([guide](knowledge_base/mini-muse.md)). Alongside it are hands-on concept labs: a single API-call playground (Week 1), a context-strategy explorer (Week 2), an inspectable Retrieval-Augmented Generation system (Week 3), a tool-calling/MCP weather assistant (Week 4), a stateful workflow agent (Week 5), agent evaluation with regression testing (Week 6), and a production reliability drill (Week 7).
+Over 8 weeks the circle builds **Mini Muse**, a personal-assistant agent, one component per week ([guide](knowledge_base/mini-muse.md)). Alongside it are hands-on concept labs: a single API-call playground (Week 1), a context-strategy explorer (Week 2), retrieval-augmented generation compared with and without documents (Week 3), a tool-calling/MCP weather assistant (Week 4), a stateful workflow agent (Week 5), agent evaluation with regression testing (Week 6), and a production reliability drill (Week 7).
 
 ## Repository layout
 

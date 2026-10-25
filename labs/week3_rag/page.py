@@ -1,4 +1,4 @@
-"""Week 3 page: build and evaluate a RAG system.
+"""Week 3 page: retrieval-augmented generation (RAG). Answer from documents the model has never seen.
 
 Run alone:   streamlit run labs/week3_rag/page.py
 In the site: streamlit run app.py
@@ -15,201 +15,197 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 import streamlit as st
 
 from labs.shared.settings import ModelSettings
+from labs.shared.ui import (can_run, example_text_area, lab_parameters, metric_row, mini_muse_part, model_settings,
+                            page_layout, run_standalone, show_error, usage_line)
 from labs.week3_rag import evaluation as ev
-from labs.week3_rag.rag import (
-    approximate_tokens,
-    build_context,
-    build_index,
-    chunk_documents,
-    generate_with_rag,
-    generate_without_rag,
-    load_documents,
-    retrieve,
-)
-from labs.shared.ui import mini_muse_part, can_run, lab_parameters, metric_row, model_settings, page_layout, show_error, run_standalone
+from labs.week3_rag.rag import build_index, chunk_documents, generate_with_rag, generate_without_rag, load_documents, retrieve
 
 HOW_IT_WORKS = """
-1. **Load and chunk** — Markdown files from this lab's `documents/` folder are split into overlapping chunks with source and chunk-number metadata.
-2. **Build two retrieval signals** — Every chunk gets an embedding for semantic search, and token frequencies for BM25 keyword search.
-3. **Rank the question** — The question is embedded, compared with chunks in FAISS, and combined with BM25 rankings through reciprocal-rank fusion (RRF).
-4. **Follow evidence links** — If a top chunk names another document's title, up to three chunks from that document are added for a grounded second hop.
-5. **Construct the context** — The selected chunks, with source filenames and chunk numbers, become the context sent to the answer model.
-6. **Gate and answer** — The app answers only when dense, keyword or title-linked evidence supports the question, and cites the source files. Otherwise it abstains.
-7. **Inspect and evaluate** — Retrieved chunks, ranks, scores, the augmented prompt and benchmark Evidence Recall@K are all visible.
+A model only knows what it was trained on and what you put in its context. **RAG** finds the relevant passages in your own documents and puts them in the context, so the answer can be grounded in them.
+
+1. **Chunk:** each document is split into short, overlapping pieces (Chunk size and Chunk overlap in Lab parameters).
+2. **Index:** every chunk is turned into an embedding (a list of numbers that captures meaning) and stored for search.
+3. **Retrieve:** the question is matched against the chunks by meaning and by keywords, and the best **Top-K** are kept.
+4. **Answer:** those chunks go into the context, and the model answers from them, citing the source files. If nothing relevant was found, it says so instead of guessing.
+
+The **Ask** tab compares the same question with and without RAG. **Documents & chunks** shows how chunking cuts a document. **Benchmark** measures retrieval over many questions at once.
 """
 
 
+def _evidence(item: dict) -> set[str]:
+    value = item.get("evidence") or []
+    return {value} if isinstance(value, str) else set(value)
+
+
 def render() -> None:
-    main, panel = page_layout("Week 3 · Build and Evaluate a RAG System")
+    main, panel = page_layout("Week 3 · Retrieval-augmented generation")
     if mini_muse_part(main, panel, 3, embedding=True,
-                      caption="Documents → chunks → embeddings → FAISS search → grounded answer + sources → evidence evaluation",
+                      caption="Give the model passages from your own documents, and compare its answer with and without them.",
                       how_it_works=HOW_IT_WORKS):
         return
-    settings = model_settings(panel, max_tokens=False, prices=False, embedding=True)
+    settings = model_settings(panel, embedding=True)
+    names = list(ev.DATASETS)
     with lab_parameters(panel):
-        dataset_name = st.selectbox("Dataset", list(ev.DATASETS), key="week3_dataset")
+        dataset_name = st.selectbox("Documents", names, index=len(names) - 1, key="week3_dataset",
+                                    help="NovaTech: 10 short company policies, one document per answer. "
+                                         "HotpotQA: 198 Wikipedia articles, two documents per answer.")
         chunk_size = int(st.slider("Chunk size (characters)", 100, 1200, 200, 50, key="week3_chunk_size"))
         overlap = int(st.slider("Chunk overlap (characters)", 0, 250, 50, 10, key="week3_overlap"))
         if overlap >= chunk_size:
             st.error("Overlap must be smaller than chunk size.")
             overlap = max(0, chunk_size - 1)
-        top_k = int(st.slider("Top-K initial chunks", 1, 8, 3, key="week3_top_k"))
-        threshold = float(st.slider("Evidence threshold", 0.0, 1.0, 0.10, 0.01, key="week3_threshold_v2"))
-        st.caption("Below the evidence threshold, the app abstains unless keyword or title-linked evidence supports the question. "
-                   "0.10 allows multi-hop evidence with modest embedding similarity.")
-    panel.caption(ev.LOADED_BUILD_STAMP)
+        top_k = int(st.slider("Top-K chunks", 1, 8, 3, key="week3_top_k", help="How many chunks go into the context."))
+        with st.expander("Advanced"):
+            threshold = float(st.slider("Evidence threshold", 0.0, 1.0, 0.10, 0.01, key="week3_threshold_v2",
+                                        help="Below this similarity the app declines to answer, unless keyword or "
+                                             "title matches support the question."))
+            st.caption(ev.LOADED_BUILD_STAMP)
 
-    params = {"dataset": ev.DATASETS[dataset_name], "chunk_size": chunk_size, "overlap": overlap,
-              "top_k": top_k, "threshold": threshold}
+    dataset = ev.DATASETS[dataset_name]
+    params = {"dataset": dataset, "chunk_size": chunk_size, "overlap": overlap, "top_k": top_k, "threshold": threshold}
     with main:
-        playground, documents, benchmark = st.tabs(["Playground", "Documents & chunks", "Benchmark"])
-        with playground:
-            _render_playground(settings, **params)
+        ask, documents, benchmark = st.tabs(["Ask", "Documents & chunks", "Benchmark"])
+        with ask:
+            _render_ask(settings, **params)
         with documents:
-            _render_documents(params["dataset"], chunk_size, overlap)
+            _render_documents(dataset, chunk_size, overlap)
         with benchmark:
             _render_benchmark(settings, **params)
 
 
 def _get_index(knowledge_base: Path, chunk_size: int, overlap: int, embedding_model: str):
-    """Build the FAISS index once per (dataset, chunking, embedding model) and keep it in the session."""
+    """Build the index once per (documents, chunking, embedding model) and keep it in the session."""
     key = (str(knowledge_base), chunk_size, overlap, embedding_model)
     if st.session_state.get("week3_index_key") != key:
-        with st.spinner("Loading documents, chunking, embedding, and building the FAISS index…"):
+        with st.spinner("Chunking and embedding the documents (once per setting)…"):
             st.session_state.week3_index = build_index(knowledge_base, chunk_size, overlap, embedding_model)
             st.session_state.week3_index_key = key
     return st.session_state.week3_index
 
 
-def _render_playground(settings: ModelSettings, dataset: dict, chunk_size: int, overlap: int, top_k: int, threshold: float) -> None:
-    st.caption("Compare the base model's answer with an answer grounded in retrieved evidence.")
-    question = st.text_area("Ask a question", dataset["default_question"], height=88, key="week3_question")
-    plain, rag = st.columns(2)
-    if plain.button("1. Ask without RAG", width="stretch", key="week3_plain_run") and can_run(settings, question):
+def _render_ask(settings: ModelSettings, dataset: dict, chunk_size: int, overlap: int, top_k: int, threshold: float) -> None:
+    questions = ev.load_questions(dataset["benchmark"])
+    # Benchmark questions first: they come with an expected answer and the documents that hold it.
+    examples = [q["question"] for q in questions][:8]
+    if dataset["default_question"] not in examples:
+        examples.append(dataset["default_question"])
+    key = "week3_" + Path(dataset["knowledge_base"]).name
+    question = example_text_area("Question", examples, key, height=70)
+
+    if st.button("Ask with and without RAG", type="primary", key="week3_run") and can_run(settings, question):
+        stage = "Answer without RAG"
         try:
-            with st.spinner("Calling the base model without retrieved documents…"):
-                st.session_state.week3_plain = {"question": question, "result": generate_without_rag(settings.model, question)}
-        except Exception as exc:  # noqa: BLE001
-            show_error("Baseline generation", exc)
-    if rag.button("2. Ask with RAG", type="primary", width="stretch", key="week3_rag_run") and can_run(settings, question):
-        stage = "RAG index build"
-        try:
+            with st.spinner("Asking the model without documents…"):
+                plain = generate_without_rag(settings.model, question)
+            stage = "Building the index"
             index = _get_index(dataset["knowledge_base"], chunk_size, overlap, settings.embedding_model)
-            stage = "RAG retrieval"
-            results, latency, tokens = retrieve(index, question, top_k)
-            st.session_state.week3_retrieval = {"question": question, "results": results, "latency": latency,
-                                                "tokens": tokens, "pipeline_version": ev.RETRIEVAL_PIPELINE_VERSION}
-            stage = "Grounded generation"
-            with st.spinner("Generating a grounded answer from retrieved context…"):
-                st.session_state.week3_rag = {"question": question, "pipeline_version": ev.RETRIEVAL_PIPELINE_VERSION,
-                                              "result": generate_with_rag(settings.model, question, results, threshold)}
+            stage = "Retrieval"
+            results, latency, embed_tokens = retrieve(index, question, top_k)
+            stage = "Answer with RAG"
+            with st.spinner("Asking the model with the retrieved chunks…"):
+                grounded = generate_with_rag(settings.model, question, results, threshold)
+            st.session_state.week3_ask = {"question": question, "dataset": dataset["knowledge_base"], "plain": plain,
+                                          "rag": grounded, "results": results, "latency": latency,
+                                          "pipeline": ev.RETRIEVAL_PIPELINE_VERSION}
         except Exception as exc:  # noqa: BLE001
             show_error(stage, exc)
 
-    retrieved = st.session_state.get("week3_retrieval", {})
-    current = retrieved.get("question") == question and retrieved.get("pipeline_version") == ev.RETRIEVAL_PIPELINE_VERSION
-    if retrieved and not current:
-        st.caption("The visible retrieval is for a previous question. Ask with RAG to refresh it.")
-    left, right = st.columns(2, gap="large")
-    with left:
-        st.markdown("#### Without RAG")
-        stored = st.session_state.get("week3_plain")
-        plain_result = stored["result"] if stored and stored["question"] == question else None
-        st.info(plain_result["text"] if plain_result else "Click Ask without RAG to generate a baseline answer.")
-    with right:
-        st.markdown("#### With RAG")
-        stored = st.session_state.get("week3_rag")
-        rag_result = (stored["result"] if stored and stored["question"] == question
-                      and stored.get("pipeline_version") == ev.RETRIEVAL_PIPELINE_VERSION else None)
-        st.success(rag_result["text"] if rag_result else "Ask with RAG to generate a grounded answer.")
-        if rag_result:
-            st.caption(f"Generation decision: {rag_result.get('gate', 'not recorded')}")
-            if rag_result.get("prompt"):
-                with st.expander("Inspect augmented prompt"):
-                    st.code(rag_result["prompt"], language="text")
-    results = retrieved.get("results", []) if current else []
-    expected = ev.expected_answer(dataset["benchmark"], question)
-    if expected:
-        st.caption(f"Benchmark expected answer: {expected}")
+    saved = st.session_state.get("week3_ask")
+    if not saved or saved["question"] != question or saved["dataset"] != dataset["knowledge_base"] \
+            or saved.get("pipeline") != ev.RETRIEVAL_PIPELINE_VERSION:
+        st.caption("Ask a question to compare the two answers and see which chunks were retrieved.")
+        return
 
-    st.subheader("Retrieved context")
-    if not results:
-        st.info("Ask with RAG to see the retrieved chunks.")
-    for rank, item in enumerate(results, start=1):
-        with st.expander(f"#{rank} · {item['source']} · chunk {item['chunk_number']} · "
-                         f"{item.get('retrieval_method', 'dense retrieval')} · similarity {item['score']:.3f}", expanded=rank == 1):
-            st.code(item["text"], language="markdown", wrap_lines=True)
+    item = next((q for q in questions if q["question"] == question), None)
+    gold = _evidence(item) if item else set()
 
-    st.subheader("RAG metrics")
-    metric_row({
-        "Retrieval latency": f"{retrieved['latency'] * 1000:.0f} ms" if results else "—",
-        "Generation latency": f"{rag_result['latency_seconds']:.2f}s" if rag_result else "—",
-        "Retrieved chunks": len(results),
-        "Top similarity": f"{max(item['score'] for item in results):.3f}" if results else "—",
-    })
-    if rag_result and results:
-        st.caption(f"Embedding tokens: {retrieved.get('tokens') or 0} · Context estimate: {approximate_tokens(build_context(results))} tokens "
-                   f"· Generation input/output: {rag_result['input_tokens']}/{rag_result['output_tokens']} · Status: {rag_result['status']}")
-    with st.expander("Retrieval diagnostics"):
-        if not results:
-            st.info("Run Ask with RAG to collect retrieval diagnostics.")
-        else:
-            st.dataframe([{
-                "Selected": rank, "Source": item["source"], "Chunk": item["chunk_number"],
-                "Method": item.get("retrieval_method"), "Dense similarity": f"{item['score']:.3f}",
-                "Dense rank": item.get("dense_rank", "—"), "BM25 score": f"{item.get('lexical_score', 0.0):.3f}",
-                "BM25 rank": item.get("lexical_rank", "—"), "Fused rank": item.get("fused_rank", "—"),
-            } for rank, item in enumerate(results, start=1)], width="stretch", hide_index=True)
+    without, with_rag = st.columns(2, gap="large")
+    with without, st.container(border=True):
+        st.markdown("**Without RAG**")
+        st.markdown(saved["plain"]["text"] or "_No text returned._")
+        p = saved["plain"]
+        usage_line(p["input_tokens"], p["output_tokens"], p["latency_seconds"], settings.cost(p["input_tokens"], p["output_tokens"]))
+    with with_rag, st.container(border=True):
+        st.markdown("**With RAG**")
+        r = saved["rag"]
+        st.markdown(r["text"] or "_No text returned._")
+        usage_line(r.get("input_tokens", 0), r.get("output_tokens", 0), r.get("latency_seconds"),
+                   settings.cost(r.get("input_tokens", 0), r.get("output_tokens", 0)))
+    if item:
+        st.caption(f"Expected answer: **{item['expected_answer']}**")
+
+    results = saved["results"]
+    with st.container(border=True):
+        found = {c["source"] for c in results} & gold
+        st.markdown("**What the model sees with RAG**")
+        st.caption(f"{len(results)} chunks retrieved in {saved['latency'] * 1000:.0f} ms"
+                   + (f" · {len(found)} of {len(gold)} ⭐ documents that hold the answer" if gold else ""))
+        for rank, c in enumerate(results, start=1):
+            star = " ⭐" if c["source"] in gold else ""
+            with st.expander(f"#{rank} · {c['source']} · chunk {c['chunk_number']} · similarity {c['score']:.2f}{star}",
+                             expanded=rank == 1):
+                st.code(c["text"], language=None, wrap_lines=True)
+        if gold:
+            st.caption("⭐ comes from a document that holds the answer, according to the benchmark.")
+        if r.get("prompt"):
+            with st.expander("The full prompt sent with RAG"):
+                st.code(r["prompt"], language=None, wrap_lines=True)
+        with st.expander("Retrieval details"):
+            st.caption(f"Decision: {r.get('gate', 'not recorded')}")
+            st.dataframe([{"#": rank, "Source": c["source"], "Chunk": c["chunk_number"],
+                           "Found by": c.get("retrieval_method", "meaning"), "Similarity": f"{c['score']:.3f}",
+                           "Keyword (BM25) score": f"{c.get('lexical_score', 0.0):.3f}"}
+                          for rank, c in enumerate(results, start=1)], width="stretch", hide_index=True)
 
 
 def _render_documents(dataset: dict, chunk_size: int, overlap: int) -> None:
     documents = load_documents(dataset["knowledge_base"])
-    st.caption(f"{len(documents)} source documents. {dataset['description']}")
-    document_column, chunk_column = st.columns(2, gap="large")
-    with document_column:
-        source = st.selectbox("Source document", [d.source for d in documents], key="week3_document")
-        document = next(item for item in documents if item.source == source)
-        st.caption(f"Original Markdown file · {len(document.text):,} characters")
-        st.code(document.text, language="markdown", wrap_lines=True, height=460)
-    with chunk_column:
-        chunks = chunk_documents(documents, chunk_size, overlap)
-        st.metric("Chunks created (all documents)", len(chunks))
-        for chunk in (c for c in chunks if c.source == source):
-            with st.expander(f"{chunk.source} · chunk {chunk.chunk_number}", expanded=True):
-                st.code(chunk.text, language="markdown", wrap_lines=True)
+    chunks = chunk_documents(documents, chunk_size, overlap)
+    st.caption(f"{dataset['description']} With the current settings they make {len(chunks):,} chunks.")
+    source = st.selectbox("Document", [d.source for d in documents], key="week3_document")
+    document = next(d for d in documents if d.source == source)
+    original, cut = st.columns(2, gap="large")
+    with original, st.container(border=True):
+        st.markdown(f"**Original** · {len(document.text):,} characters")
+        st.code(document.text, language=None, wrap_lines=True, height=460)
+    with cut, st.container(border=True):
+        own = [c for c in chunks if c.source == source]
+        st.markdown(f"**Chunks** · {len(own)} of up to {chunk_size} characters, overlapping by {overlap}")
+        for chunk in own:
+            st.code(chunk.text, language=None, wrap_lines=True)
 
 
 def _render_benchmark(settings: ModelSettings, dataset: dict, chunk_size: int, overlap: int, top_k: int, threshold: float) -> None:
-    st.caption("Evidence Recall@K evaluates retrieval on its own. The full benchmark also checks each grounded answer, or that it abstains.")
-    with st.expander("How benchmark evaluation works"):
-        st.markdown("""
-1. **Gold evidence** — Each question names the source file or files that support it.
-2. **Evidence Recall@K** — A question counts as retrieved only when every expected source appears in the top-*K* chunks, so multi-hop questions need all their documents.
-3. **Answer evaluation (optional)** — With **Generate answers too**, each grounded answer is compared with the expected answer by exact match and token F1. Unanswerable questions check that the system abstained.
-4. **Limitation** — Gold evidence is per document, not per chunk: any chunk from an expected document earns credit.
-""")
     questions = ev.load_questions(dataset["benchmark"])
-    generate = st.checkbox("Generate answers too (one LLM call per question)", key="week3_benchmark_full")
+    st.caption(f"Run all {len(questions)} benchmark questions. **Evidence recall@{top_k}** counts a question as found when "
+               f"every document that holds its answer is among the top {top_k} chunks. Change chunking or Top-K and "
+               "run again to compare.")
+    generate = st.checkbox("Also generate and score answers (one model call per question)", key="week3_benchmark_full")
     if st.button("Run benchmark", type="primary", key="week3_benchmark_run") and can_run(settings):
         try:
             index = _get_index(dataset["knowledge_base"], chunk_size, overlap, settings.embedding_model)
-            bar = st.progress(0, text="Retrieving benchmark evidence…")
+            bar = st.progress(0, text="Retrieving…")
             st.session_state.week3_benchmark_rows = ev.run_rag_benchmark(
                 index, questions, settings.model, top_k, threshold, generate,
-                progress=lambda done, total: bar.progress(done / total, text=f"Processed {done}/{total} questions"))
+                progress=lambda done, total: bar.progress(done / total, text=f"{done} of {total} questions"))
             bar.empty()
         except Exception as exc:  # noqa: BLE001
             show_error("Benchmark", exc)
     rows = st.session_state.get("week3_benchmark_rows")
-    if rows:
-        summary = ev.summarize_benchmark(rows)
+    if not rows:
+        st.caption("Run the benchmark to see recall and, optionally, answer scores.")
+        return
+    summary = ev.summarize_benchmark(rows)
+    with st.container(border=True):
         metric_row({
-            f"Evidence Recall@{top_k}": f"{summary['evidence_recall']:.0%}",
-            "Answer exact match": f"{summary['exact_match']:.0%}" if summary["exact_match"] is not None else "—",
-            "Mean token F1": f"{summary['mean_f1']:.0%}" if summary["mean_f1"] is not None else "—",
+            f"Evidence recall@{top_k}": f"{summary['evidence_recall']:.0%}",
+            "Exact match": f"{summary['exact_match']:.0%}" if summary["exact_match"] is not None else "—",
+            "Token F1": f"{summary['mean_f1']:.0%}" if summary["mean_f1"] is not None else "—",
         })
         st.dataframe(rows, width="stretch", hide_index=True)
+        st.caption("Exact match and token F1 compare each answer with the expected one; they appear when answers are "
+                   "generated. Evidence is judged per document, so any chunk of the right document counts.")
 
 
 if __name__ == "__main__":
-    run_standalone(render, "Week 3 · RAG")
+    run_standalone(render, "Week 3 · Retrieval-augmented generation")
