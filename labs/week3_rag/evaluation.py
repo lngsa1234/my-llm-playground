@@ -109,6 +109,7 @@ def run_rag_benchmark(index, questions: list[dict], model: str, top_k: int, thre
             "Token F1": "—" if f1 is None else f"{f1:.0%}",
             "Grounded": "—" if answer is None else ("✓" if answer["abstained"] or evidence_found else "?"),
             "Latency": f"{latency + (answer['latency_seconds'] if answer else 0):.2f}s",
+            "Answer": answer["text"] if answer else "",
         })
         if progress:
             progress(position, len(questions))

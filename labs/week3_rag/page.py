@@ -44,7 +44,7 @@ Both include a few questions with no answer in the documents, to check that the 
 **Try this**
 - Ask "How many remote days are employees allowed?" Without RAG the model can only guess; with RAG it quotes NovaTech's policy.
 - Switch **Chunk strategy** to *By heading*, then open **See the chunks**: each policy becomes a single chunk. Ask again and compare the input tokens.
-- In **Compare settings**, run once with *Keywords*, once with *Meaning*, once with *Hybrid*, and compare recall in "Your runs so far".
+- In **Compare settings**, run once with *Keywords*, once with *Meaning*, once with *Hybrid*, and compare in "Your runs" (or click "Compare all three search methods").
 - Switch **Documents** to HotpotQA. Each answer needs two articles, so watch whether both ⭐ documents are found, and try a higher Top-K.
 """
 
@@ -217,50 +217,93 @@ def _render_documents(dataset: dict, chunk_size: int, overlap: int, strategy: st
             st.code(chunk.text, language=None, wrap_lines=True)
 
 
+DOCUMENT_SET = {"novatech": "NovaTech", "hotpotqa_mini": "HotpotQA"}
+
+
+def _settings_label(strategy: str, chunk_size: int, overlap: int, method: str, embedding: str, top_k: int) -> dict:
+    return {"Chunks": CHUNK_STRATEGIES[strategy] + (f" {chunk_size}/{overlap}" if strategy == "fixed" else ""),
+            "Search": SEARCH_METHODS[method], "Embedding": "—" if method == "keyword" else embedding, "Top-K": top_k}
+
+
 def _render_benchmark(settings: ModelSettings, dataset: dict, chunk_size: int, overlap: int, top_k: int, threshold: float,
                       strategy: str, method: str) -> None:
     questions = ev.load_questions(dataset["benchmark"])
-    st.caption(f"Run all {len(questions)} benchmark questions. **Evidence recall@{top_k}** counts a question as found when "
-               f"every document that holds its answer is among the top {top_k} chunks. Change chunking or Top-K and "
-               "run again to compare.")
-    generate = st.checkbox("Also generate and score answers (one model call per question)", key="week3_benchmark_full")
-    if st.button("Run benchmark", type="primary", key="week3_benchmark_run") and can_run(settings):
+    docs = DOCUMENT_SET.get(Path(dataset["knowledge_base"]).name, Path(dataset["knowledge_base"]).name)
+    current = _settings_label(strategy, chunk_size, overlap, method, settings.embedding_model, top_k)
+    st.caption(f"Runs all {len(questions)} {docs} questions and checks whether the documents that hold each answer "
+               f"are among the top {top_k} chunks. Change one setting in Lab parameters, run again, and compare.")
+    st.markdown("Now testing: " + " · ".join(f"**{k}** {v}" for k, v in current.items()))
+    generate = st.checkbox("Also generate and score answers", key="week3_benchmark_full",
+                           help="One extra model call per question.")
+    if generate:
+        st.caption(f"Adds {len(questions)} model calls per run.")
+    run, run_all, clear = st.columns([1.2, 1.8, 1])
+    single = run.button("Run", type="primary", width="stretch", key="week3_benchmark_run")
+    three = run_all.button("Compare all three search methods", width="stretch", key="week3_benchmark_methods",
+                           help="Runs Keywords, Meaning and Hybrid with everything else unchanged.")
+    if clear.button("Clear runs", width="stretch", key="week3_benchmark_clear"):
+        st.session_state.pop("week3_runs", None)
+        st.session_state.pop("week3_benchmark_rows", None)
+
+    if (single or three) and can_run(settings):
+        methods = ["keyword", "dense", "hybrid"] if three else [method]
         try:
             index = _get_index(dataset["knowledge_base"], chunk_size, overlap, settings.embedding_model, strategy)
-            bar = st.progress(0, text="Retrieving…")
-            rows = ev.run_rag_benchmark(
-                index, questions, settings.model, top_k, threshold, generate,
-                progress=lambda done, total: bar.progress(done / total, text=f"{done} of {total} questions"),
-                method=method)
-            st.session_state.week3_benchmark_rows = rows
-            summary = ev.summarize_benchmark(rows)
-            history = st.session_state.setdefault("week3_benchmark_history", [])
-            history.append({"Documents": Path(dataset["knowledge_base"]).name, "Chunks": CHUNK_STRATEGIES[strategy]
-                            + (f" ({chunk_size}/{overlap})" if strategy == "fixed" else ""),
-                            "Search": SEARCH_METHODS[method],
-                            "Embedding": "—" if method == "keyword" else settings.embedding_model, "Top-K": top_k,
-                            f"Recall": f"{summary['evidence_recall']:.0%}"})
+            bar = st.progress(0.0, text="Searching…")
+            runs = st.session_state.setdefault("week3_runs", [])
+            for i, m in enumerate(methods):
+                rows = ev.run_rag_benchmark(
+                    index, questions, settings.model, top_k, threshold, generate, method=m,
+                    progress=lambda done, total, i=i, m=m: bar.progress(
+                        (i * total + done) / (len(methods) * total),
+                        text=f"{SEARCH_METHODS[m]}: {done} of {total} questions"))
+                summary = ev.summarize_benchmark(rows)
+                runs.append({"Run": len(runs) + 1, "Documents": docs,
+                             **_settings_label(strategy, chunk_size, overlap, m, settings.embedding_model, top_k),
+                             "Right documents found": f"{summary['evidence_recall']:.0%}",
+                             "Correct answers": f"{summary['exact_match']:.0%}" if summary["exact_match"] is not None else "—",
+                             "Word overlap": f"{summary['mean_f1']:.0%}" if summary["mean_f1"] is not None else "—"})
+                st.session_state.week3_benchmark_rows = {"run": len(runs), "rows": rows}
             bar.empty()
         except Exception as exc:  # noqa: BLE001
             show_error("Benchmark", exc)
-    rows = st.session_state.get("week3_benchmark_rows")
-    if not rows:
-        st.caption("Run the benchmark to see recall and, optionally, answer scores.")
+
+    runs = st.session_state.get("week3_runs", [])
+    if not runs:
+        st.caption("Run once to start a comparison table.")
         return
-    summary = ev.summarize_benchmark(rows)
     with st.container(border=True):
-        metric_row({
-            f"Evidence recall@{top_k}": f"{summary['evidence_recall']:.0%}",
-            "Exact match": f"{summary['exact_match']:.0%}" if summary["exact_match"] is not None else "—",
-            "Token F1": f"{summary['mean_f1']:.0%}" if summary["mean_f1"] is not None else "—",
-        })
-        st.dataframe(rows, width="stretch", hide_index=True)
-        history = st.session_state.get("week3_benchmark_history", [])
-        if len(history) > 1:
-            st.markdown("**Your runs so far**")
-            st.dataframe(history[::-1], width="stretch", hide_index=True)
-        st.caption("Exact match and token F1 compare each answer with the expected one; they appear when answers are "
-                   "generated. Evidence is judged per document, so any chunk of the right document counts.")
+        st.markdown("**Your runs**")
+        latest = runs[-1]["Run"]
+        st.dataframe([{**r, "Run": f"#{r['Run']}" + (" (latest)" if r["Run"] == latest else "")} for r in runs[::-1]],
+                     width="stretch", hide_index=True)
+        st.caption("**Right documents found**: share of questions whose answer documents were all retrieved. "
+                   "**Correct answers** and **Word overlap** compare generated answers with the expected ones; they "
+                   "appear when answers are generated.")
+
+    saved = st.session_state.get("week3_benchmark_rows")
+    if saved:
+        with st.expander(f"Question by question · run #{saved['run']}"):
+            misses_only = st.checkbox("Show only misses", key="week3_misses")
+            table = []
+            for row in saved["rows"]:
+                found = row["Evidence found"]
+                answered = row["Exact match"]
+                missed = found == "✗" or answered == "0%"
+                if misses_only and not missed:
+                    continue
+                entry = {"Question": row["Question"],
+                         "Documents needed": ", ".join(row["Expected evidence"]) if isinstance(row["Expected evidence"], list)
+                         else row["Expected evidence"],
+                         "Found?": {"✓": "✓", "✗": "✗"}.get(found, "no answer exists")}
+                if answered != "—":
+                    entry["Answer correct?"] = "✓" if answered == "100%" else "✗"
+                    entry["Answer"] = row.get("Answer", "")
+                table.append(entry)
+            if table:
+                st.dataframe(table, width="stretch", hide_index=True)
+            else:
+                st.caption("No misses in this run.")
 
 
 if __name__ == "__main__":
