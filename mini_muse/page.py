@@ -134,9 +134,6 @@ def step1(main, panel, settings) -> None:
                          "date is in the instructions.",
                          "A vague request: watch **missing_info** list what Mini Muse would have to ask you.",
                          "Something it can't do: the intent should be **other**."])
-        st.markdown("One API call reads your request and returns a filled-in form. "
-                    "Follow it from top to bottom: **① your request → ② what is sent → ③ what comes back → "
-                    "④ what Mini Muse does with it.**")
 
         # ① input
         st.markdown("#### ① Your request")
