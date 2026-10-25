@@ -155,7 +155,9 @@ def step1(main, panel, settings) -> None:
         sent_col, back_col = st.columns(2, gap="large")
         with sent_col, st.container(border=True):
             st.markdown("**Sent to the model**")
-            form, api_request = st.tabs(["Output form", "API request"])
+            instructions, form, api_request = st.tabs(["System instructions", "Output form", "API request"])
+            with instructions:
+                st.code(week1_understand.instructions(), language=None, wrap_lines=True)
             with form:
                 st.dataframe(week1_understand.output_form(), width="stretch", hide_index=True)
             with api_request:
