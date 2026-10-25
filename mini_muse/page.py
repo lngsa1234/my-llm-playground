@@ -143,7 +143,9 @@ def step1(main, panel, settings) -> None:
             _usage(llm, result["seconds"])
             st.markdown(f"**Model output**: the exact text the model returned, "
                         f"{llm.usage.output_tokens} output tokens")
-            st.code(result["raw"] or "(no text returned)", language="json", wrap_lines=True)
+            raw = result.get("raw")  # results saved by an older version of the page have no raw text
+            st.code(raw if raw is not None else "(click Understand again to see the raw output)", language="json",
+                    wrap_lines=True)
             st.caption("Structured output forced it to be JSON that matches the schema, so code can read it "
                        "without guessing. Below, the same JSON parsed into fields.")
             left, right = st.columns(2, gap="large")
