@@ -23,14 +23,23 @@ from labs.week3_rag.rag import (CHUNK_STRATEGIES, EMBEDDING_MODELS, SEARCH_METHO
                                 generate_with_rag, generate_without_rag, load_documents, retrieve)
 
 HOW_IT_WORKS = """
-A model only knows what it was trained on and what you put in its context. **RAG** finds the relevant passages in your own documents and puts them in the context, so the answer can be grounded in them.
+A model can't answer from documents it has never seen. **RAG** (retrieval-augmented generation) searches your documents first and puts the best passages into the context, so the answer comes from them.
 
-1. **Chunk:** each document is cut into pieces. **Chunk strategy** decides where: every N characters (fixed size), at blank lines (by paragraph), or at headings (one section per chunk).
-2. **Index:** for meaning search, every chunk is turned into an embedding by the **Embedding model**: a list of numbers that captures meaning.
-3. **Retrieve:** the question is matched against the chunks. **Search method** decides how: by meaning (embeddings, finds paraphrases), by keywords (exact words, finds names and numbers), or hybrid (both). The best **Top-K** are kept.
-4. **Answer:** those chunks go into the context, and the model answers from them, citing the source files. If nothing relevant was found, it says so instead of guessing.
+**Documents → chunks → search → context → answer**
 
-The **Ask** tab compares the same question with and without RAG. **Documents & chunks** shows how chunking cuts a document. **Benchmark** measures retrieval over many questions at once, and keeps a table of your runs so you can compare settings.
+| Step | What happens | You control | See it in |
+|---|---|---|---|
+| 1. Chunk | Each document is cut into small pieces that can be searched | Chunk strategy, size, overlap | **Documents & chunks** tab |
+| 2. Index | Each chunk becomes an embedding: numbers that capture its meaning | Embedding model | Built once per setting |
+| 3. Search | The question is matched against every chunk; the best are kept | Search method, Top-K | **Ask** → What the model sees with RAG |
+| 4. Answer | The kept chunks go into the context; the model answers from them and cites the files, or says it doesn't know | Model, Evidence threshold (Advanced) | **Ask** → With RAG |
+| 5. Measure | Every benchmark question is searched: were the right documents found? | — | **Benchmark** tab |
+
+**Try this**
+- Ask "How many remote days are employees allowed?" Without RAG the model can only guess; with RAG it quotes NovaTech's policy.
+- Switch **Chunk strategy** to *By heading*, then open **Documents & chunks**: each policy becomes a single chunk. Ask again and compare the input tokens.
+- In **Benchmark**, run once with *Keywords*, once with *Meaning*, once with *Hybrid*, and compare recall in "Your runs so far".
+- Switch **Documents** to HotpotQA. Each answer needs two articles, so watch whether both ⭐ documents are found, and try a higher Top-K.
 """
 
 
