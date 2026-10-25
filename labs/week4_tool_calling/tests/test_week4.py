@@ -94,4 +94,29 @@ def test_live_benchmark_scores_the_expected_tool_and_location(monkeypatch):
 
     rows, _ = week4.run_live_benchmark("test-model")
 
-    assert rows == [{"Prompt": "Weekend hike", "Expected calls": 1, "Actual calls": 1, "Tool selection": "PASS", "Arguments": "PASS"}]
+    assert rows == [{"Prompt": "Weekend hike", "Expected calls": 1, "Actual calls": 1, "Tool selection": "PASS", "Arguments": "PASS",
+                     "Expected": "get_weekend_forecast(Detroit)", "Actual": "get_weekend_forecast(Detroit)"}]
+
+
+@patch("labs.week4_tool_calling.weather.OpenAI")
+def test_agent_counts_tokens_records_rounds_and_offers_only_chosen_tools(mock_openai):
+    from types import SimpleNamespace
+
+    def message(content=None, calls=None):
+        m = Mock()
+        m.content, m.tool_calls = content, calls or []
+        m.model_dump.return_value = {"role": "assistant", "content": content}
+        return SimpleNamespace(choices=[SimpleNamespace(message=m)],
+                               usage=SimpleNamespace(prompt_tokens=100, completion_tokens=20))
+
+    call = SimpleNamespace(id="c1", function=SimpleNamespace(name="get_weather", arguments='{"location": "Detroit"}'))
+    create = mock_openai.return_value.chat.completions.create
+    create.side_effect = [message(calls=[call]), message("48°F in Detroit.")]
+    with patch.object(week4, "get_weather", return_value={"temperature_f": 48}):
+        result = run_direct_agent("Weather in Detroit?", "m", tools=["get_weather"])
+    assert result["model_calls"] == 2 and result["input_tokens"] == 200 and result["output_tokens"] == 40
+    assert result["trace"][0]["round"] == 1
+    assert [t["function"]["name"] for t in create.call_args_list[0].kwargs["tools"]] == ["get_weather"]
+    create.side_effect = [message("I can't check live weather.")]
+    no_tools = run_direct_agent("Weather in Detroit?", "m", tools=[])
+    assert no_tools["mode"] == "Without tools" and "tools" not in create.call_args.kwargs

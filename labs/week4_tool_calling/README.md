@@ -5,11 +5,13 @@ Lab guide: [knowledge_base/week-04-tool-calling/lab.md](../../knowledge_base/wee
 This lab builds the same real-time weather capability in two ways:
 
 1. **Direct tool calling**: the agent runtime calls a local Python function.
-2. **Tool calling through MCP**: the agent runtime discovers and invokes that function through ## What's here
+2. **Tool calling through MCP**: the agent runtime discovers and invokes that function through an MCP server (Model Context Protocol, a standard way to share tools between apps).
+
+## What's here
 
 ```text
 week4_tool_calling/
-├── page.py                 the web page: run with or without tools, inspect the trace, live benchmark
+├── page.py                 the web page: Ask a question, See the tools, Check tool choices
 ├── weather.py              the weather tools, tool schemas and agent loop, shared by everything below
 ├── tool_calling_demo.py    command-line agent using the tools directly
 ├── weather_mcp_server.py   MCP server exposing the same tools

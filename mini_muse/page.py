@@ -369,17 +369,42 @@ def step4(main, panel, settings) -> None:
             except Exception as exc:  # noqa: BLE001
                 show_error("Tool call", exc)
         result = st.session_state.get("muse_w4_result")
-        if result:
-            trace = result["trace"]
-            st.markdown("**Answer**")
-            st.info(trace["answer"] or "(no text)")
-            st.markdown("**Tool calls requested by the model, run by the app**")
-            _calls_table(trace["tool_calls"])
-            _side_effects(trace["final_state"], warn_email=True)
-            _usage(result["llm"], result["seconds"])
-            with st.expander("Messages, including tool results"):
-                st.json(trace["messages"], expanded=False)
-        with st.expander("Tool schemas sent to the model"):
+        if not result or result["trace"]["query"] != text:
+            st.caption("Run a request to see which tools the model asked for and what changed.")
+        else:
+            trace, llm = result["trace"], result["llm"]
+            answer_col, world_col = st.columns(2, gap="large")
+            with answer_col, st.container(border=True):
+                st.markdown("**Answer**")
+                st.markdown(trace["answer"] or "_No text returned._")
+                usage_line(llm.usage.input_tokens, llm.usage.output_tokens, result["seconds"], llm.cost())
+            with world_col, st.container(border=True):
+                st.markdown("**What changed in the fake world**")
+                state = trace["final_state"]
+                st.markdown(f"Events created: **{len(state['events_created'])}** · Emails sent: **{len(state['emails_sent'])}**")
+                for event in state["events_created"]:
+                    st.caption(f"Booked {event['title']} on {event['date']} at {event['time']}")
+                for email in state["emails_sent"]:
+                    st.caption(f"Sent to {email['to']}: {email['subject']}")
+                if state["emails_sent"]:
+                    st.warning("It sent an email without asking you. One round of tools has no approval step; "
+                               "Week 5's agent loop adds one.")
+            with st.container(border=True):
+                st.markdown("**What happened**")
+                step = 1
+                for c in trace["tool_calls"]:
+                    shown = ", ".join(f'{k}="{v}"' for k, v in c["args"].items())
+                    failed = "error" in c["result"]
+                    st.markdown(f"{step}. The model asked for `{c['tool']}({shown})`. The app ran it "
+                                + ("and got an **error**." if failed else "and sent the result back."))
+                    with st.expander(f"Result of {c['tool']}"):
+                        st.json(c["result"])
+                    step += 1
+                if not trace["tool_calls"]:
+                    st.markdown("1. The model answered without asking for a tool.")
+                else:
+                    st.markdown(f"{step}. The model wrote the answer, with no further tools: this week allows one round.")
+        with st.expander("Tool definitions sent to the model"):
             st.json(week4_tools.schemas(tools), expanded=False)
         _world_viewer()
 

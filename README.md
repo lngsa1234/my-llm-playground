@@ -1,6 +1,6 @@
 # Agent Engineering Peer Learning Labs
 
-Over 8 weeks the circle builds **Mini Muse**, a personal-assistant agent, one component per week ([guide](knowledge_base/mini-muse.md)). Alongside it are hands-on concept labs: a single API-call playground (Week 1), a context-strategy explorer (Week 2), retrieval-augmented generation compared with and without documents (Week 3), a tool-calling/MCP weather assistant (Week 4), a stateful workflow agent (Week 5), agent evaluation with regression testing (Week 6), and a production reliability drill (Week 7).
+Over 8 weeks the circle builds **Mini Muse**, a personal-assistant agent, one component per week ([guide](knowledge_base/mini-muse.md)). Alongside it are hands-on concept labs: a single API-call playground (Week 1), a context-strategy explorer (Week 2), retrieval-augmented generation compared with and without documents (Week 3), a tool-calling weather assistant with MCP (Week 4), a stateful workflow agent (Week 5), agent evaluation with regression testing (Week 6), and a production reliability drill (Week 7).
 
 ## Repository layout
 
@@ -69,7 +69,7 @@ Every week's page has the same layout:
 - **Main area** — the week title, then a switch between **Concept demo** and **Build Mini Muse**. Each part has a one-line description and an explainer (**How this lab works** or **How this step works**), then inputs, one primary button, and results in labelled boxes with tokens, latency and cost.
 - **Right panel** — one box:
   - **Model settings** — the model. Token limit and prices are under **Model options**. The values are shared across weeks, so set them once. The default is `gpt-5.4-mini`, with matching default prices; change both together if you switch models.
-  - **Lab parameters** — the settings specific to that week, such as output format (Week 1), the sample conversation (Week 2), chunk strategy, search method, embedding model and Top-K (Week 3), max tool-call rounds (Week 4), steps, repair budget and router (Week 5), the evaluation step, agent version, judge and release gates (Week 6), or failure rates and the hardened policy (Week 7).
+  - **Lab parameters** — the settings specific to that week, such as output format (Week 1), the sample conversation (Week 2), chunk strategy, search method, embedding model and Top-K (Week 3), tools offered and max tool-call rounds (Week 4), steps, repair budget and router (Week 5), the evaluation step, agent version, judge and release gates (Week 6), or failure rates and the hardened policy (Week 7).
 
 The look (colors, fonts, heading sizes) is set once in [`.streamlit/config.toml`](.streamlit/config.toml).
 

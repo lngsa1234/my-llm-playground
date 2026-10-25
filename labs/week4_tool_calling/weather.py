@@ -205,8 +205,13 @@ def get_weekend_forecast(location: str, today: date | None = None) -> dict[str, 
 
 
 def run_direct_agent(prompt: str, model: str, use_tools: bool = True, max_tool_rounds: int = 5,
-                     max_output_tokens: int | None = None) -> dict[str, Any]:
-    """Run the agent with optional weather tools and retain its trace for the lab UI."""
+                     max_output_tokens: int | None = None, tools: list[str] | None = None) -> dict[str, Any]:
+    """Run the agent with optional weather tools and retain its trace for the lab UI.
+
+    tools: names of the tools to offer (default: both). The result also counts model calls and tokens.
+    """
+    offered = [t for t in (WEATHER_TOOL, WEEKEND_FORECAST_TOOL) if tools is None or t["function"]["name"] in tools]
+    use_tools = use_tools and bool(offered)
     instructions = system_prompt()
     if not use_tools:
         instructions = (
@@ -219,23 +224,29 @@ def run_direct_agent(prompt: str, model: str, use_tools: bool = True, max_tool_r
         {"role": "user", "content": prompt},
     ]
     trace: list[dict[str, Any]] = []
+    usage = {"model_calls": 0, "input_tokens": 0, "output_tokens": 0}
     start = time.perf_counter()
-    for _ in range(max_tool_rounds):
+
+    def finish(answer: str) -> dict[str, Any]:
+        return {"answer": answer, "trace": trace, "latency": time.perf_counter() - start,
+                "mode": "With tools" if use_tools else "Without tools", **usage}
+
+    for round_number in range(1, max_tool_rounds + 1):
         request: dict[str, Any] = {"model": model, "messages": messages}
         if max_output_tokens:
             request["max_completion_tokens"] = max_output_tokens
         if use_tools:
-            request.update({"tools": [WEATHER_TOOL, WEEKEND_FORECAST_TOOL], "tool_choice": "auto"})
+            request.update({"tools": offered, "tool_choice": "auto"})
         response = OpenAI().chat.completions.create(**request)
+        usage["model_calls"] += 1
+        tokens_in = getattr(getattr(response, "usage", None), "prompt_tokens", 0)
+        tokens_out = getattr(getattr(response, "usage", None), "completion_tokens", 0)
+        usage["input_tokens"] += tokens_in if isinstance(tokens_in, int) else 0
+        usage["output_tokens"] += tokens_out if isinstance(tokens_out, int) else 0
         assistant_message = response.choices[0].message
         messages.append(assistant_message.model_dump(exclude_none=True))
         if not assistant_message.tool_calls:
-            return {
-                "answer": assistant_message.content or "No visible answer was returned.",
-                "trace": trace,
-                "latency": time.perf_counter() - start,
-                "mode": "With tools" if use_tools else "Without tools",
-            }
+            return finish(assistant_message.content or "No visible answer was returned.")
         for call in assistant_message.tool_calls:
             try:
                 arguments = json.loads(call.function.arguments)
@@ -247,14 +258,10 @@ def run_direct_agent(prompt: str, model: str, use_tools: bool = True, max_tool_r
                     result = {"error": "Unsupported tool."}
             except (json.JSONDecodeError, KeyError, TypeError):
                 result = {"error": "Invalid weather tool arguments."}
-            trace.append({"tool": call.function.name, "arguments": call.function.arguments, "result": result})
+            trace.append({"tool": call.function.name, "arguments": call.function.arguments, "result": result,
+                          "round": round_number})
             messages.append({"role": "tool", "tool_call_id": call.id, "content": json.dumps(result)})
-    return {
-        "answer": "Tool-call limit reached.",
-        "trace": trace,
-        "latency": time.perf_counter() - start,
-        "mode": "With tools" if use_tools else "Without tools",
-    }
+    return finish(f"Stopped: the model was still asking for tools after {max_tool_rounds} rounds.")
 
 
 LIVE_BENCHMARKS = [
@@ -320,12 +327,14 @@ LIVE_BENCHMARKS = [
 ]
 
 
-def run_live_benchmark(model: str, max_tool_rounds: int = 5, max_output_tokens: int | None = None) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+def run_live_benchmark(model: str, max_tool_rounds: int = 5, max_output_tokens: int | None = None,
+                       tools: list[str] | None = None, progress=None) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     """Score a small live set for tool selection and location arguments."""
     rows: list[dict[str, Any]] = []
     details: list[dict[str, Any]] = []
-    for case in LIVE_BENCHMARKS:
-        result = run_direct_agent(case["prompt"], model, max_tool_rounds=max_tool_rounds, max_output_tokens=max_output_tokens)
+    for number, case in enumerate(LIVE_BENCHMARKS, start=1):
+        result = run_direct_agent(case["prompt"], model, max_tool_rounds=max_tool_rounds,
+                                  max_output_tokens=max_output_tokens, tools=tools)
         actual_calls = []
         for entry in result["trace"]:
             try:
@@ -346,9 +355,13 @@ def run_live_benchmark(model: str, max_tool_rounds: int = 5, max_output_tokens: 
                 "Actual calls": len(actual_calls),
                 "Tool selection": "PASS" if selection_passed else "FAIL",
                 "Arguments": "PASS" if arguments_passed else "FAIL",
+                "Expected": "; ".join(f"{c['tool']}({c['location']})" for c in expected_calls) or "no tool",
+                "Actual": "; ".join(f"{c['tool']}({c['location']})" for c in actual_calls) or "no tool",
             }
         )
         details.append({"prompt": case["prompt"], **result})
+        if progress:
+            progress(number, len(LIVE_BENCHMARKS))
     return rows, details
 
 
