@@ -66,6 +66,22 @@ def expected_found(item: dict, results: list[dict]) -> bool | None:
     return expected_sources.issubset({result["source"] for result in results})
 
 
+def retrieval_scores(item: dict, results: list[dict]) -> tuple[float, float] | None:
+    """Recall@K and Precision@K for one question; None when the question has no answer documents.
+
+    Recall: share of the needed documents that appear among the retrieved chunks.
+    Precision: share of the retrieved chunks that come from a needed document.
+    """
+    evidence = item["evidence"]
+    if not evidence:
+        return None
+    needed = {evidence} if isinstance(evidence, str) else set(evidence)
+    sources = [r["source"] for r in results]
+    recall = len(needed & set(sources)) / len(needed)
+    precision = sum(source in needed for source in sources) / len(sources) if sources else 0.0
+    return recall, precision
+
+
 def _normalize_answer(text: str) -> list[str]:
     return re.findall(r"\w+", text.lower())
 
@@ -95,6 +111,7 @@ def run_rag_benchmark(index, questions: list[dict], model: str, top_k: int, thre
         results, latency, _ = retrieve(index, item["question"], top_k, method)
         answer = generate_with_rag(model, item["question"], results, threshold) if generate_answers else None
         evidence_found = expected_found(item, results)
+        scores = retrieval_scores(item, results)
         exact_match = f1 = None
         if answer:
             expected = item["expected_answer"].lower()
@@ -105,6 +122,9 @@ def run_rag_benchmark(index, questions: list[dict], model: str, top_k: int, thre
         rows.append({
             "Question": item["question"], "Expected evidence": item["evidence"] or "N/A (abstain)",
             "Evidence found": "N/A" if evidence_found is None else ("✓" if evidence_found else "✗"),
+            "Recall@K": "—" if scores is None else f"{scores[0]:.0%}",
+            "Precision@K": "—" if scores is None else f"{scores[1]:.0%}",
+            "_scores": scores,  # unrounded (recall, precision), for the averages
             "Exact match": "—" if exact_match is None else f"{exact_match:.0%}",
             "Token F1": "—" if f1 is None else f"{f1:.0%}",
             "Grounded": "—" if answer is None else ("✓" if answer["abstained"] or evidence_found else "?"),
@@ -120,8 +140,16 @@ def summarize_benchmark(rows: list[dict]) -> dict:
     evaluable = [row for row in rows if row["Evidence found"] != "N/A"]
     answers = [row for row in rows if row["Exact match"] != "—"]
     f1 = [float(row["Token F1"].strip("%")) / 100 for row in rows if row["Token F1"] != "—"]
+
+    scored = [row["_scores"] for row in rows if row.get("_scores")]
+
+    def mean_of(position: int) -> float | None:
+        return sum(s[position] for s in scored) / len(scored) if scored else None
+
     return {
         "evidence_recall": sum(row["Evidence found"] == "✓" for row in evaluable) / len(evaluable) if evaluable else 0.0,
+        "recall_at_k": mean_of(0),
+        "precision_at_k": mean_of(1),
         "exact_match": sum(float(row["Exact match"].strip("%")) / 100 for row in answers) / len(answers) if answers else None,
         "mean_f1": sum(f1) / len(f1) if f1 else None,
     }

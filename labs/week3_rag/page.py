@@ -43,13 +43,19 @@ Both include a few questions with no answer in the documents, to check that the 
 
 **Reading the metrics** (Compare settings)
 
-| Metric | What it measures | Example |
-|---|---|---|
-| Right documents found | Share of questions where **every** document that holds the answer is among the Top-K chunks sent to the model. This scores search alone. | 58% on HotpotQA: in 42% of questions at least one of the two articles was missing. |
-| Correct answers | Share of generated answers whose **whole text** equals the expected answer, ignoring case, punctuation and the cited sources. Strict: a right answer in a full sentence, or with extra words, counts as wrong. For questions with no answer in the documents, "correct" means the system said it didn't know. | Expected "Chief of Protocol": "chief of protocol" is correct; "Chief of Protocol of the United States" and "She served as Chief of Protocol." are not. |
-| Word overlap | Partial credit: how many words the answer shares with the expected one (token F1). The gap above *Correct answers* is mostly right answers worded differently. | The same answer still gets about 60%. |
+Search is scored first, then answers. Each number is an average over the questions.
 
-Answers can't beat search: when a needed document is missing, the model can only say it doesn't know or guess, so *Right documents found* is roughly a ceiling for *Correct answers*. Fix search first, then answers.
+| Metric | Scores | Question it answers | Example |
+|---|---|---|---|
+| **Recall@K** | Search | Of the documents the answer needs, how many were in the top K chunks? | A HotpotQA question needs 2 articles; 1 was found → 50%. |
+| **Precision@K** | Search | Of the K chunks sent to the model, how many came from a needed document? | 3 chunks sent, 1 from a needed article → 33%. |
+| **Exact match** | Answers | Is the **whole** answer the expected one (ignoring case, punctuation and cited sources)? Strict: extra words count as wrong. For questions with no answer in the documents, a match means the system said it didn't know. | Expected "Chief of Protocol": "chief of protocol" ✓; "She served as Chief of Protocol." ✗ |
+| **F1** | Answers | Partial credit: the balance of how many of the answer's words are expected (precision) and how many expected words it includes (recall). | "Chief of Protocol of the United States" → about 60%. |
+
+How to read them together:
+- **Recall vs. precision is the Top-K trade-off.** A higher Top-K finds more needed documents (recall up) but sends more noise (precision down), and costs more tokens on every call.
+- **Answers can't beat search.** When a needed document is missing, the model can only say it doesn't know or guess, so low recall caps exact match and F1. Fix search first.
+- **The gap between F1 and exact match** is mostly right answers worded differently.
 
 **Try this**
 - Ask "How many remote days are employees allowed?" Without RAG the model can only guess; with RAG it quotes NovaTech's policy.
@@ -228,6 +234,16 @@ def _render_documents(dataset: dict, chunk_size: int, overlap: int, strategy: st
 
 
 DOCUMENT_SET = {"novatech": "NovaTech", "hotpotqa_mini": "HotpotQA"}
+RUN_COLUMNS = {
+    "Recall@K": st.column_config.TextColumn("Recall@K", help="Search: share of the needed documents found in the top K chunks."),
+    "Precision@K": st.column_config.TextColumn("Precision@K", help="Search: share of the top K chunks that came from a needed document."),
+    "Exact match": st.column_config.TextColumn("Exact match", help="Answers: whole answer equals the expected one."),
+    "F1": st.column_config.TextColumn("F1", help="Answers: word overlap with the expected answer (partial credit)."),
+}
+
+
+def _pct(value: float | None) -> str:
+    return "—" if value is None else f"{value:.0%}"
 
 
 def _settings_label(strategy: str, chunk_size: int, overlap: int, method: str, embedding: str, top_k: int) -> dict:
@@ -270,9 +286,8 @@ def _render_benchmark(settings: ModelSettings, dataset: dict, chunk_size: int, o
                 summary = ev.summarize_benchmark(rows)
                 runs.append({"Run": len(runs) + 1, "Documents": docs,
                              **_settings_label(strategy, chunk_size, overlap, m, settings.embedding_model, top_k),
-                             "Right documents found": f"{summary['evidence_recall']:.0%}",
-                             "Correct answers": f"{summary['exact_match']:.0%}" if summary["exact_match"] is not None else "—",
-                             "Word overlap": f"{summary['mean_f1']:.0%}" if summary["mean_f1"] is not None else "—"})
+                             "Recall@K": _pct(summary["recall_at_k"]), "Precision@K": _pct(summary["precision_at_k"]),
+                             "Exact match": _pct(summary["exact_match"]), "F1": _pct(summary["mean_f1"])})
                 st.session_state.week3_benchmark_rows = {"run": len(runs), "rows": rows}
             bar.empty()
         except Exception as exc:  # noqa: BLE001
@@ -286,10 +301,9 @@ def _render_benchmark(settings: ModelSettings, dataset: dict, chunk_size: int, o
         st.markdown("**Your runs**")
         latest = runs[-1]["Run"]
         st.dataframe([{**r, "Run": f"#{r['Run']}" + (" (latest)" if r["Run"] == latest else "")} for r in runs[::-1]],
-                     width="stretch", hide_index=True)
-        st.caption("**Right documents found**: share of questions whose answer documents were all retrieved. "
-                   "**Correct answers** and **Word overlap** compare generated answers with the expected ones; they "
-                   "appear when answers are generated.")
+                     width="stretch", hide_index=True, column_config=RUN_COLUMNS)
+        st.caption("Search: **Recall@K** (were the needed documents found?) and **Precision@K** (how much of what was "
+                   "sent was needed?). Answers, when generated: **Exact match** and **F1**. Hover a column for details.")
 
     saved = st.session_state.get("week3_benchmark_rows")
     if saved:
@@ -305,7 +319,8 @@ def _render_benchmark(settings: ModelSettings, dataset: dict, chunk_size: int, o
                 entry = {"Question": row["Question"],
                          "Documents needed": ", ".join(row["Expected evidence"]) if isinstance(row["Expected evidence"], list)
                          else row["Expected evidence"],
-                         "Found?": {"✓": "✓", "✗": "✗"}.get(found, "no answer exists")}
+                         "All found?": {"✓": "✓", "✗": "✗"}.get(found, "no answer exists"),
+                         "Recall@K": row.get("Recall@K", "—"), "Precision@K": row.get("Precision@K", "—")}
                 if answered != "—":
                     entry["Answer correct?"] = "✓" if answered == "100%" else "✗"
                     entry["Answer"] = row.get("Answer", "")

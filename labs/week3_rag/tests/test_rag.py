@@ -276,3 +276,19 @@ def test_meaning_search_finds_a_paraphrase_keywords_miss(monkeypatch):
     assert keyword == []
     with pytest.raises(ValueError):
         retrieve(_toy_index(), "x", 1, "magic")
+
+
+def test_recall_and_precision_at_k():
+    from labs.week3_rag.evaluation import retrieval_scores, summarize_benchmark
+
+    item = {"evidence": ["a.md", "b.md"]}
+    results = [{"source": "a.md"}, {"source": "a.md"}, {"source": "c.md"}]
+    assert retrieval_scores(item, results) == (0.5, 2 / 3)
+    assert retrieval_scores({"evidence": "a.md"}, results) == (1.0, 2 / 3)
+    assert retrieval_scores({"evidence": None}, results) is None
+    rows = [{"Evidence found": "✗", "Exact match": "—", "Token F1": "—", "_scores": (0.5, 2 / 3)},
+            {"Evidence found": "✓", "Exact match": "—", "Token F1": "—", "_scores": (1.0, 1 / 3)},
+            {"Evidence found": "N/A", "Exact match": "—", "Token F1": "—", "_scores": None}]
+    summary = summarize_benchmark(rows)
+    assert summary["recall_at_k"] == 0.75 and abs(summary["precision_at_k"] - 0.5) < 1e-9
+    assert summary["evidence_recall"] == 0.5

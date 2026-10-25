@@ -10,7 +10,7 @@ Lab guide: [knowledge_base/week-03-rag/lab.md](../../knowledge_base/week-03-rag/
 week3_rag/
 ├── page.py          the web page: Ask a question, See the chunks, Compare settings
 ├── rag.py           loading, chunk strategies, embeddings, search methods, grounded generation
-├── evaluation.py    datasets and benchmark scoring (Evidence Recall@K, exact match, token F1)
+├── evaluation.py    datasets and benchmark scoring (Recall@K, Precision@K, exact match, F1)
 ├── documents/
 │   ├── novatech/        ten fictional company-policy documents
 │   └── hotpotqa_mini/   198 Wikipedia articles from HotpotQA (see ATTRIBUTION.txt)
