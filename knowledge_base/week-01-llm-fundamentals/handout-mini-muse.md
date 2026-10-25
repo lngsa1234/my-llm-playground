@@ -89,4 +89,13 @@ Also start the Week 1 concept lab (one API call, tokens, latency, cost) and a fi
 | 8-week plan | [8-week plan](../plan.md) |
 | Mini Muse code | [`mini_muse/`](../../mini_muse/), one file per week |
 
-**To run it on your own computer** (optional): clone the repo, run `pip install -r requirements.txt`, copy `.env.example` to `.env` and add your OpenAI API key, then run `streamlit run app.py`. Each Mini Muse run costs a fraction of a cent with the default model, `gpt-5.4-mini`.
+**The hosted lab app runs on Ling's API key for now**, so you can start right away with no setup. Each Mini Muse run costs a fraction of a cent with the default model, `gpt-5.4-mini`.
+
+**To use your own key**, fork the repository to your GitHub account and run your copy:
+
+1. Fork [lngsa1234/my-llm-playground](https://github.com/lngsa1234/my-llm-playground) and clone your fork.
+2. Run `pip install -r requirements.txt`.
+3. Copy `.env.example` to `.env` and add your own OpenAI API key.
+4. Run `streamlit run app.py`. To host it, deploy your fork on Streamlit Community Cloud and put the key in the app's Secrets as `OPENAI_API_KEY`.
+
+Your fork is also where you build your own version of Mini Muse and your team project.

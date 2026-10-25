@@ -31,6 +31,8 @@ Each lab folder holds everything for that week: its logic, data, tests, a README
 
 ## Run locally
 
+The [hosted app](https://my-llm-playground-bvapyfhmkp7xn5ji9raank.streamlit.app/) runs on the circle organizer's API key. To use your own key, **fork this repository**, then run your fork locally as below, or deploy it on Streamlit Community Cloud with `OPENAI_API_KEY` in the app's Secrets.
+
 1. Create and activate a Python virtual environment.
 2. Install the required dependencies:
 
