@@ -51,10 +51,10 @@ def _graph(state: wf.AgentState | None) -> str:
 
 
 def render() -> None:
-    main, panel = page_layout("Week 5 · Agent Workflow",
-                              "Move a request through an explicit workflow: state, router, repair budget and a bounded loop.",
-                              HOW_IT_WORKS)
-    if mini_muse_part(main, panel, 5):
+    main, panel = page_layout("Week 5 · Agent Workflow")
+    if mini_muse_part(main, panel, 5,
+                      caption="Move a request through an explicit workflow: state, router, repair budget and a bounded loop.",
+                      how_it_works=HOW_IT_WORKS):
         return
     settings = model_settings(panel)
     with lab_parameters(panel):

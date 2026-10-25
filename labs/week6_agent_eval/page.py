@@ -37,10 +37,10 @@ JUDGES = ["Heuristic (offline, free)", "LLM judge (uses Model settings)"]
 
 
 def render() -> None:
-    main, panel = page_layout("Week 6 · Agent Evaluation",
-                              "Goal: decide whether Muse v2 is safe to ship, using evidence instead of a demo, and catch what the update broke before users do.",
-                              HOW_IT_WORKS)
-    if mini_muse_part(main, panel, 6):
+    main, panel = page_layout("Week 6 · Agent Evaluation")
+    if mini_muse_part(main, panel, 6,
+                      caption="Goal: decide whether Muse v2 is safe to ship, using evidence instead of a demo, and catch what the update broke before users do.",
+                      how_it_works=HOW_IT_WORKS):
         return
     settings = model_settings(panel)
     with lab_parameters(panel):

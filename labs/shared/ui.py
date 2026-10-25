@@ -3,14 +3,18 @@
 Page layout used by every week:
 
     Left sidebar     week navigation only (app.py)
-    Main column      header → "How this lab works" → tabs / inputs → results
+    Main column      title → part switch (🔬 Concept demo | 🧩 Build Mini Muse) →
+                       Concept demo:    caption → "How this lab works" → inputs → results
+                       Build Mini Muse: the step's own caption → "How this step works" → inputs → results
     Right panel      one box, one column:
                        ⚙️ Model settings  (same widgets, same keys, shared across weeks)
                        🧪 Lab parameters  (week-specific knobs)
 
 Usage in a page:
 
-    main, panel = page_layout(title, caption, how_it_works)
+    main, panel = page_layout(title)
+    if mini_muse_part(main, panel, week, caption=caption, how_it_works=how_it_works):
+        return  # the Mini Muse step drew itself
     settings = model_settings(panel)
     with lab_parameters(panel):
         ...widgets...
@@ -52,16 +56,19 @@ def apply_page_style() -> None:
     )
 
 
-def page_header(title: str, caption: str, how_it_works: str | None = None) -> None:
+def page_header(title: str, caption: str | None = None, how_it_works: str | None = None,
+                how_label: str = "How this lab works") -> None:
     """Standard page title, one-line caption and an optional collapsed explainer."""
     st.header(title)
-    st.caption(caption)
+    if caption:
+        st.caption(caption)
     if how_it_works:
-        with st.expander("How this lab works"):
+        with st.expander(how_label):
             st.markdown(how_it_works)
 
 
-def page_layout(title: str, caption: str, how_it_works: str | None = None):
+def page_layout(title: str, caption: str | None = None, how_it_works: str | None = None,
+                how_label: str = "How this lab works"):
     """Split the page into the main column and a full-height right-hand settings panel.
 
     The header and "How this lab works" go inside the main column, so the settings
@@ -70,7 +77,7 @@ def page_layout(title: str, caption: str, how_it_works: str | None = None):
     """
     main, column = st.columns(PANEL_RATIO, gap="large")
     with main:
-        page_header(title, caption, how_it_works)
+        page_header(title, caption, how_it_works, how_label)
     return main, column.container(border=True)
 
 
@@ -171,7 +178,8 @@ CONCEPT_PART = "🔬 Concept demo"
 MINI_MUSE_PART = "🧩 Build Mini Muse"
 
 
-def mini_muse_part(main, panel, week: int, **settings_options) -> bool:
+def mini_muse_part(main, panel, week: int, caption: str | None = None, how_it_works: str | None = None,
+                   **settings_options) -> bool:
     """The switch at the top of each week page: the week's concept demo, or its Mini Muse step.
 
     When the Mini Muse step is chosen, this renders it (with its own Model settings and
@@ -184,6 +192,12 @@ def mini_muse_part(main, panel, week: int, **settings_options) -> bool:
         part = st.radio("Part", [CONCEPT_PART, MINI_MUSE_PART], horizontal=True, label_visibility="collapsed",
                         key=f"week{week}_part")
     if part != MINI_MUSE_PART:
+        with main:
+            if caption:
+                st.caption(caption)
+            if how_it_works:
+                with st.expander("How this lab works"):
+                    st.markdown(how_it_works)
         return False
     from mini_muse.page import render_step  # the project's screens live with its code, in mini_muse/
 

@@ -27,10 +27,10 @@ HOW_IT_WORKS = """
 
 
 def render() -> None:
-    main, panel = page_layout("Week 4 · Weather Assistant",
-                "Ask about current conditions or which weekend day is best, and inspect every tool call.",
-                HOW_IT_WORKS)
-    if mini_muse_part(main, panel, 4):
+    main, panel = page_layout("Week 4 · Weather Assistant")
+    if mini_muse_part(main, panel, 4,
+                      caption="Ask about current conditions or which weekend day is best, and inspect every tool call.",
+                      how_it_works=HOW_IT_WORKS):
         return
     settings = model_settings(panel, prices=False)
     with lab_parameters(panel):

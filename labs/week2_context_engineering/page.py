@@ -34,10 +34,10 @@ DEMOS = ["Demo 1 · Strategy benchmark", "Demo 2 · Multi-run builder", "Demo 3 
 
 
 def render() -> None:
-    main, panel = page_layout("Week 2 · Context Engineering",
-                "Choose what the model sees on each call, and measure what that choice costs and changes.",
-                HOW_IT_WORKS)
-    if mini_muse_part(main, panel, 2):
+    main, panel = page_layout("Week 2 · Context Engineering")
+    if mini_muse_part(main, panel, 2,
+                      caption="Choose what the model sees on each call, and measure what that choice costs and changes.",
+                      how_it_works=HOW_IT_WORKS):
         return
     settings = model_settings(panel)
     with lab_parameters(panel):

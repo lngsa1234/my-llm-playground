@@ -616,7 +616,7 @@ def render_step(week: int, main, panel, settings) -> None:
 def render() -> None:
     """The Mini Muse page: every component in one place, including Week 8."""
     main, panel = page_layout("🧩 Mini Muse", "The personal-assistant agent the circle builds, one component per week.",
-                              HOW_IT_WORKS)
+                              HOW_IT_WORKS, how_label="The 8-week roadmap")
     labels = {w: f"Week {w} · {ICONS[w]} {name}" for w, (name, _, _) in COMPONENTS.items()}
     with main:
         week = st.selectbox("Component", list(labels), index=7, format_func=labels.get, key="muse_component")

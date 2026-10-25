@@ -28,10 +28,10 @@ HOW_IT_WORKS = """
 
 
 def render() -> None:
-    main, panel = page_layout("Week 1 · Single API Call",
-                "Explore one independent API call: its response, token use, latency and estimated cost.",
-                HOW_IT_WORKS)
-    if mini_muse_part(main, panel, 1):
+    main, panel = page_layout("Week 1 · Single API Call")
+    if mini_muse_part(main, panel, 1,
+                      caption="Explore one independent API call: its response, token use, latency and estimated cost.",
+                      how_it_works=HOW_IT_WORKS):
         return
     settings = model_settings(panel)
     with lab_parameters(panel):

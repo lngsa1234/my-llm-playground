@@ -40,10 +40,10 @@ Code: `labs/week7_production/reliability.py`.
 
 
 def render() -> None:
-    main, panel = page_layout("Week 7 · Production Reliability",
-                              "Inject failures into an LLM feature, then compare a naive and a hardened policy.",
-                              HOW_IT_WORKS)
-    if mini_muse_part(main, panel, 7):
+    main, panel = page_layout("Week 7 · Production Reliability")
+    if mini_muse_part(main, panel, 7,
+                      caption="Inject failures into an LLM feature, then compare a naive and a hardened policy.",
+                      how_it_works=HOW_IT_WORKS):
         return
     settings = model_settings(panel)
     with lab_parameters(panel):

@@ -40,10 +40,10 @@ HOW_IT_WORKS = """
 
 
 def render() -> None:
-    main, panel = page_layout("Week 3 · Build and Evaluate a RAG System",
-                "Documents → chunks → embeddings → FAISS search → grounded answer + sources → evidence evaluation",
-                HOW_IT_WORKS)
-    if mini_muse_part(main, panel, 3, embedding=True):
+    main, panel = page_layout("Week 3 · Build and Evaluate a RAG System")
+    if mini_muse_part(main, panel, 3, embedding=True,
+                      caption="Documents → chunks → embeddings → FAISS search → grounded answer + sources → evidence evaluation",
+                      how_it_works=HOW_IT_WORKS):
         return
     settings = model_settings(panel, max_tokens=False, prices=False, embedding=True)
     with lab_parameters(panel):
