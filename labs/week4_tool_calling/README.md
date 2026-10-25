@@ -11,7 +11,7 @@ This lab builds the same real-time weather capability in two ways:
 
 ```text
 week4_tool_calling/
-├── page.py                 the web page: Ask a question, See the tools, Check tool choices
+├── page.py                 the web page: ask with and without tools, and see each tool call
 ├── weather.py              the weather tools, tool schemas and agent loop, shared by everything below
 ├── tool_calling_demo.py    command-line agent using the tools directly
 ├── weather_mcp_server.py   MCP server exposing the same tools
