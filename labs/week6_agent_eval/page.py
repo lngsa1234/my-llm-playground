@@ -28,13 +28,12 @@ You evaluate **Muse**, a small personal-assistant agent that checks weather, rea
 4. **LLM-as-a-judge** — a rubric scores faithfulness, helpfulness, safety and tone, then the judge is checked against human labels.
 5. **Regression** — run everything on v1 and v2, diff case by case, and apply release gates.
 
-By default Muse is **rule-based**: deterministic, offline, and the same scores every run (v1 = 100%, v2 = 75%). Switch **Agent** to *Real LLM agent* in Lab parameters to grade a real OpenAI tool-calling agent instead — then v1 and v2 differ only by their system prompt, the agent makes live tool-calling model calls, and the scores vary run to run. The optional **LLM judge** also uses the model in Model settings. The same rule-based lab runs from the command line: `python3 labs/week6_agent_eval/run_all.py`.
+Muse is rule-based, so the agent itself makes no API calls. Only the optional **LLM judge** uses the model in Model settings. The same lab runs from the command line: `python3 labs/week6_agent_eval/run_all.py`.
 """
 
 STEPS = ["0 · Explore the agent (no grading)", "1 · Golden dataset", "2 · Task success", "3 · Tool evaluation",
          "4 · LLM-as-a-judge", "5 · Regression"]
 JUDGES = ["Heuristic (offline, free)", "LLM judge (uses Model settings)"]
-AGENTS = ["Rule-based (offline, deterministic)", "Real LLM agent (uses Model settings)"]
 
 
 def render() -> None:
@@ -45,8 +44,6 @@ def render() -> None:
         return
     settings = model_settings(panel)
     with lab_parameters(panel):
-        agent_mode = st.radio("Agent", AGENTS, key="week6_agent_mode")
-        st.divider()
         step = st.radio("Step", STEPS, key="week6_step")
         st.divider()
         params = {"step": step}
@@ -63,71 +60,23 @@ def render() -> None:
                 "max_new_failures": int(st.number_input("Max new failures (pass → fail)", 0, 50, 0, key="week6_gate_new")),
                 "max_metric_drop": st.slider("Max drop in any pass rate", 0.0, 0.5, 0.05, 0.01, format="%.2f", key="week6_gate_drop"),
             }
-    # The agent runner is chosen here and threaded through every step. The real runner and the
-    # optional LLM judge share one usage dict, so the token/cost caption covers both.
-    real = agent_mode == AGENTS[1]
-    usage: dict = {}
-    runner = evals.real_runner(settings, usage) if real else evals.rule_based_runner
     with main:
         st.subheader(step)
         if step == STEPS[0]:
-            _render_explore(runner, real, settings, usage)
+            _render_explore()
         elif step == STEPS[1]:
             _render_dataset()
         elif step == STEPS[2]:
-            _render_task_success(params["version"], runner, real, settings, usage)
+            _render_task_success(params["version"])
         elif step == STEPS[3]:
-            _render_tool_eval(params["version"], runner, real, settings, usage)
+            _render_tool_eval(params["version"])
         elif step == STEPS[4]:
-            _render_judge(settings, params["version"], params["judge"], runner, real, usage)
+            _render_judge(settings, params["version"], params["judge"])
         else:
-            _render_regression(settings, params["judge"], params["gates"], runner, real, usage)
+            _render_regression(settings, params["judge"], params["gates"])
 
 
-def _usage_caption(usage: dict, settings: ModelSettings) -> None:
-    """One quiet line of model usage (covers agent and/or judge calls that share the dict)."""
-    if usage.get("calls"):
-        st.caption(f"Model usage: {usage['calls']} calls · {usage['input_tokens']} input / "
-                   f"{usage['output_tokens']} output tokens · "
-                   f"${settings.cost(usage['input_tokens'], usage['output_tokens']):.4f}")
-
-
-def _run_suite_cached(kind: str, version: str, real: bool, settings: ModelSettings, usage: dict, compute):
-    """Rule-based: compute immediately. Real: button-gate, cache by (kind, version, model), show usage.
-
-    Returns the computed value, or None when the real agent hasn't been run yet.
-    """
-    if not real:
-        return compute()
-    slot, key = f"week6_{kind}_result", (kind, version, settings.model)
-    stored = st.session_state.get(slot)
-    if not stored or stored["key"] != key:
-        if not (st.button(f"Run the real agent on all {len(evals.load_cases())} cases ({version})",
-                          type="primary", key=f"week6_{kind}_run") and can_run(settings)):
-            st.info("Real agent mode: run it on every golden case to see the scores (live model calls).")
-            return None
-        try:
-            with st.spinner("Running the agent on each case…"):
-                data = compute()
-            st.session_state[slot] = {"key": key, "data": data, "usage": dict(usage)}
-        except Exception as exc:  # noqa: BLE001
-            show_error("Agent", exc)
-            return None
-    stored = st.session_state[slot]
-    _usage_caption(stored["usage"], settings)
-    return stored["data"]
-
-
-def _explore_data(query: str, case: dict | None, runner) -> dict:
-    """Run both versions once; grade too when the request is a golden case."""
-    out = {}
-    for version in evals.VERSIONS:
-        out[version] = evals.grade_case(case, version, runner) if case is not None \
-            else {"trace": evals.run_agent(query, version, runner)}
-    return out
-
-
-def _render_explore(runner, real: bool, settings: ModelSettings, usage: dict) -> None:
+def _render_explore() -> None:
     st.caption("Try requests by hand and compare the two versions. Nothing is graded here: you judge by eye. "
                "Pick a golden-dataset request to see how the same request is written down and graded automatically.")
     source = st.radio("Request", ["From the golden dataset", "Type your own"], horizontal=True, key="week6_explore_source")
@@ -142,15 +91,10 @@ def _render_explore(runner, real: bool, settings: ModelSettings, usage: dict) ->
     if not query.strip():
         return
 
-    data = _run_suite_cached("explore", query, real, settings, usage,
-                             lambda: _explore_data(query, case, runner))
-    if data is None:
-        return
-
     st.markdown("#### What each version does")
     for column, version in zip(st.columns(2), evals.VERSIONS):
         with column:
-            trace = data[version]["trace"]
+            trace = evals.run_agent(query, version)
             st.markdown(f"**{evals.VERSION_LABELS[version]}**")
             st.info(trace["answer"])
             st.caption(f"Tools called: {' → '.join(c['tool'] for c in trace['tool_calls']) or '(none)'} · "
@@ -182,7 +126,7 @@ def _render_explore(runner, real: bool, settings: ModelSettings, usage: dict) ->
     st.markdown("#### Graded automatically")
     for column, version in zip(st.columns(2), evals.VERSIONS):
         with column:
-            graded = data[version]
+            graded = evals.grade_case(case, version)
             st.markdown(f"**{version}**")
             task_icon = "✅" if graded["task_passed"] else "❌"
             tool_icon = "✅" if graded["tools_passed"] else "❌"
@@ -220,26 +164,18 @@ def _render_dataset() -> None:
     st.caption("Edit `labs/week6_agent_eval/data/golden.jsonl` to add cases; this page reads it directly.")
 
 
-def _render_task_success(version: str, runner, real: bool, settings: ModelSettings, usage: dict) -> None:
+def _render_task_success(version: str) -> None:
     st.caption("Grade the outcome only: the final answer and the end state of the world (events booked, emails sent).")
-    result = _run_suite_cached("task", version, real, settings, usage,
-                               lambda: evals.task_results(version, runner))
-    if result is None:
-        return
-    rows, rate = result
+    rows, rate = evals.task_results(version)
     metric_row({"Task success": f"{rate:.0%}", "Passed": sum(r["Result"] == "PASS" for r in rows), "Failed": sum(r["Result"] == "FAIL" for r in rows)})
     st.dataframe(rows, width="stretch", hide_index=True)
-    if version == "v2" and not real:
+    if version == "v2":
         st.info("Look at **sch-01**: it passes here. Switch to **3 · Tool evaluation** to see why it shouldn't.")
 
 
-def _render_tool_eval(version: str, runner, real: bool, settings: ModelSettings, usage: dict) -> None:
+def _render_tool_eval(version: str) -> None:
     st.caption("Grade the path, not just the destination: an agent can reach a right answer the wrong way.")
-    result = _run_suite_cached("tool", version, real, settings, usage,
-                               lambda: evals.tool_results(version, runner))
-    if result is None:
-        return
-    rows, s = result
+    rows, s = evals.tool_results(version)
     metric_row({"Tool-use pass rate": f"{s['pass_rate']:.0%}", "Precision": f"{s['precision']:.0%}", "Recall": f"{s['recall']:.0%}",
                 "Correct order": f"{s['order']:.0%}", "Safety violations": s["safety_violations"]})
     st.dataframe(rows, width="stretch", hide_index=True)
@@ -247,62 +183,61 @@ def _render_tool_eval(version: str, runner, real: bool, settings: ModelSettings,
         st.error(f"{s['safety_violations']} forbidden tool call(s). Safety violations should always be zero.")
 
 
-def _render_judge(settings: ModelSettings, version: str, judge_name: str, runner, real: bool, usage: dict) -> None:
+def _judge_function(settings: ModelSettings, judge_name: str, usage: dict):
+    return evals.heuristic_judge if judge_name == JUDGES[0] else evals.llm_judge(settings, usage)
+
+
+def _render_judge(settings: ModelSettings, version: str, judge_name: str) -> None:
     st.caption("A rubric grades what string checks can't, and the judge is compared with human labels before it's trusted.")
     with st.expander("Rubric and judge prompt"):
         st.dataframe([{"Criterion": k, "What it means": v} for k, v in evals.RUBRIC.items()], width="stretch", hide_index=True)
         st.code(evals.judge_prompt_example(version), language="text")
-    llm = judge_name == JUDGES[1]
-    key = ("judge", version, judge_name, settings.model, real)
-    if not (real or llm):  # fully offline: compute immediately, every rerun
-        st.session_state.week6_judge_result = {"key": key, "result": evals.judge_results(version, evals.heuristic_judge, runner), "usage": {}}
-    else:
-        calls = len(evals.load_cases()) * ((1 if real else 0) + (1 if llm else 0))
-        if st.button(f"Run on {version} ({calls} model calls)", type="primary", key="week6_judge_run") and can_run(settings):
-            try:
-                judge_fn = evals.llm_judge(settings, usage) if llm else evals.heuristic_judge
-                with st.spinner("Running each case…"):
-                    result = evals.judge_results(version, judge_fn, runner)
-                st.session_state.week6_judge_result = {"key": key, "result": result, "usage": dict(usage)}
-            except Exception as exc:  # noqa: BLE001
-                show_error("Judge", exc)
+    key = ("judge", version, judge_name, settings.model)
+    if judge_name == JUDGES[0]:
+        st.session_state.week6_judge_result = {"key": key, "result": evals.judge_results(version, evals.heuristic_judge), "usage": {}}
+    elif st.button(f"Run LLM judge on {version} ({len(evals.load_cases())} calls)", type="primary", key="week6_judge_run") and can_run(settings):
+        usage: dict = {}
+        try:
+            with st.spinner("Judging each case…"):
+                result = evals.judge_results(version, evals.llm_judge(settings, usage))
+            st.session_state.week6_judge_result = {"key": key, "result": result, "usage": usage}
+        except Exception as exc:  # noqa: BLE001
+            show_error("LLM judge", exc)
     stored = st.session_state.get("week6_judge_result")
     if not stored or stored["key"] != key:
-        st.info("Run the judge to score this version.")
+        st.info("Run the LLM judge to score this version.")
         return
-    result, used = stored["result"], stored["usage"]
+    result, usage = stored["result"], stored["usage"]
     agreement = result["agreement"]
     metric_row({"Judge pass rate": f"{result['pass_rate']:.0%}",
                 **{k.title(): f"{v:.1f}" for k, v in result["averages"].items()},
                 "Judge–human agreement": "—" if agreement is None else f"{agreement:.0%}"})
-    _usage_caption(used, settings)
+    if usage:
+        st.caption(f"{usage['calls']} judge calls · {usage['input_tokens']} input / {usage['output_tokens']} output tokens · "
+                   f"${settings.cost(usage['input_tokens'], usage['output_tokens']):.4f}")
     if agreement is not None and agreement < 0.85:
         st.warning(f"Agreement with humans is {agreement:.0%} on {result['labeled']} labeled cases. Don't trust a judge below about 85%: look at the ⚠ rows.")
     st.dataframe(result["rows"], width="stretch", hide_index=True)
 
 
-def _render_regression(settings: ModelSettings, judge_name: str, gates: dict, runner, real: bool, usage: dict) -> None:
+def _render_regression(settings: ModelSettings, judge_name: str, gates: dict) -> None:
     st.caption("Run every evaluation on the baseline and the candidate, diff case by case, and apply release gates.")
-    llm = judge_name == JUDGES[1]
-    key = ("regression", judge_name, settings.model, real, tuple(sorted(gates.items())))
-    if not (real or llm):  # fully offline: compute immediately, every rerun
-        st.session_state.week6_regression_result = {"key": key, "result": evals.regression("v1", "v2", evals.heuristic_judge, gates, runner), "usage": {}}
-    else:
-        calls = 2 * len(evals.load_cases()) * ((1 if real else 0) + (1 if llm else 0))
-        if st.button(f"Run regression on v1 and v2 ({calls} model calls)", type="primary", key="week6_regression_run") and can_run(settings):
-            try:
-                judge_fn = evals.llm_judge(settings, usage) if llm else evals.heuristic_judge
-                with st.spinner("Evaluating v1 and v2…"):
-                    result = evals.regression("v1", "v2", judge_fn, gates, runner)
-                st.session_state.week6_regression_result = {"key": key, "result": result, "usage": dict(usage)}
-            except Exception as exc:  # noqa: BLE001
-                show_error("Regression", exc)
+    key = ("regression", judge_name, settings.model, tuple(sorted(gates.items())))
+    if judge_name == JUDGES[0]:
+        st.session_state.week6_regression_result = {"key": key, "result": evals.regression("v1", "v2", evals.heuristic_judge, gates), "usage": {}}
+    elif st.button(f"Run regression with the LLM judge ({2 * len(evals.load_cases())} calls)", type="primary", key="week6_regression_run") and can_run(settings):
+        usage: dict = {}
+        try:
+            with st.spinner("Evaluating v1 and v2…"):
+                result = evals.regression("v1", "v2", evals.llm_judge(settings, usage), gates)
+            st.session_state.week6_regression_result = {"key": key, "result": result, "usage": usage}
+        except Exception as exc:  # noqa: BLE001
+            show_error("Regression", exc)
     stored = st.session_state.get("week6_regression_result")
     if not stored or stored["key"] != key:
-        st.info("Run the regression to compare v1 and v2.")
+        st.info("Run the regression with the LLM judge to compare v1 and v2.")
         return
-    result, used = stored["result"], stored["usage"]
-    _usage_caption(used, settings)
+    result = stored["result"]
     base, cand = result["base"]["metrics"], result["cand"]["metrics"]
     if result["ship"]:
         st.success("Verdict: SHIP IT ✅ — every release gate passed.")

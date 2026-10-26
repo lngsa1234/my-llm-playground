@@ -26,7 +26,6 @@ LAB_DIR = Path(__file__).resolve().parent / "lab"
 if str(LAB_DIR) not in sys.path:
     sys.path.insert(0, str(LAB_DIR))
 agent = importlib.import_module("agent")
-real_agent = importlib.import_module("real_agent")
 lab_common = importlib.import_module("common")
 golden = importlib.import_module("step1_golden")
 task_step = importlib.import_module("step2_task_success")
@@ -40,7 +39,6 @@ DIMENSIONS = ["task", "tools", "judge"]
 DEFAULT_GATES = {"max_safety_violations": 0, "max_new_failures": 0, "max_metric_drop": 0.05}
 
 Judge = Callable[[dict], dict]
-AgentRunner = Callable[[str, str], dict]  # (query, version) -> trace dict
 
 
 # ------------------------------------------------------------ data + agent
@@ -48,32 +46,17 @@ def load_cases() -> list[dict]:
     return lab_common.load_golden()
 
 
-def rule_based_runner(query: str, version: str) -> dict:
-    """The deterministic, offline Muse: same answer every run, no API calls."""
+def run_agent(query: str, version: str) -> dict:
     return agent.run_agent(query, version).to_dict()
 
 
-def real_runner(settings: ModelSettings, usage: dict | None = None) -> AgentRunner:
-    """A runner that calls a real OpenAI tool-calling agent with the app's Model settings."""
-    def run(query: str, version: str) -> dict:
-        return real_agent.run_agent(query, version, settings.model,
-                                    settings.max_output_tokens, usage).to_dict()
-
-    return run
+def run_suite(version: str) -> list[tuple[dict, dict]]:
+    return lab_common.run_suite(version)
 
 
-def run_agent(query: str, version: str, runner: AgentRunner | None = None) -> dict:
-    return (runner or rule_based_runner)(query, version)
-
-
-def run_suite(version: str, runner: AgentRunner | None = None) -> list[tuple[dict, dict]]:
-    run = runner or rule_based_runner
-    return [(c, run(c["input"], version)) for c in load_cases()]
-
-
-def grade_case(case: dict, version: str, runner: AgentRunner | None = None) -> dict:
+def grade_case(case: dict, version: str) -> dict:
     """Run one golden case and grade it the way steps 2 and 3 do."""
-    trace = run_agent(case["input"], version, runner)
+    trace = run_agent(case["input"], version)
     task = task_step.evaluate_task(case, trace)
     tools = tool_step.evaluate_tools(case, trace)
     tool_problems = tools["arg_errors"] + [f"forbidden tool called: {f}" for f in tools["forbidden_calls"]]
@@ -93,9 +76,9 @@ def dataset_report(cases: list[dict]) -> dict:
 
 
 # --------------------------------------------------- step 2: task success
-def task_results(version: str, runner: AgentRunner | None = None) -> tuple[list[dict], float]:
+def task_results(version: str) -> tuple[list[dict], float]:
     rows = []
-    for case, trace in run_suite(version, runner):
+    for case, trace in run_suite(version):
         r = task_step.evaluate_task(case, trace)
         rows.append({"Case": case["id"], "Category": case["category"], "Input": case["input"],
                      "Result": "PASS" if r["passed"] else "FAIL", "Failed checks": "; ".join(r["failed"]),
@@ -104,9 +87,9 @@ def task_results(version: str, runner: AgentRunner | None = None) -> tuple[list[
 
 
 # --------------------------------------------------- step 3: tool use
-def tool_results(version: str, runner: AgentRunner | None = None) -> tuple[list[dict], dict]:
+def tool_results(version: str) -> tuple[list[dict], dict]:
     rows, agg = [], {"precision": 0.0, "recall": 0.0, "order": 0, "args": 0, "safety_violations": 0, "pass": 0}
-    results = run_suite(version, runner)
+    results = run_suite(version)
     for case, trace in results:
         r = tool_step.evaluate_tools(case, trace)
         agg["precision"] += r["precision"]
@@ -156,11 +139,11 @@ def judge_prompt_example(version: str = "v1") -> str:
     return judge_step.build_prompt(trace)
 
 
-def judge_results(version: str, judge: Judge, runner: AgentRunner | None = None) -> dict:
+def judge_results(version: str, judge: Judge) -> dict:
     labels = judge_step.load_human_labels().get(version, {})
     rows, totals, agree, labeled = [], {k: 0 for k in RUBRIC}, 0, 0
     started = time.perf_counter()
-    for case, trace in run_suite(version, runner):
+    for case, trace in run_suite(version):
         scores = judge(trace)
         passed = judge_step.judge_passes(scores)
         for k in RUBRIC:
@@ -182,9 +165,9 @@ def judge_results(version: str, judge: Judge, runner: AgentRunner | None = None)
 
 
 # --------------------------------------------------- step 5: regression
-def full_eval(version: str, judge: Judge, runner: AgentRunner | None = None) -> dict:
+def full_eval(version: str, judge: Judge) -> dict:
     per_case, safety = {}, 0
-    for case, trace in run_suite(version, runner):
+    for case, trace in run_suite(version):
         t = task_step.evaluate_task(case, trace)
         tl = tool_step.evaluate_tools(case, trace)
         j = judge(trace)
@@ -204,9 +187,8 @@ def full_eval(version: str, judge: Judge, runner: AgentRunner | None = None) -> 
     return {"version": version, "metrics": metrics, "cases": per_case}
 
 
-def regression(baseline: str, candidate: str, judge: Judge, gates: dict = DEFAULT_GATES,
-               runner: AgentRunner | None = None) -> dict:
-    base, cand = full_eval(baseline, judge, runner), full_eval(candidate, judge, runner)
+def regression(baseline: str, candidate: str, judge: Judge, gates: dict = DEFAULT_GATES) -> dict:
+    base, cand = full_eval(baseline, judge), full_eval(candidate, judge)
     new_failures, fixed = [], []
     for cid, c in cand["cases"].items():
         b = base["cases"].get(cid)
