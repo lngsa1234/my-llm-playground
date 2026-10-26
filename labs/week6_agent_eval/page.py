@@ -30,7 +30,7 @@ Both versions share the same code and tools; **v2** changes just three things �
 4. **LLM-as-a-judge** — a rubric scores faithfulness, helpfulness, safety and tone, then the judge is checked against human labels.
 5. **Regression** — run everything on v1 and v2, diff case by case, and apply release gates.
 
-Muse is **rule-based**, not an LLM: it matches your wording against a few fixed patterns (weather, calendar, scheduling, email, tip math), so every run is identical (v1 = 100%, v2 = 75%) and its tools are faked in memory — nothing touches the network or a real inbox. Only the optional **LLM judge** calls a model. To grade a *real* LLM agent instead (where answers vary run to run), switch the part above to **🧩 Build Mini Muse**. The rule-based lab also runs from the command line: `python3 labs/week6_agent_eval/run_all.py`.
+Muse is **rule-based**, not an LLM: it follows fixed rules, so every run is identical and its tools are faked in memory — nothing touches the network or a real inbox. Only the optional **LLM judge** calls a model. To grade a *real* LLM agent instead (where answers vary run to run), switch the part above to **🧩 Build Mini Muse**. The rule-based lab also runs from the command line: `python3 labs/week6_agent_eval/run_all.py`.
 """
 
 STEPS = ["0 · Explore the agent (no grading)", "1 · Golden dataset", "2 · Task success", "3 · Tool evaluation",
@@ -79,19 +79,12 @@ def render() -> None:
 
 
 def _render_explore() -> None:
-    st.caption("Try requests by hand and compare the two versions. Nothing is graded here: you judge by eye. "
-               "Pick a golden-dataset request to see how the same request is written down and graded automatically.")
-    source = st.radio("Request", ["From the golden dataset", "Type your own"], horizontal=True, key="week6_explore_source")
-    case = None
-    if source == "From the golden dataset":
-        cases = evals.load_cases()
-        case = st.selectbox("Golden-dataset case", cases, key="week6_explore_case",
-                            format_func=lambda c: f"{c['id']} · {c['input']}")
-        query = case["input"]
-    else:
-        query = st.text_input("Your request", "Schedule lunch on 2026-10-28 at 12:00", key="week6_explore_custom")
-    if not query.strip():
-        return
+    st.caption("Pick a golden-dataset request and compare the two versions by eye. Nothing is graded here: "
+               "this is the “it looks good when I try it” baseline, next to what the golden dataset says should happen.")
+    cases = evals.load_cases()
+    case = st.selectbox("Golden-dataset case", cases, key="week6_explore_case",
+                        format_func=lambda c: f"{c['id']} · {c['input']}")
+    query = case["input"]
 
     st.markdown("#### What each version does")
     for column, version in zip(st.columns(2), evals.VERSIONS):
@@ -104,11 +97,6 @@ def _render_explore() -> None:
                        f"Emails sent: {len(trace['final_state']['emails_sent'])}")
             with st.popover("Full trace"):
                 st.json(trace)
-
-    if case is None:
-        st.info("This request isn't in the golden dataset, so there is no written-down expected behavior to grade it against. "
-                "To grade it on every run, add it to `labs/week6_agent_eval/data/golden.jsonl` with its expected behavior.")
-        return
 
     exp = case["expected"]
     st.markdown("#### What the golden dataset says should happen")
