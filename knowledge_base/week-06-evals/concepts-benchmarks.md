@@ -63,7 +63,7 @@ For **Step 4** of the [evaluation lab](../../labs/week6_agent_eval/README.md): c
 1. Pick the benchmark closest to your project (e.g. τ-bench for a customer-support agent, AppWorld for a personal assistant, HotpotQA for RAG).
 2. Read 5 of its tasks and note **how each one is graded**.
 3. Rewrite each task for your own agent's tools and users.
-4. Add them to your golden dataset with `expected_tools`, `forbidden_tools` and `expected_state`, then run `python3 lab/step1_golden.py` to check coverage.
+4. Add them to your golden dataset with `expected_tools`, `forbidden_tools` and `expected_state`, then run `python3 labs/week6_agent_eval/lab/step1_golden.py` to check coverage.
 
 Example — a BFCL-style "no tool needed" case rewritten for Muse:
 
