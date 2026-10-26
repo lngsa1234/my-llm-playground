@@ -48,6 +48,18 @@ PAGES = {
 
 st.set_page_config(page_title="Agent Engineering Peer Learning", page_icon="🧭", layout="wide")
 apply_page_style()
+st.markdown(
+    """
+    <style>
+        /* Keep each week's label on a single line in the sidebar. */
+        [data-testid="stSidebar"] [role="radiogroup"] label p {
+            font-size: 0.8rem;
+            white-space: nowrap;
+        }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
 
 CONCEPTS = available_concepts()
 KB_OFF = "— Hide —"
@@ -64,7 +76,6 @@ with st.sidebar:
                         key="nav_week", on_change=_show_labs)
     st.divider()
     with st.expander("📚 Knowledge Base"):
-        st.caption("Each week's basic concept, straight from `knowledge_base/`.")
         concept = st.radio("Concept", [KB_OFF, *CONCEPTS], label_visibility="collapsed",
                            key="nav_concept")
     st.divider()
