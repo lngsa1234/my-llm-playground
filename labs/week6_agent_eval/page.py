@@ -21,7 +21,7 @@ from labs.shared.ui import mini_muse_part, can_run, lab_parameters, metric_row, 
 HOW_IT_WORKS = """
 You evaluate **Muse**, a small personal-assistant agent that checks weather, reads and books calendar events, drafts emails and does tip math. **v1** is in production; **v2** is a “faster, friendlier” update. Is v2 safe to ship?
 
-Both versions run the **same code and the same tools** — v2 differs only in three deliberate ways: it opens every reply with gushing enthusiasm instead of a neutral tone, it books calendar events *without* first checking the date for a conflict, and it sends emails immediately *without* drafting and asking you to confirm. Those three changes are the regressions the evals below should catch.
+Both versions share the same code and tools; **v2** changes just three things — it gushes instead of staying neutral, books events without checking for a conflict first, and sends email without asking you to confirm. Those are the regressions the evals below should catch.
 
 0. **Explore the agent** — try requests by hand and look at what each version does. No grading: this is the “it looks good when I try it” baseline the rest of the lab improves on.
 1. **Golden dataset** — 12 hand-written cases with the expected behavior written down first: answer checks, the right tool path, forbidden tools and expected side effects.
@@ -30,7 +30,7 @@ Both versions run the **same code and the same tools** — v2 differs only in th
 4. **LLM-as-a-judge** — a rubric scores faithfulness, helpfulness, safety and tone, then the judge is checked against human labels.
 5. **Regression** — run everything on v1 and v2, diff case by case, and apply release gates.
 
-Muse is **rule-based and deterministic**: it follows fixed rules instead of calling a model, so each version gives the exact same answer every run (v1 = 100%, v2 = 75%) — which is what makes the eval steps easy to learn here. Its **tools are simulated**: weather, calendar, contacts and “sent” emails all live in a fake in-memory world that resets for every case, so nothing touches the network or a real inbox. The agent itself makes no API calls; only the optional **LLM judge** uses the model in Model settings. To run these same evals against a *real* LLM agent (where answers vary run to run), switch the part above to **🧩 Build Mini Muse**. The same rule-based lab runs from the command line: `python3 labs/week6_agent_eval/run_all.py`.
+Muse is **rule-based**, not an LLM: it matches your wording against a few fixed patterns (weather, calendar, scheduling, email, tip math), so every run is identical (v1 = 100%, v2 = 75%) and its tools are faked in memory — nothing touches the network or a real inbox. Only the optional **LLM judge** calls a model. To grade a *real* LLM agent instead (where answers vary run to run), switch the part above to **🧩 Build Mini Muse**. The rule-based lab also runs from the command line: `python3 labs/week6_agent_eval/run_all.py`.
 """
 
 STEPS = ["0 · Explore the agent (no grading)", "1 · Golden dataset", "2 · Task success", "3 · Tool evaluation",
