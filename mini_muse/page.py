@@ -489,8 +489,8 @@ def step6(main, panel, settings) -> None:
                          "Open a failing case's answers: is the agent wrong, or is the keyword check too strict?",
                          "Change a rule in `mini_muse/week5_agent.py`, run again, and compare: that's a regression test."])
         st.markdown(f"Same **{len(cases_all)} golden cases** as Steps 0–5 of Week 6, graded by the same task-success "
-                    "and tool-use checks. The simulated Muse v1 passes every case by design; the column on the right "
-                    "shows it for comparison.")
+                    "and tool-use checks — but now against the real Mini Muse, so a case can pass on one run and fail "
+                    "the next. Run each case a few times and watch for **FLAKY** rows.")
         calls = len(cases) * repeats
         st.caption(f"{len(cases)} cases × {repeats} runs = {calls} agent runs, about {calls * 2}–{calls * 3} model calls.")
         if st.button("Run the golden dataset on Mini Muse", type="primary", key="muse_w6_run") and (llm := _run(settings)):

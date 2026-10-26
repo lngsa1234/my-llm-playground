@@ -68,8 +68,7 @@ def run_golden(run_fn: RunFn, cases: list[dict], repeats: int = 1, judge=None,
         both = sum(g["task"] and g["tools"] for g in graded) / repeats
         rows.append({"Case": case["id"], "Category": case["category"], "Input": case["input"],
                      "Task pass": f"{task_rate:.0%}", "Tools pass": f"{tool_rate:.0%}",
-                     "Status": "PASS" if both == 1 else "FAIL" if both == 0 else "FLAKY",
-                     "v1 (simulated)": _v1_status(case)})
+                     "Status": "PASS" if both == 1 else "FAIL" if both == 0 else "FLAKY"})
     n = len(runs) or 1
     return {"rows": rows, "runs": runs,
             "task_rate": sum(r["Task"] == "PASS" for r in runs) / n,
@@ -80,8 +79,3 @@ def run_golden(run_fn: RunFn, cases: list[dict], repeats: int = 1, judge=None,
 
 def _mark(ok: bool) -> str:
     return "PASS" if ok else "FAIL"
-
-
-def _v1_status(case: dict) -> str:
-    g = evals.grade_case(case, "v1")
-    return "PASS" if g["task_passed"] and g["tools_passed"] else "FAIL"
