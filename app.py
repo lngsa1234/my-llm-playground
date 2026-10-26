@@ -23,6 +23,7 @@ for _name, _module in list(sys.modules.items()):
             del sys.modules[_name]
 
 from labs.shared.ui import api_key_notice, apply_page_style  # noqa: E402
+from labs.shared.knowledge import available_concepts, render_concept  # noqa: E402
 from labs.week1_llm_api import page as week1  # noqa: E402
 from labs.week2_context_engineering import page as week2  # noqa: E402
 from labs.week3_rag import page as week3  # noqa: E402
@@ -48,10 +49,28 @@ PAGES = {
 st.set_page_config(page_title="Agent Engineering Peer Learning", page_icon="🧭", layout="wide")
 apply_page_style()
 
+CONCEPTS = available_concepts()
+KB_OFF = "— Hide —"
+
+
+def _show_labs() -> None:
+    """Picking a week in the lab nav leaves the Knowledge Base view."""
+    st.session_state.nav_concept = KB_OFF
+
+
 with st.sidebar:
     st.subheader("🧭 Agent Engineering Peer Learning")
-    selected = st.radio("Choose a week", list(PAGES), label_visibility="collapsed", key="nav_week")
+    selected = st.radio("Choose a week", list(PAGES), label_visibility="collapsed",
+                        key="nav_week", on_change=_show_labs)
+    st.divider()
+    with st.expander("📚 Knowledge Base"):
+        st.caption("Each week's basic concept, straight from `knowledge_base/`.")
+        concept = st.radio("Concept", [KB_OFF, *CONCEPTS], label_visibility="collapsed",
+                           key="nav_concept")
     st.divider()
     api_key_notice()
 
-PAGES[selected]()
+if concept != KB_OFF:
+    render_concept(CONCEPTS[concept])
+else:
+    PAGES[selected]()
