@@ -1,7 +1,6 @@
 """Week 6 · Proof: grade the real Mini Muse with the Week 6 golden dataset.
 
-The simulated Muse (v1, v2) gives the same answer every time, which made it easy to
-learn the evaluation steps. Mini Muse is a real LLM agent, so two new things appear:
+Mini Muse is a real LLM agent, so two new things appear:
 
   variation   the same case can pass on one run and fail on the next. Run each case
               several times and report a pass *rate*; a case that sometimes fails is "flaky".

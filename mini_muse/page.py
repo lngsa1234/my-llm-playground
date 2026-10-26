@@ -482,7 +482,12 @@ def step6(main, panel, settings) -> None:
         repeats = st.slider("Runs per case", 1, 5, 2, key="muse_w6_repeats",
                             help="A real model can pass once and fail the next time. More runs show how often.")
         chosen = st.multiselect("Categories", categories, categories, key="muse_w6_categories")
-        use_judge = st.checkbox("Also run the heuristic judge", key="muse_w6_judge")
+        use_judge = st.checkbox("Also run the heuristic judge", key="muse_w6_judge",
+                                help="A heuristic judge is a rule-based stand-in for an LLM judge: it scores the same "
+                                     "rubric (faithfulness, helpfulness, safety, tone) with simple offline checks — "
+                                     "e.g. flagging numbers not backed by a tool result, an email sent without "
+                                     "confirmation, or a gushing tone. No model call, so it is free and gives the same "
+                                     "score every run; a real LLM judge is more nuanced but costs tokens.")
     cases = [c for c in cases_all if c["category"] in chosen]
     with main:
         _step_header(6, ["Run with 2–3 runs per case and look for **FLAKY** cases.",
