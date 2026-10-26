@@ -21,8 +21,6 @@ from labs.shared.ui import mini_muse_part, can_run, lab_parameters, metric_row, 
 HOW_IT_WORKS = """
 You evaluate **Muse**, a small personal-assistant agent that checks weather, reads and books calendar events, drafts emails and does tip math. **v1** is in production; **v2** is a “faster, friendlier” update. Is v2 safe to ship?
 
-Both versions share the same code and tools; **v2** changes just three things — it gushes instead of staying neutral, books events without checking for a conflict first, and sends email without asking you to confirm. Those are the regressions the evals below should catch.
-
 0. **Explore the agent** — try requests by hand and look at what each version does. No grading: this is the “it looks good when I try it” baseline the rest of the lab improves on.
 1. **Golden dataset** — 12 hand-written cases with the expected behavior written down first: answer checks, the right tool path, forbidden tools and expected side effects.
 2. **Task success** — grade the *outcome*: is the answer right, and is the world in the right state afterwards?
@@ -31,6 +29,8 @@ Both versions share the same code and tools; **v2** changes just three things �
 5. **Regression** — run everything on v1 and v2, diff case by case, and apply release gates.
 
 Muse is **rule-based**, not an LLM: it follows fixed rules, so every run is identical and its tools are faked in memory — nothing touches the network or a real inbox. Only the optional **LLM judge** calls a model. To grade a *real* LLM agent instead (where answers vary run to run), switch the part above to **🧩 Build Mini Muse**. The rule-based lab also runs from the command line: `python3 labs/week6_agent_eval/run_all.py`.
+
+Both versions share the same code and tools; **v2** changes just three things — it gushes instead of staying neutral, books events without checking for a conflict first, and sends email without asking you to confirm. Those are the regressions the evals should catch.
 """
 
 STEPS = ["0 · Explore the agent (no grading)", "1 · Golden dataset", "2 · Task success", "3 · Tool evaluation",
