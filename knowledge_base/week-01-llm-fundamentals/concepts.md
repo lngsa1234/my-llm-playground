@@ -1,11 +1,5 @@
 # Week 1 · LLM Fundamentals — Concepts
 
-## At a glance
-
-| Learn | Build | Key terms | Watch for |
-| --- | --- | --- | --- |
-| How an LLM generates tokens and where it fits in an app | A first API call with structured output | Tokens, context, prompts, temperature, API | An LLM does not retain prior API calls unless the app supplies history |
-
 Since we're learning LLM basics with the goal of building AI agents, I would organize the concepts into three layers:
 
 ```graphviz

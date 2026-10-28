@@ -1,11 +1,5 @@
 # Week 6 · Evals — Concepts: Public Benchmarks
 
-## At a glance
-
-| Learn | Build | Key terms | Watch for |
-| --- | --- | --- | --- |
-| Use public benchmarks as ideas and comparison points, not as a substitute for product-specific evals | A small benchmark-derived test set adapted to your agent | Benchmark, BFCL, scorer, contamination, golden dataset | A high public score does not guarantee performance on your users' tasks |
-
 There is no single "standard" golden dataset. A golden dataset is built around **your** agent: its tools, users and failure modes. Public benchmarks do something different: they compare models on shared tasks.
 
 Samples, a download script and a BFCL scorer are in [`benchmark/`](../../benchmark/).

@@ -1,11 +1,5 @@
 # Week 4 · Tool Calling — Concepts: MCP
 
-## At a glance
-
-| Learn | Build | Key terms | Watch for |
-| --- | --- | --- | --- |
-| Use a common protocol to connect AI applications with tools and data | An MCP client or server integration | MCP, tools, resources, prompts, client, server | MCP standardizes connections; it does not replace authorization or tool safety |
-
 ## 1. What is MCP?
 
 **MCP = Model Context Protocol.**
