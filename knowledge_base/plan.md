@@ -1,4 +1,4 @@
-# Agent Engineering Peer Learning Circle — 8-Week Program Guide
+# Agent Engineering Peer Learning Circle — Program Guide
 
 An 8-week, hands-on program for learning AI engineering foundations. The program ends with building and validating an AI assistant.
 

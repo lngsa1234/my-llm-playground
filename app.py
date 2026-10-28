@@ -101,7 +101,7 @@ with st.sidebar:
                         key="nav_week", on_change=_show_labs)
     st.divider()
     with st.expander("🗺️ Program Guide"):
-        guide = st.radio("Program guide", [GUIDE_OFF, "8-Week Program Guide"], label_visibility="collapsed",
+        guide = st.radio("Program guide", [GUIDE_OFF, "Program Guide"], label_visibility="collapsed",
                          key="nav_guide", on_change=_show_guide)
     with st.expander("📚 Knowledge Base"):
         concept = st.radio("Concept", [KB_OFF, *CONCEPTS], label_visibility="collapsed",
