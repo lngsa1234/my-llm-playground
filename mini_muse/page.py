@@ -706,8 +706,8 @@ def render_step(week: int, main, panel, settings) -> None:
 
 
 def render() -> None:
-    """The Week 7 Mini Muse demo: every component in one place, including Week 8."""
-    main, panel = page_layout("Week 7 · Mini Muse Demo", "The personal-assistant agent the circle builds, one component per week.",
+    """The Week 8 Mini Muse demo: every component in one place, including Week 8."""
+    main, panel = page_layout("Week 8 · Mini Muse Demo", "The personal-assistant agent the circle builds, one component per week.",
                               HOW_IT_WORKS, how_label="The 8-week roadmap")
     labels = {w: f"Week {w} · {name}" for w, (name, _, _) in COMPONENTS.items()}
     with main:
