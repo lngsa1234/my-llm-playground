@@ -24,6 +24,7 @@ for _name, _module in list(sys.modules.items()):
 
 from labs.shared.ui import api_key_notice, apply_page_style  # noqa: E402
 from labs.shared.knowledge import available_concepts, render_concept  # noqa: E402
+from labs.shared.quizzes import QUIZZES, render_quiz  # noqa: E402
 from labs.week1_llm_api import page as week1  # noqa: E402
 from labs.week2_context_engineering import page as week2  # noqa: E402
 from labs.week3_rag import page as week3  # noqa: E402
@@ -63,10 +64,22 @@ st.markdown(
 
 CONCEPTS = available_concepts()
 KB_OFF = "— Hide —"
+QUIZ_OFF = "— Hide —"
 
 
 def _show_labs() -> None:
     """Picking a week in the lab nav leaves the Knowledge Base view."""
+    st.session_state.nav_concept = KB_OFF
+    st.session_state.nav_quiz = QUIZ_OFF
+
+
+def _show_concept() -> None:
+    """Opening Knowledge Base hides the quiz view."""
+    st.session_state.nav_quiz = QUIZ_OFF
+
+
+def _show_quiz() -> None:
+    """Opening a quiz hides the Knowledge Base view."""
     st.session_state.nav_concept = KB_OFF
 
 
@@ -77,11 +90,16 @@ with st.sidebar:
     st.divider()
     with st.expander("📚 Knowledge Base"):
         concept = st.radio("Concept", [KB_OFF, *CONCEPTS], label_visibility="collapsed",
-                           key="nav_concept")
+                           key="nav_concept", on_change=_show_concept)
+    with st.expander("🧠 Quizzes"):
+        quiz = st.radio("Quiz", [QUIZ_OFF, *QUIZZES], label_visibility="collapsed",
+                        key="nav_quiz", on_change=_show_quiz)
     st.divider()
     api_key_notice()
 
-if concept != KB_OFF:
+if quiz != QUIZ_OFF:
+    render_quiz(quiz)
+elif concept != KB_OFF:
     render_concept(CONCEPTS[concept])
 else:
     PAGES[selected]()
