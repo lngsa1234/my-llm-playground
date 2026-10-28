@@ -2,9 +2,26 @@
 
 > Exported from the Notion page "Agent Engineering Peer Learning Circle – Temporary Plan" on 2026-10-24. The notes for each week are linked under its heading; see the [knowledge base index](README.md) for all pages.
 
-**Target audience:** PM, Technical PM, Software/System Engineer, Data/ML professionals moving toward AI PM, AI Engineer, AI Systems or Agent Engineering.
+## Who this course is for
 
-**Prerequisites:** Basic programming language and REST API familiarity recommended. Prior AI/ML experience is not required. AI coding tools are fine, but participants should understand the architecture and code they build.
+This course is for product-minded builders who want to move from using AI tools to designing, evaluating, and demonstrating useful AI systems.
+
+- **Product managers and technical PMs** who want enough technical depth to scope AI features, define quality bars, and make informed trade-offs.
+- **Software, systems, data, and ML practitioners** who want stronger product judgment and hands-on agent-building experience.
+- **Career switchers into AI product or agent engineering** who want a concrete portfolio project rather than theory alone.
+
+Basic programming and REST API familiarity are helpful, but prior AI/ML experience is not required. AI coding tools are welcome; the goal is to understand and be able to explain the architecture and behavior of what you build.
+
+## What you will learn
+
+By the end of eight weeks, you will be able to:
+
+- Explain how LLM applications use prompts, context, retrieval, tools, and state.
+- Build a small agent that can retrieve knowledge, call tools, preserve useful memory, and stop safely.
+- Turn a product problem into a scoped AI workflow with clear user value and success criteria.
+- Evaluate an agent with golden cases, observable outcomes, tool checks, and regression tests.
+- Reason about cost, latency, reliability, security, and human approval before shipping.
+- Present a working demo and communicate its capabilities, evidence, limitations, and next steps.
 
 **Standard build stack:** Python/JavaScript/TypeScript + OpenAI/Claude API
 
