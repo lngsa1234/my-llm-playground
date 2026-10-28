@@ -70,7 +70,7 @@ st.markdown(
 CONCEPTS = available_concepts()
 KB_OFF = "— Hide —"
 QUIZ_OFF = "— Hide —"
-PROGRAM_GUIDE = Path(__file__).resolve().parent / "knowledge_base" / "plan.md"
+PROGRAM_GUIDE = Path(__file__).resolve().parent / "knowledge_base" / "program-guide.md"
 
 
 def _show_labs() -> None:
@@ -116,7 +116,7 @@ with st.sidebar:
 
 if st.session_state.get("show_program_guide", False):
     st.markdown(PROGRAM_GUIDE.read_text(encoding="utf-8"))
-    st.caption("Source: `knowledge_base/plan.md` · pick **— Hide —** in the sidebar to return to the labs.")
+    st.caption("Source: `knowledge_base/program-guide.md` · pick **— Hide —** in the sidebar to return to the labs.")
 elif quiz != QUIZ_OFF:
     render_quiz(quiz)
 elif concept != KB_OFF:

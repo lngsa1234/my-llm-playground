@@ -86,7 +86,7 @@ Also start the Week 1 concept lab (one API call, tokens, latency, cost) and a fi
 | Lab app (no setup needed) | [my-llm-playground on Streamlit](https://my-llm-playground-bvapyfhmkp7xn5ji9raank.streamlit.app/) |
 | Code and notes | [lngsa1234/my-llm-playground](https://github.com/lngsa1234/my-llm-playground) on GitHub |
 | Week-by-week Mini Muse guide | [Mini Muse guide](../mini-muse.md) |
-| 8-week plan | [8-week plan](../plan.md) |
+| Program Guide | [Program Guide](../program-guide.md) |
 | Mini Muse code | [`mini_muse/`](../../mini_muse/), one file per week |
 
 **The hosted lab app runs on Ling's API key for now**, so you can start right away with no setup. Each Mini Muse run costs a fraction of a cent with the default model, `gpt-5.4-mini`.

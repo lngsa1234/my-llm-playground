@@ -202,7 +202,7 @@ goal → decide → run tools → observe results → decide again …
   - "I prefer mornings. Am I free on 2026-10-28?" Then: "Book coffee with Maya then at 9:00."
   - "What did Jordan say about the offsite budget? Email him a short summary." This uses notes, contacts and approval together.
   - Turn components off in 🧪 Lab parameters and see what breaks.
-- **Final review** (from the [plan](plan.md#week-8--ai-system-design--demo)), answered for Mini Muse:
+- **Final review** (from the [Program Guide](program-guide.md#learning-modules-roadmap)), answered for Mini Muse:
   - What is deterministic, and what is probabilistic?
   - What goes into context, and where does state live?
   - Why is RAG needed?

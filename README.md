@@ -16,7 +16,7 @@ labs/                          one self-contained folder per lab
   week5_agent_workflow/        stateful workflow agent: state, router, repair budget, bounded loop
   week6_agent_eval/            Muse agent, golden dataset, five evaluation steps, LLM judge
   week7_production/            reliability drill: injected failures, retries, timeouts, validation, fallback
-knowledge_base/                the 8-week plan, weekly concepts and lab guides
+knowledge_base/                the Program Guide, weekly concepts and lab guides
 benchmark/                     public benchmarks: BFCL and τ²-bench samples, downloader, scorer
 ```
 
@@ -28,7 +28,7 @@ Each lab folder holds everything for that week: its logic, data, tests, a README
 - **On its own** — `streamlit run labs/<lab>/page.py`, for example `streamlit run labs/week3_rag/page.py`.
 - **From the command line**, where the lab has command-line tools — see that lab's README.
 
-- [`knowledge_base/`](knowledge_base/) — the circle's [8-week plan](knowledge_base/plan.md), weekly concepts and lab guides.
+- [`knowledge_base/`](knowledge_base/) — the circle's [Program Guide](knowledge_base/program-guide.md), weekly concepts and lab guides.
 - [`benchmark/`](benchmark/) — public agent-evaluation benchmarks (BFCL, τ²-bench and a download script for others).
 
 ## Run locally

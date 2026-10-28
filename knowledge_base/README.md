@@ -2,7 +2,7 @@
 
 Notes for the Agent Engineering Peer Learning Circle, exported from Notion on 2026-10-24. Week 1's core diagrams are rendered directly in the app; remaining diagrams and screenshots stay in Notion and are marked 🖼️ with a link back to their page.
 
-**Start here:** [8-week plan](plan.md) — audience, schedule, readings, builds and agendas for every week.
+**Start here:** [Program Guide](program-guide.md) — audience, learning roadmap, and Mini Muse project actions.
 
 **Course project:** [Mini Muse](mini-muse.md) — the personal-assistant agent the circle builds one component per week, with what to build, try and check each week.
 
