@@ -8,9 +8,9 @@ Since we're learning LLM basics with the goal of building AI agents, I would org
 digraph learning_layers {
   rankdir=BT; bgcolor="transparent"; nodesep=.25; ranksep=.3;
   node [shape=box style="rounded,filled" fontname="Arial" fontsize=9 fontcolor="#202124" margin=".12,.06"];
-  fundamentals [label="Layer 1 — LLM Fundamentals\nTokens · Embeddings · Transformers\nAttention · Inference" fillcolor="#F5E9FF" color="#C5A5E9"];
-  application [label="Layer 2 — LLM Application Engineering\nAPIs · Prompts · Context Engineering\nRAG · Structured Outputs" fillcolor="#E8F7F2" color="#86CDB7"];
-  agents [label="Layer 3 — Agent Engineering\nTools · State · Control Loops\nMemory · Workflows" fillcolor="#E8F0FF" color="#92AFE8"];
+  fundamentals [label=<<B>Layer 1 — LLM Fundamentals</B><BR/><FONT POINT-SIZE="7">Tokens · Embeddings · Transformers<BR/>Attention · Inference</FONT>> fillcolor="#F5E9FF" color="#C5A5E9"];
+  application [label=<<B>Layer 2 — LLM Application Engineering</B><BR/><FONT POINT-SIZE="7">APIs · Prompts · Context Engineering<BR/>RAG · Structured Outputs</FONT>> fillcolor="#E8F7F2" color="#86CDB7"];
+  agents [label=<<B>Layer 3 — Agent Engineering</B><BR/><FONT POINT-SIZE="7">Tools · State · Control Loops<BR/>Memory · Workflows</FONT>> fillcolor="#E8F0FF" color="#92AFE8"];
   fundamentals -> application [dir=both color="#606770" penwidth=2];
   application -> agents [dir=both color="#606770" penwidth=2];
 }
