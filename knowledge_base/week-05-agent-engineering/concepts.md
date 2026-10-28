@@ -1,5 +1,11 @@
 # Week 5 · Agent Engineering — Concepts
 
+## At a glance
+
+| Learn | Build | Key terms | Watch for |
+| --- | --- | --- | --- |
+| Design a multi-step system that observes, decides, acts, and tracks progress | A stateful workflow agent with defined transitions | State, workflow, routing, control loop, orchestration | Agents need stop conditions, budgets, and human approval paths |
+
 **Topics:** State · Workflow · Control Loop · Routing · Agent Orchestration
 
 **Reference:** https://github.com/bojieli/ai-agent-book

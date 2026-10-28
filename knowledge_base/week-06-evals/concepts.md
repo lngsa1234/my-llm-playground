@@ -1,5 +1,11 @@
 # Week 6 · Evals — Concepts: Agent Evaluation Fundamentals
 
+## At a glance
+
+| Learn | Build | Key terms | Watch for |
+| --- | --- | --- | --- |
+| Measure whether an agent completes tasks correctly and safely | A golden dataset with automated checks and regression tests | Task success, tool evaluation, judge, regression, release gate | A plausible final answer does not prove the agent used tools or changed state correctly |
+
 Evaluating an AI agent requires more than assessing whether its final response appears correct. An agent may generate a convincing response while selecting the wrong tool, using incorrect parameters, failing to complete the requested action, or introducing failures that did not exist in a previous version.
 
 A robust evaluation framework typically includes five foundational concepts:
