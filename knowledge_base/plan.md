@@ -1,6 +1,6 @@
 # Agent Engineering Peer Learning Circle — 8-Week Plan
 
-An 8-week, hands-on program for building and evaluating an AI assistant. Each week combines a short concept guide, a practical lab, and peer discussion.
+An 8-week, hands-on program for learning AI engineering foundations. The program ends with building and validating an AI assistant.
 
 ## Who this course is for
 
