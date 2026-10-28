@@ -100,15 +100,15 @@ with st.sidebar:
     selected = st.radio("Choose a week", list(PAGES), label_visibility="collapsed",
                         key="nav_week", on_change=_show_labs)
     st.divider()
+    with st.expander("🗺️ Program Guide"):
+        guide = st.radio("Program guide", [GUIDE_OFF, "8-Week Program Guide"], label_visibility="collapsed",
+                         key="nav_guide", on_change=_show_guide)
     with st.expander("📚 Knowledge Base"):
         concept = st.radio("Concept", [KB_OFF, *CONCEPTS], label_visibility="collapsed",
                            key="nav_concept", on_change=_show_concept)
     with st.expander("🧠 Quizzes"):
         quiz = st.radio("Quiz", [QUIZ_OFF, *QUIZZES], label_visibility="collapsed",
                         key="nav_quiz", on_change=_show_quiz)
-    with st.expander("🗺️ Program Guide"):
-        guide = st.radio("Program guide", [GUIDE_OFF, "8-Week Program Guide"], label_visibility="collapsed",
-                         key="nav_guide", on_change=_show_guide)
     st.divider()
     api_key_notice()
 

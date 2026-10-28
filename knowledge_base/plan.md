@@ -10,6 +10,23 @@
 
 **Time commitment:** ~3–4 hours/week: 30–60 min required material, 1–2 hours hands-on building, and 60–75 min peer discussion.
 
+## How this program works
+
+This is a build-and-critique program, not a lecture series. Each week follows the same loop:
+
+1. **Learn** the essential concept in the Knowledge Base.
+2. **Build** one working capability in the lab and Mini Muse.
+3. **Evaluate** the result against a concrete success criterion.
+4. **Share** what worked, what failed, and what you would change with peers.
+
+By the end of the program, you should be able to explain an AI product opportunity, prototype an agentic workflow, make explicit cost/latency/quality trade-offs, evaluate behavior with a golden dataset, and demo a working system with clear safeguards.
+
+### Your portfolio thread
+
+Choose one small, useful problem by Week 3. From Weeks 5–8, work with a team of 2–3 to turn it into a focused capstone: define the user and success metric, build the smallest credible workflow, evaluate it, and present a short demo with evidence of what works and where the limits are.
+
+The emphasis on real artifacts, evaluation, and a final demonstration is inspired by the [AI Product Management Bootcamp](https://maven.com/marily-nika/ai-pm-bootcamp); this circle's schedule and materials are independently designed.
+
 **Team organization:**
 
 - **Weeks 1–2:** Individual learning and builds
