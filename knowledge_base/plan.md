@@ -10,8 +10,6 @@ This course is for anyone looking to systematically learn AI agent concepts, arc
 - **Software, systems, data, and ML practitioners** who want stronger product judgment and hands-on agent-building experience.
 - **Career switchers into AI product or agent engineering** who want a concrete portfolio project rather than theory alone.
 
-Basic programming and REST API familiarity are helpful, but prior AI/ML experience is not required. AI coding tools are welcome; the goal is to understand and be able to explain the architecture and behavior of what you build.
-
 ## What you will learn
 
 By the end of eight weeks, you will be able to:
