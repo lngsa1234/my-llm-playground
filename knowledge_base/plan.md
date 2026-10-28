@@ -1,6 +1,6 @@
 # Agent Engineering Peer Learning Circle — 8-Week Plan
 
-> Exported from the Notion page "Agent Engineering Peer Learning Circle – Temporary Plan" on 2026-10-24. The notes for each week are linked under its heading; see the [knowledge base index](README.md) for all pages.
+An 8-week, hands-on program for building and evaluating an AI assistant. Each week combines a short concept guide, a practical lab, and peer discussion.
 
 ## Who this course is for
 
