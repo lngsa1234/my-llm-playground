@@ -1,7 +1,5 @@
 # Week 4 · Tool Calling — Concepts
 
-> 🎯 **At a glance — Learning goal:** let an LLM request reliable external actions and data through safe, validated tool calls.
-
 ## 1. What is Tool Calling?
 
 **Tool calling is the mechanism that allows an LLM or AI agent to request an external function or system to perform an action or retrieve information.**

@@ -1,7 +1,5 @@
 # Week 6 · Evals — Concepts: Agent Evaluation Fundamentals
 
-> 🎯 **At a glance — Learning goal:** measure whether an agent completes tasks correctly, uses tools appropriately, and remains reliable as it changes.
-
 Evaluating an AI agent requires more than assessing whether its final response appears correct. An agent may generate a convincing response while selecting the wrong tool, using incorrect parameters, failing to complete the requested action, or introducing failures that did not exist in a previous version.
 
 A robust evaluation framework typically includes five foundational concepts:

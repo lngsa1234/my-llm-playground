@@ -1,7 +1,5 @@
 # Week 4 · Tool Calling — Concepts: MCP
 
-> 🎯 **At a glance — Learning goal:** understand how MCP standardizes connections between AI applications, tools, and data sources.
-
 ## 1. What is MCP?
 
 **MCP = Model Context Protocol.**

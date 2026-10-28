@@ -1,6 +1,6 @@
 # Week 3 · RAG — Concepts
 
-> 🎯 **At a glance — Learning goal:** understand when Retrieval-Augmented Generation (RAG) is useful, how a basic pipeline works, and how to improve it when answers are wrong.
+**Learning goal:** understand when Retrieval-Augmented Generation (RAG) is useful, how a basic pipeline works, and how to improve it when answers are wrong.
 
 ## 1. RAG in one sentence
 
