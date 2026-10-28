@@ -4,11 +4,11 @@ Since we're learning LLM basics with the goal of building AI agents, I would org
 
 ```graphviz
 digraph learning_layers {
-  rankdir=BT; bgcolor="transparent"; nodesep=.45; ranksep=.5;
-  node [shape=box style="rounded,filled" fontname="Arial" fontsize=12 fontcolor="#202124" margin=".2,.1"];
-  fundamentals [label="Layer 1 — LLM Fundamentals\nTokens · Embeddings · Transformers · Attention · Inference" fillcolor="#F5E9FF" color="#C5A5E9"];
-  application [label="Layer 2 — LLM Application Engineering\nAPIs · Prompts · Context Engineering · RAG · Structured Outputs" fillcolor="#E8F7F2" color="#86CDB7"];
-  agents [label="Layer 3 — Agent Engineering\nTools · State · Control Loops · Memory · Workflows" fillcolor="#E8F0FF" color="#92AFE8"];
+  rankdir=BT; bgcolor="transparent"; nodesep=.25; ranksep=.3; size="4,3!";
+  node [shape=box style="rounded,filled" fontname="Arial" fontsize=10 fontcolor="#202124" margin=".12,.06"];
+  fundamentals [label="Layer 1 — LLM Fundamentals\nTokens · Embeddings · Transformers\nAttention · Inference" fillcolor="#F5E9FF" color="#C5A5E9"];
+  application [label="Layer 2 — LLM Application Engineering\nAPIs · Prompts · Context Engineering\nRAG · Structured Outputs" fillcolor="#E8F7F2" color="#86CDB7"];
+  agents [label="Layer 3 — Agent Engineering\nTools · State · Control Loops\nMemory · Workflows" fillcolor="#E8F0FF" color="#92AFE8"];
   fundamentals -> application [dir=both color="#606770" penwidth=2];
   application -> agents [dir=both color="#606770" penwidth=2];
 }
