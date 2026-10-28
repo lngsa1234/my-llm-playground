@@ -8,7 +8,7 @@
 
 Public benchmarks compare systems on shared tasks. Your golden dataset should instead reflect your agent's tools, users, policies, and past failures. Use benchmarks for case ideas, grading patterns, and baseline comparisons—not as proof that your product works.
 
-Samples, a download script, and a BFCL scorer are in [`benchmark/`](../../benchmark/).
+Samples, a download script, and a BFCL scorer are in the [`benchmark/` folder on GitHub](https://github.com/lngsa1234/my-llm-playground/tree/main/benchmark).
 
 ## Useful benchmark families
 
