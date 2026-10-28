@@ -16,9 +16,7 @@ By the end of eight weeks, you will be able to:
 
 1. **Understand AI agents** — prompts, context, retrieval, tools, memory, and state.
 2. **Build an AI assistant** — connect knowledge, tools, and workflows into one working system.
-3. **Design useful AI features** — define the user problem, scope the workflow, and set success criteria.
-4. **Evaluate and improve quality** — use test cases, observable outcomes, and regression checks.
-5. **Demo responsibly** — explain capabilities, limits, cost, reliability, and safety considerations.
+3. **Evaluate and improve quality** — use test cases, observable outcomes, and regression checks.
 
 **Standard build stack:** Python/JavaScript/TypeScript + OpenAI/Claude API
 
