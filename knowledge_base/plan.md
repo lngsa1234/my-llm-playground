@@ -47,14 +47,16 @@ For each week, use the matching **Knowledge Base** guide, lab, and quiz in the s
 
 Mini Muse is the small personal assistant built across the program. Complete one action each week:
 
-1. **Week 1 — Understand:** turn a request into structured fields.
-2. **Week 2 — Remember:** save useful facts and recent conversation context.
-3. **Week 3 — Know:** search notes and answer from retrieved evidence.
-4. **Week 4 — Act:** use calendar, contacts, email, weather, and calculator tools.
-5. **Week 5 — Agent loop:** plan, act, observe, and stop safely.
-6. **Week 6 — Prove:** run a golden dataset against the real assistant.
-7. **Week 7 — Harden:** trace calls, retry failures, and enforce timeouts.
-8. **Week 8 — Demo:** show the assembled assistant.
+| Week | Action | What you do |
+| --- | --- | --- |
+| 1 | **Understand** | Turn a request into structured fields. |
+| 2 | **Remember** | Save useful facts and recent conversation context. |
+| 3 | **Know** | Search notes and answer from retrieved evidence. |
+| 4 | **Act** | Use calendar, contacts, email, weather, and calculator tools. |
+| 5 | **Agent loop** | Plan, act, observe, and stop safely. |
+| 6 | **Prove** | Run a golden dataset against the real assistant. |
+| 7 | **Harden** | Trace calls, retry failures, and enforce timeouts. |
+| 8 | **Demo** | Show the assembled assistant. |
 
 Open **Week 8 · Mini Muse Demo** in the sidebar to try the completed assistant.
 
