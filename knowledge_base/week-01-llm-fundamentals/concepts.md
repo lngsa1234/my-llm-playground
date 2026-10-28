@@ -2,20 +2,16 @@
 
 Since we're learning LLM basics with the goal of building AI agents, I would organize the concepts into three layers:
 
-```mermaid
-flowchart BT
-    L1["<b>Layer 1 — LLM Fundamentals</b><br/><br/>Tokens · Embeddings · Transformers · Attention · Inference"]
-    L2["<b>Layer 2 — LLM Application Engineering</b><br/><br/>APIs · Prompts · Context Engineering · RAG · Structured Outputs"]
-    L3["<b>Layer 3 — Agent Engineering</b><br/><br/>Tools · State · Control Loops · Memory · Workflows"]
-
-    L1 <--> L2
-    L2 <--> L3
-
-    style L1 fill:#F5E9FF,stroke:#F5E9FF,color:#202124
-    style L2 fill:#E8F7F2,stroke:#E8F7F2,color:#202124
-    style L3 fill:#E8F0FF,stroke:#E8F0FF,color:#202124
-
-    linkStyle default stroke:#606770,stroke-width:2px
+```graphviz
+digraph learning_layers {
+  rankdir=BT; bgcolor="transparent"; nodesep=.45; ranksep=.5;
+  node [shape=box style="rounded,filled" fontname="Arial" fontsize=12 fontcolor="#202124" margin=".2,.1"];
+  fundamentals [label="Layer 1 — LLM Fundamentals\nTokens · Embeddings · Transformers · Attention · Inference" fillcolor="#F5E9FF" color="#C5A5E9"];
+  application [label="Layer 2 — LLM Application Engineering\nAPIs · Prompts · Context Engineering · RAG · Structured Outputs" fillcolor="#E8F7F2" color="#86CDB7"];
+  agents [label="Layer 3 — Agent Engineering\nTools · State · Control Loops · Memory · Workflows" fillcolor="#E8F0FF" color="#92AFE8"];
+  fundamentals -> application [dir=both color="#606770" penwidth=2];
+  application -> agents [dir=both color="#606770" penwidth=2];
+}
 ```
 
 The distinction is important: an LLM generates predictions, an application manages context, and an agent uses the LLM within a system that can take actions toward a goal.
