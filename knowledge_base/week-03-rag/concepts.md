@@ -189,3 +189,4 @@ Start simple, collect a small set of real questions and expected evidence, then 
 - [OpenAI API — Prompt engineering](https://developers.openai.com/api/docs/guides/prompt-engineering)
 - [OpenAI API — Vector embeddings](https://developers.openai.com/api/docs/guides/embeddings)
 - [Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks](https://arxiv.org/abs/2005.11401)
+- [Hugging Face — RAG evaluation cookbook](https://huggingface.co/learn/cookbook/en/rag_evaluation)

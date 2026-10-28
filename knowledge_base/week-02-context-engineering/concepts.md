@@ -299,3 +299,4 @@ For a fair experiment, keep the dataset, model, instructions, and evaluation rub
 - [OpenAI API — Prompt engineering](https://developers.openai.com/api/docs/guides/prompt-engineering)
 - [OpenAI API — Prompt caching](https://developers.openai.com/api/docs/guides/prompt-caching)
 - [OWASP — LLM Prompt Injection Prevention Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/LLM_Prompt_Injection_Prevention_Cheat_Sheet.html)
+- [Anthropic — Effective context engineering for AI agents](https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents)

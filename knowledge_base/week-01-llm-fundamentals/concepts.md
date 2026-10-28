@@ -293,3 +293,4 @@ Once you understand the fundamentals, these concepts will help you design more c
 - [OpenAI API — Prompt engineering](https://developers.openai.com/api/docs/guides/prompt-engineering)
 - [Attention Is All You Need (the Transformer paper)](https://arxiv.org/abs/1706.03762)
 - [OpenAI API — Key concepts](https://developers.openai.com/api/docs/concepts)
+- [Hugging Face LLM Course](https://huggingface.co/learn/llm-course/chapter1/1)

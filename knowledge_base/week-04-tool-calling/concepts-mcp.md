@@ -111,3 +111,4 @@ That distinction keeps architecture discussions clear: MCP helps an agent find a
 - [OpenAI API — Function calling](https://developers.openai.com/api/docs/guides/function-calling)
 - [MCP TypeScript SDK documentation](https://ts.sdk.modelcontextprotocol.io/v2/)
 - [OWASP — AI Agent Security Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/AI_Agent_Security_Cheat_Sheet.html)
+- [MCP — Getting started](https://modelcontextprotocol.io/docs/getting-started/intro)

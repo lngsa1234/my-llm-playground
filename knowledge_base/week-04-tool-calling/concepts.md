@@ -120,3 +120,4 @@ That separation is what makes tool-using systems useful without giving a probabi
 - [Model Context Protocol — Specification](https://modelcontextprotocol.io/specification/)
 - [OWASP — AI Agent Security Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/AI_Agent_Security_Cheat_Sheet.html)
 - [OWASP — LLM Prompt Injection Prevention Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/LLM_Prompt_Injection_Prevention_Cheat_Sheet.html)
+- [Hugging Face Agents Course — Introduction](https://huggingface.co/learn/agents-course/en/unit1/introduction)
