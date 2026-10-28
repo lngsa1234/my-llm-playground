@@ -41,7 +41,18 @@ These describe what an LLM is and how it works.
 
 ### How an LLM generates text
 
-> 🖼️ *Diagram: how an LLM generates text* — [view in Notion](https://app.notion.com/p/3e0dbc95f92c809f9d1dd1e8c92de043)
+```graphviz
+digraph next_token {
+  rankdir=LR; bgcolor="transparent"; nodesep=.45; ranksep=.65;
+  node [shape=box style="rounded,filled" fontname="Arial" fontsize=12 color="#7B61FF" fillcolor="#F3F0FF" fontcolor="#202124" margin=".18,.10"];
+  prompt [label="Input text\nThe cat sat on the"];
+  tokens [label="Tokens\nThe | cat | sat | on | the" fillcolor="#E8F7F2" color="#25866A"];
+  model [label="LLM\ncalculates next-token probabilities" fillcolor="#E8F0FF" color="#4F76C8"];
+  choices [label="likely next tokens\nmat  0.62   floor  0.13   chair  0.08" fillcolor="#FFF6DE" color="#C68B20"];
+  output [label="Select “mat”\nand repeat" fillcolor="#FFECEE" color="#C74B62"];
+  prompt -> tokens -> model -> choices -> output;
+}
+```
 
 The model then predicts the next token, and continues until a stopping condition is reached.
 
@@ -87,7 +98,21 @@ A standard stateless LLM inference does not automatically remember earlier API c
 
 Your application must provide the relevant previous information again, or use a service that manages conversation state for you.
 
-> 🖼️ *Diagram: stateless API calls vs. application-supplied history* — [view in Notion](https://app.notion.com/p/3e0dbc95f92c809f9d1dd1e8c92de043)
+```graphviz
+digraph state {
+  rankdir=LR; bgcolor="transparent"; nodesep=.4; ranksep=.7;
+  node [shape=box style="rounded,filled" fontname="Arial" fontsize=12 fontcolor="#202124" margin=".18,.10"];
+  user1 [label="User: I prefer concise answers" fillcolor="#FFF6DE" color="#C68B20"];
+  app [label="Your application\nstores history" fillcolor="#E8F7F2" color="#25866A"];
+  call1 [label="API call 1" fillcolor="#E8F0FF" color="#4F76C8"];
+  model [label="LLM\nno memory between calls" fillcolor="#F3F0FF" color="#7B61FF"];
+  user2 [label="User: Explain RAG" fillcolor="#FFF6DE" color="#C68B20"];
+  call2 [label="API call 2\n+ selected history" fillcolor="#E8F0FF" color="#4F76C8"];
+  user1 -> app -> call1 -> model;
+  user2 -> app;
+  app -> call2 -> model [label="  relevant context" fontname="Arial" fontsize=10 color="#606770"];
+}
+```
 
 Context engineering is how the application decides what the model should know for the current call.
 
@@ -155,7 +180,18 @@ An LLM API provides a programming interface to a model service.
 
 ### What happens when you call an LLM API?
 
-> 🖼️ *Diagram: the LLM API request/response flow* — [view in Notion](https://app.notion.com/p/3e0dbc95f92c809f9d1dd1e8c92de043)
+```graphviz
+digraph api_flow {
+  rankdir=LR; bgcolor="transparent"; nodesep=.45; ranksep=.65;
+  node [shape=box style="rounded,filled" fontname="Arial" fontsize=12 fontcolor="#202124" margin=".18,.10"];
+  app [label="Your application\ncode + API key" fillcolor="#E8F7F2" color="#25866A"];
+  request [label="API request\ninstructions, input, settings" fillcolor="#E8F0FF" color="#4F76C8"];
+  service [label="Model API service\nauthenticates and routes" fillcolor="#F3F0FF" color="#7B61FF"];
+  model [label="LLM inference\nprocesses tokens" fillcolor="#FFF6DE" color="#C68B20"];
+  response [label="API response\ntext, structured output, usage" fillcolor="#FFECEE" color="#C74B62"];
+  app -> request -> service -> model -> response -> app [constraint=false];
+}
+```
 
 You can use JavaScript, Python, or another supported language to build an LLM application. The language you use to call the API is separate from the language used to train or run the model.
 
@@ -213,7 +249,22 @@ This layer combines the LLM with tools, state management, and an execution proce
 
 ### The agent control loop
 
-> 🖼️ *Diagram: the agent control loop* — [view in Notion](https://app.notion.com/p/3e0dbc95f92c809f9d1dd1e8c92de043)
+```graphviz
+digraph agent_loop {
+  rankdir=LR; bgcolor="transparent"; nodesep=.45; ranksep=.65;
+  node [shape=box style="rounded,filled" fontname="Arial" fontsize=12 fontcolor="#202124" margin=".18,.10"];
+  goal [label="Goal + current state" fillcolor="#E8F7F2" color="#25866A"];
+  decide [label="Model decides\nnext action" fillcolor="#E8F0FF" color="#4F76C8"];
+  check [label="Allowed and within budget?" fillcolor="#FFF6DE" color="#C68B20"];
+  act [label="Call tool / respond" fillcolor="#F3F0FF" color="#7B61FF"];
+  observe [label="Observe result\nand update state" fillcolor="#FFECEE" color="#C74B62"];
+  done [label="Finish or ask for\nhuman approval" fillcolor="#EDEFF2" color="#606770"];
+  goal -> decide -> check -> act -> observe;
+  observe -> decide [label="  continue" fontname="Arial" fontsize=10 color="#606770"];
+  check -> done [label="  no / stop" fontname="Arial" fontsize=10 color="#606770"];
+  observe -> done [label="  goal met" fontname="Arial" fontsize=10 color="#606770"];
+}
+```
 
 In practice, an agent also needs termination conditions for errors, budget limits, repeated failures, and situations requiring human approval. Not every workflow needs a model-driven loop; a fixed sequence of API calls may be sufficient for simpler tasks.
 

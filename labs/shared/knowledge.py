@@ -8,6 +8,7 @@ can have a main `concepts.md` plus extra `concepts-*.md` notes (e.g.
 
 from __future__ import annotations
 
+import re
 from pathlib import Path
 
 import streamlit as st
@@ -50,7 +51,18 @@ def available_concepts() -> dict[str, Path]:
 
 
 def render_concept(path: Path) -> None:
-    """Show one week's concept markdown full width."""
-    st.markdown(path.read_text(encoding="utf-8"))
+    """Show one week's concept markdown full width, including native diagrams.
+
+    A ``graphviz`` fenced block is deliberately rendered as a chart rather than
+    as source code.  That keeps the knowledge-base export readable in the app
+    without making the markdown depend on a private Notion attachment.
+    """
+    content = path.read_text(encoding="utf-8")
+    pieces = re.split(r"```graphviz\s*\n(.*?)```", content, flags=re.DOTALL)
+    for index, piece in enumerate(pieces):
+        if index % 2:
+            st.graphviz_chart(piece, use_container_width=True)
+        elif piece.strip():
+            st.markdown(piece)
     st.caption("Source: `knowledge_base/" + path.relative_to(KNOWLEDGE_BASE).as_posix()
                + "` · pick **— Hide —** in the sidebar to return to the labs.")

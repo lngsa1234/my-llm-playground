@@ -1,6 +1,6 @@
 # Knowledge Base
 
-Notes for the Agent Engineering Peer Learning Circle, exported from Notion on 2026-10-24. Diagrams and screenshots stay in Notion; each one is marked 🖼️ with a link back to its page.
+Notes for the Agent Engineering Peer Learning Circle, exported from Notion on 2026-10-24. Week 1's core diagrams are rendered directly in the app; remaining diagrams and screenshots stay in Notion and are marked 🖼️ with a link back to their page.
 
 **Start here:** [8-week plan](plan.md) — audience, schedule, readings, builds and agendas for every week.
 
