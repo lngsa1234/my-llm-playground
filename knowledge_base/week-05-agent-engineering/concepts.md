@@ -1,5 +1,7 @@
 # Week 5 · Agent Engineering — Concepts
 
+> 🎯 **At a glance — Learning goal:** design a stateful agent workflow that can observe, decide, act, and stop safely.
+
 **Topics:** State · Workflow · Control Loop · Routing · Agent Orchestration
 
 **Reference:** https://github.com/bojieli/ai-agent-book

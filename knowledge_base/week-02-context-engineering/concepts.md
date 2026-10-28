@@ -1,5 +1,7 @@
 # Week 2 · Context Engineering — Concepts
 
+> 🎯 **At a glance — Learning goal:** select, organize, and manage the information an LLM needs for each reliable model call.
+
 Context engineering is one of the foundational disciplines of building reliable LLM applications and AI agents. It determines what information an AI model receives, how that information is organized, and how it changes as the application runs.
 
 This knowledge base is designed for your AI PM / AI Engineer learning circle. It starts with the fundamentals, then connects them to practical system design, memory, retrieval, and evaluation.

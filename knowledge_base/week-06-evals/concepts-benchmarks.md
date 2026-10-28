@@ -1,5 +1,7 @@
 # Week 6 · Evals — Concepts: Public Benchmarks
 
+> 🎯 **At a glance — Learning goal:** use public benchmarks as useful references while keeping evaluation focused on your own agent and users.
+
 There is no single "standard" golden dataset. A golden dataset is built around **your** agent: its tools, users and failure modes. Public benchmarks do something different: they compare models on shared tasks.
 
 Samples, a download script and a BFCL scorer are in [`benchmark/`](../../benchmark/).
