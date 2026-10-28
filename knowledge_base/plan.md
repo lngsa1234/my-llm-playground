@@ -14,12 +14,11 @@ This course is for anyone looking to systematically learn AI agent concepts, arc
 
 By the end of eight weeks, you will be able to:
 
-- Explain how LLM applications use prompts, context, retrieval, tools, and state.
-- Build a small agent that can retrieve knowledge, call tools, preserve useful memory, and stop safely.
-- Turn a product problem into a scoped AI workflow with clear user value and success criteria.
-- Evaluate an agent with golden cases, observable outcomes, tool checks, and regression tests.
-- Reason about cost, latency, reliability, security, and human approval before shipping.
-- Present a working demo and communicate its capabilities, evidence, limitations, and next steps.
+1. **Understand AI agents** — prompts, context, retrieval, tools, memory, and state.
+2. **Build an AI assistant** — connect knowledge, tools, and workflows into one working system.
+3. **Design useful AI features** — define the user problem, scope the workflow, and set success criteria.
+4. **Evaluate and improve quality** — use test cases, observable outcomes, and regression checks.
+5. **Demo responsibly** — explain capabilities, limits, cost, reliability, and safety considerations.
 
 **Standard build stack:** Python/JavaScript/TypeScript + OpenAI/Claude API
 
