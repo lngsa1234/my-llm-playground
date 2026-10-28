@@ -4,7 +4,7 @@ An 8-week, hands-on program for learning AI engineering foundations. The program
 
 ## Who this course is for
 
-This course is for product-minded builders who want to move from using AI tools to designing, evaluating, and demonstrating useful AI systems.
+This course is for anyone looking to systematically learn AI agent concepts, architecture, and engineering practices.
 
 - **Product managers and technical PMs** who want enough technical depth to scope AI features, define quality bars, and make informed trade-offs.
 - **Software, systems, data, and ML practitioners** who want stronger product judgment and hands-on agent-building experience.
