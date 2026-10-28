@@ -28,7 +28,9 @@ Each weekly session has three parts:
 2. **30 minutes — Walk through the lab and Mini Muse demo.**
 3. **25 minutes — Open discussion.**
 
-## 8-week roadmap
+## Learning modules roadmap
+
+> **Note:** This guide includes eight learning modules, delivered across six calendar weeks. Some modules are combined within the same weekly session.
 
 | Week | Topic | Key idea | Basic knowledge points |
 | --- | --- | --- | --- |
