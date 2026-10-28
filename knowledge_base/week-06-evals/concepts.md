@@ -89,3 +89,5 @@ Public benchmarks can inspire case formats and graders, but the most valuable su
 
 - [OpenAI API — Working with evals](https://developers.openai.com/api/docs/guides/evals)
 - [Public Benchmarks](concepts-benchmarks.md)
+- [OpenAI API — Evaluate agent workflows](https://developers.openai.com/api/docs/guides/agent-evals)
+- [OpenAI API — Prompt engineering](https://developers.openai.com/api/docs/guides/prompt-engineering)

@@ -118,3 +118,5 @@ That separation is what makes tool-using systems useful without giving a probabi
 
 - [OpenAI API — Function calling](https://developers.openai.com/api/docs/guides/function-calling)
 - [Model Context Protocol — Specification](https://modelcontextprotocol.io/specification/)
+- [OWASP — AI Agent Security Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/AI_Agent_Security_Cheat_Sheet.html)
+- [OWASP — LLM Prompt Injection Prevention Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/LLM_Prompt_Injection_Prevention_Cheat_Sheet.html)

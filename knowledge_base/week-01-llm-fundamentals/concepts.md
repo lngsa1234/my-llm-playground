@@ -291,3 +291,5 @@ Once you understand the fundamentals, these concepts will help you design more c
 
 - [OpenAI API — Text generation](https://developers.openai.com/api/docs/guides/text)
 - [OpenAI API — Prompt engineering](https://developers.openai.com/api/docs/guides/prompt-engineering)
+- [Attention Is All You Need (the Transformer paper)](https://arxiv.org/abs/1706.03762)
+- [OpenAI API — Key concepts](https://developers.openai.com/api/docs/concepts)

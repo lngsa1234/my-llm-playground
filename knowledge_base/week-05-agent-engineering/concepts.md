@@ -103,3 +103,5 @@ Measure task success as well as behavior: correct route, valid tool sequence, st
 
 - [OpenAI API — Agents](https://developers.openai.com/api/docs/guides/agents)
 - [OpenAI API — Function calling](https://developers.openai.com/api/docs/guides/function-calling)
+- [OpenAI API — Safety in building agents](https://developers.openai.com/api/docs/guides/agent-builder-safety)
+- [OWASP — AI Agent Security Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/AI_Agent_Security_Cheat_Sheet.html)

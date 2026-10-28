@@ -43,3 +43,5 @@ Two cautions: popular public tasks may have appeared in model training data, and
 
 - [OpenAI API — Working with evals](https://developers.openai.com/api/docs/guides/evals)
 - [BFCL](https://gorilla.cs.berkeley.edu/leaderboard.html), [τ-bench](https://github.com/sierra-research/tau-bench), and [BEIR](https://github.com/beir-cellar/beir)
+- [OpenAI API — Evaluate agent workflows](https://developers.openai.com/api/docs/guides/agent-evals)
+- [HotpotQA](https://hotpotqa.github.io/) and [SWE-bench](https://github.com/SWE-bench/SWE-bench)
