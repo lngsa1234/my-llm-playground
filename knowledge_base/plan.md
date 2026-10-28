@@ -30,12 +30,6 @@ Each weekly session has three parts:
 2. **30 minutes — Walk through the lab and Mini Muse demo.** See the concept working in code and in the reference assistant.
 3. **25 minutes — Open discussion.** Share questions, observations, challenges, and ideas with the group.
 
-### Your portfolio thread
-
-Choose one small, useful problem by Week 3. From Weeks 5–8, work with a team of 2–3 to turn it into a focused capstone: define the user and success metric, build the smallest credible workflow, evaluate it, and present a short demo with evidence of what works and where the limits are.
-
-The emphasis on real artifacts, evaluation, and a final demonstration is inspired by the [AI Product Management Bootcamp](https://maven.com/marily-nika/ai-pm-bootcamp); this circle's schedule and materials are independently designed.
-
 **Team organization:**
 
 - **Weeks 1–2:** Individual learning and builds
