@@ -58,6 +58,10 @@ st.markdown(
             font-size: 0.8rem;
             white-space: nowrap;
         }
+        [data-testid="stSidebar"] .stButton > button {
+            justify-content: flex-start;
+            text-align: left;
+        }
     </style>
     """,
     unsafe_allow_html=True,
