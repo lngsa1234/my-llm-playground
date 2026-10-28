@@ -182,14 +182,12 @@ An LLM API provides a programming interface to a model service.
 
 ```graphviz
 digraph api_flow {
-  rankdir=LR; bgcolor="transparent"; nodesep=.45; ranksep=.65;
-  node [shape=box style="rounded,filled" fontname="Arial" fontsize=12 fontcolor="#202124" margin=".18,.10"];
+  rankdir=LR; bgcolor="transparent"; nodesep=.35; ranksep=.45;
+  node [shape=box style="rounded,filled" fontname="Arial" fontsize=11 fontcolor="#202124" margin=".14,.08"];
   app [label="Your application\ncode + API key" fillcolor="#E8F7F2" color="#25866A"];
-  request [label="API request\ninstructions, input, settings" fillcolor="#E8F0FF" color="#4F76C8"];
-  service [label="Model API service\nauthenticates and routes" fillcolor="#F3F0FF" color="#7B61FF"];
-  model [label="LLM inference\nprocesses tokens" fillcolor="#FFF6DE" color="#C68B20"];
-  response [label="API response\ntext, structured output, usage" fillcolor="#FFECEE" color="#C74B62"];
-  app -> request -> service -> model -> response -> app [constraint=false];
+  api [label="Model API + LLM\nauthenticates, processes tokens, generates output" fillcolor="#F3F0FF" color="#7B61FF"];
+  app -> api [label="request: instructions, input, settings" fontname="Arial" fontsize=9 color="#4F76C8"];
+  api -> app [label="response: output + usage" fontname="Arial" fontsize=9 color="#C74B62"];
 }
 ```
 
