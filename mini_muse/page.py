@@ -706,15 +706,10 @@ def render_step(week: int, main, panel, settings) -> None:
 
 
 def render() -> None:
-    """The Week 8 Mini Muse demo: every component in one place, including Week 8."""
-    main, panel = page_layout("Week 8 · Mini Muse Demo", "The personal-assistant agent the circle builds, one component per week.",
-                              HOW_IT_WORKS, how_label="The 8-week roadmap")
-    labels = {w: f"Week {w} · {name}" for w, (name, _, _) in COMPONENTS.items()}
-    with main:
-        week = st.selectbox("Component", list(labels), index=7, format_func=labels.get, key="muse_component")
-        _progress(week)
+    """The Week 8 Mini Muse demo: the assembled assistant only."""
+    main, panel = page_layout("Week 8 · Mini Muse Demo", "Try the assembled personal assistant built throughout the course.")
     settings = model_settings(panel)
-    render_step(week, main, panel, settings)
+    render_step(8, main, panel, settings)
 
 
 if __name__ == "__main__":
