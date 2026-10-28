@@ -45,18 +45,16 @@ For each week, use the matching **Knowledge Base** guide, lab, and quiz in the s
 
 ## Course project: Mini Muse
 
-Mini Muse is the small personal assistant built across the program. Each week adds one engineering capability:
+Mini Muse is the small personal assistant built across the program. Complete one action each week:
 
-| Week | Mini Muse capability |
-| --- | --- |
-| 1 | Understand a request and return structured fields |
-| 2 | Retain useful facts and recent conversation context |
-| 3 | Search notes and answer from retrieved evidence |
-| 4 | Use calendar, contacts, email, weather, and calculator tools |
-| 5 | Plan, act, observe, and stop safely |
-| 6 | Run a golden dataset against the real assistant |
-| 7 | Trace calls, retry failures, and enforce timeouts |
-| 8 | Demonstrate the assembled assistant |
+1. **Week 1 — Understand:** turn a request into structured fields.
+2. **Week 2 — Remember:** save useful facts and recent conversation context.
+3. **Week 3 — Know:** search notes and answer from retrieved evidence.
+4. **Week 4 — Act:** use calendar, contacts, email, weather, and calculator tools.
+5. **Week 5 — Agent loop:** plan, act, observe, and stop safely.
+6. **Week 6 — Prove:** run a golden dataset against the real assistant.
+7. **Week 7 — Harden:** trace calls, retry failures, and enforce timeouts.
+8. **Week 8 — Demo:** show the assembled assistant.
 
 Open **Week 8 · Mini Muse Demo** in the sidebar to try the completed assistant.
 
