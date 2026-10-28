@@ -2,6 +2,8 @@
 
 A hands-on program for learning AI engineering foundations. The program ends with building and validating an AI assistant.
 
+**Course repository:** [lngsa1234/my-llm-playground](https://github.com/lngsa1234/my-llm-playground)
+
 ## Who this course is for
 
 This course is for anyone looking to systematically learn AI agent concepts, architecture, and engineering practices.
