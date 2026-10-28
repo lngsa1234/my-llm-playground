@@ -34,8 +34,8 @@ Lynn's demo: [lngsa1234/my-llm-playground](https://github.com/lngsa1234/my-llm-p
 
 **Communication:**
 
-- CircleW app: please **approve your Circle invitation in the CircleW app**. Once you join the Circle, you'll be able to access your **weekly meeting link through the Calendar page, Circle page or Home page.**
-- Please download the CircleW app to receive real-time notifications.
+- In the CircleW app, **approve your Circle invitation**. Once you join, find your weekly meeting link on the Calendar, Circle, or Home page.
+- [Download the CircleW iOS app](https://apps.apple.com/us/app/circlew/id6780248349) to receive real-time notifications.
 
 | Week | Topic | Core concepts | Build / Deliverable |
 | --- | --- | --- | --- |
