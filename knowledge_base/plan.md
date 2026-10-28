@@ -30,16 +30,16 @@ Each weekly session has three parts:
 
 ## 8-week roadmap
 
-| Week | Topic | Key idea |
-| --- | --- | --- |
-| 1 | LLM Fundamentals | How an application sends and receives model requests. |
-| 2 | Context Engineering | How to select the right information for each model call. |
-| 3 | RAG | How to retrieve evidence before the model answers. |
-| 4 | Tool Calling + MCP | How an AI system can safely use external tools and data. |
-| 5 | Agent Engineering | How state, workflows, and control loops enable multi-step work. |
-| 6 | Evals | How to measure outcomes, tool behavior, and regressions. |
-| 7 | Production Reliability | How to trace, recover, and operate an AI system safely. |
-| 8 | Mini Muse Demo | How the complete assistant fits together. |
+| Week | Topic | Key idea | Basic knowledge points |
+| --- | --- | --- | --- |
+| 1 | LLM Fundamentals | How an application sends and receives model requests. | Tokens, prompts, context window, structured output |
+| 2 | Context Engineering | How to select the right information for each model call. | Instructions, history, state, memory, compaction |
+| 3 | RAG | How to retrieve evidence before the model answers. | Chunks, embeddings, search, grounding, citations |
+| 4 | Tool Calling + MCP | How an AI system can safely use external tools and data. | Tool schemas, validation, APIs, MCP, approval |
+| 5 | Agent Engineering | How state, workflows, and control loops enable multi-step work. | Routing, state, control loop, termination, orchestration |
+| 6 | Evals | How to measure outcomes, tool behavior, and regressions. | Golden dataset, task success, graders, regression tests |
+| 7 | Production Reliability | How to trace, recover, and operate an AI system safely. | Traces, retries, timeouts, fallback, cost and latency |
+| 8 | Mini Muse Demo | How the complete assistant fits together. | Architecture, system boundaries, safety, trade-offs |
 
 For each week, use the matching **Knowledge Base** guide, lab, and quiz in the sidebar. The table is the single program overview; the weekly materials contain the details.
 
