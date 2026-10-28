@@ -22,16 +22,13 @@ By the end of eight weeks, you will be able to:
 
 **Time commitment:** ~3–4 hours/week: 30–60 min required material, 1–2 hours hands-on building, and 60–75 min peer discussion.
 
-## How this program works
+## How this program is organized
 
-This is a build-and-critique program, not a lecture series. Each week follows the same loop:
+Each weekly session has three parts:
 
-1. **Learn** the essential concept in the Knowledge Base.
-2. **Build** one working capability in the lab and Mini Muse.
-3. **Evaluate** the result against a concrete success criterion.
-4. **Share** what worked, what failed, and what you would change with peers.
-
-By the end of the program, you should be able to explain an AI product opportunity, prototype an agentic workflow, make explicit cost/latency/quality trade-offs, evaluate behavior with a golden dataset, and demo a working system with clear safeguards.
+1. **20 minutes — Learn the essential concept.** Review the week's key AI engineering idea.
+2. **30 minutes — Walk through the lab and Mini Muse demo.** See the concept working in code and in the reference assistant.
+3. **25 minutes — Open discussion.** Share questions, observations, challenges, and ideas with the group.
 
 ### Your portfolio thread
 
