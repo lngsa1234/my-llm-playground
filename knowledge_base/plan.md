@@ -30,14 +30,6 @@ Each weekly session has three parts:
 2. **30 minutes — Walk through the lab and Mini Muse demo.** See the concept working in code and in the reference assistant.
 3. **25 minutes — Open discussion.** Share questions, observations, challenges, and ideas with the group.
 
-**Team organization:**
-
-- **Weeks 1–2:** Individual learning and builds
-- **Weeks 3–4:** Work in pairs
-- **Weeks 5–8:** Form teams of **2–3 people** and collaborate on a specific project
-
-Please take a look at the [project pool](project-pool.md).
-
 Lynn's demo: [lngsa1234/my-llm-playground](https://github.com/lngsa1234/my-llm-playground) (this repository)
 
 **Communication:**
