@@ -66,7 +66,6 @@ st.markdown(
 CONCEPTS = available_concepts()
 KB_OFF = "— Hide —"
 QUIZ_OFF = "— Hide —"
-GUIDE_OFF = "— Hide —"
 PROGRAM_GUIDE = Path(__file__).resolve().parent / "knowledge_base" / "plan.md"
 
 
@@ -74,25 +73,26 @@ def _show_labs() -> None:
     """Picking a week in the lab nav leaves the Knowledge Base view."""
     st.session_state.nav_concept = KB_OFF
     st.session_state.nav_quiz = QUIZ_OFF
-    st.session_state.nav_guide = GUIDE_OFF
+    st.session_state.show_program_guide = False
 
 
 def _show_concept() -> None:
     """Opening Knowledge Base hides the quiz view."""
     st.session_state.nav_quiz = QUIZ_OFF
-    st.session_state.nav_guide = GUIDE_OFF
+    st.session_state.show_program_guide = False
 
 
 def _show_quiz() -> None:
     """Opening a quiz hides the Knowledge Base view."""
     st.session_state.nav_concept = KB_OFF
-    st.session_state.nav_guide = GUIDE_OFF
+    st.session_state.show_program_guide = False
 
 
 def _show_guide() -> None:
     """Opening the Program Guide hides other document views."""
     st.session_state.nav_concept = KB_OFF
     st.session_state.nav_quiz = QUIZ_OFF
+    st.session_state.show_program_guide = True
 
 
 with st.sidebar:
@@ -100,9 +100,7 @@ with st.sidebar:
     selected = st.radio("Choose a week", list(PAGES), label_visibility="collapsed",
                         key="nav_week", on_change=_show_labs)
     st.divider()
-    with st.expander("🗺️ Program Guide"):
-        guide = st.radio("Program guide", [GUIDE_OFF, "Program Guide"], label_visibility="collapsed",
-                         key="nav_guide", on_change=_show_guide)
+    st.button("🗺️ Program Guide", width="stretch", on_click=_show_guide)
     with st.expander("📚 Knowledge Base"):
         concept = st.radio("Concept", [KB_OFF, *CONCEPTS], label_visibility="collapsed",
                            key="nav_concept", on_change=_show_concept)
@@ -112,7 +110,7 @@ with st.sidebar:
     st.divider()
     api_key_notice()
 
-if guide != GUIDE_OFF:
+if st.session_state.get("show_program_guide", False):
     st.markdown(PROGRAM_GUIDE.read_text(encoding="utf-8"))
     st.caption("Source: `knowledge_base/plan.md` · pick **— Hide —** in the sidebar to return to the labs.")
 elif quiz != QUIZ_OFF:
