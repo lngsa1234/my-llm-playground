@@ -30,16 +30,16 @@ Each weekly session has three parts:
 
 ## 8-week roadmap
 
-| Week | Focus | Lab / demo | Deliverable |
-| --- | --- | --- | --- |
-| 1 | LLM Fundamentals | Make a structured LLM API call | Basic LLM application |
-| 2 | Context Engineering | Assemble instructions, history, and state | Context builder and saved state |
-| 3 | RAG | Search relevant documents before answering | Retrieval pipeline |
-| 4 | Tool Calling + MCP | Let the model request safe external actions | 2–3 validated tools |
-| 5 | Agent Engineering | Build a stateful observe → decide → act loop | Workflow agent with stop conditions |
-| 6 | Evals | Test outcomes, tool use, and regressions | Golden dataset and automated checks |
-| 7 | Production Reliability | Trace calls and handle expected failures | Retries, timeouts, and fallback policy |
-| 8 | Mini Muse Demo | Review the complete assistant and system design | Working demo and architecture review |
+| Week | Topic | Key idea |
+| --- | --- | --- |
+| 1 | LLM Fundamentals | How an application sends and receives model requests. |
+| 2 | Context Engineering | How to select the right information for each model call. |
+| 3 | RAG | How to retrieve evidence before the model answers. |
+| 4 | Tool Calling + MCP | How an AI system can safely use external tools and data. |
+| 5 | Agent Engineering | How state, workflows, and control loops enable multi-step work. |
+| 6 | Evals | How to measure outcomes, tool behavior, and regressions. |
+| 7 | Production Reliability | How to trace, recover, and operate an AI system safely. |
+| 8 | Mini Muse Demo | How the complete assistant fits together. |
 
 For each week, use the matching **Knowledge Base** guide, lab, and quiz in the sidebar. The table is the single program overview; the weekly materials contain the details.
 
