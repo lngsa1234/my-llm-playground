@@ -104,3 +104,8 @@ Test server downtime, malformed results, revoked access, overly broad tools, and
 **MCP is the standardized connection. Tool calling is the model's request. The host application remains the control point.**
 
 That distinction keeps architecture discussions clear: MCP helps an agent find and use capabilities, while the host decides which capabilities are available and when they may run.
+
+## References
+
+- [Model Context Protocol — Specification](https://modelcontextprotocol.io/specification/)
+- [OpenAI API — Function calling](https://developers.openai.com/api/docs/guides/function-calling)

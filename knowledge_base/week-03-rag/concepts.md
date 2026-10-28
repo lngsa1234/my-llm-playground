@@ -182,3 +182,8 @@ return answer, results
 Keep the retrieved chunks with every answer. They are essential for source links, debugging, and evaluation.
 
 Start simple, collect a small set of real questions and expected evidence, then improve the weak stage. The Week 3 lab lets you compare answers with and without retrieved documents so you can see that difference directly.
+
+## References
+
+- [OpenAI API — File search](https://developers.openai.com/api/docs/guides/tools-file-search)
+- [OpenAI API — Prompt engineering](https://developers.openai.com/api/docs/guides/prompt-engineering)

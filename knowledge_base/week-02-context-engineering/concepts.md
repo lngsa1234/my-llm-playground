@@ -292,3 +292,8 @@ For a fair experiment, keep the dataset, model, instructions, and evaluation rub
 | **Handoff information loss** | The next agent lacks important decisions | Structured handoff contracts |
 
 > 🛡️ Context quality includes not just relevance but also provenance, freshness, trust, and completeness.
+
+## References
+
+- [OpenAI Cookbook — Context engineering with session memory](https://developers.openai.com/cookbook/examples/agents_sdk/session_memory)
+- [OpenAI API — Prompt engineering](https://developers.openai.com/api/docs/guides/prompt-engineering)

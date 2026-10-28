@@ -113,3 +113,8 @@ Test negative cases too: no tool needed, unavailable data, malformed arguments, 
 **The model proposes; the application controls; the tool performs; the result becomes evidence.**
 
 That separation is what makes tool-using systems useful without giving a probabilistic model unrestricted access to real systems.
+
+## References
+
+- [OpenAI API — Function calling](https://developers.openai.com/api/docs/guides/function-calling)
+- [Model Context Protocol — Specification](https://modelcontextprotocol.io/specification/)

@@ -84,3 +84,8 @@ Inspect individual failures, not only averages. A higher average score can hide 
 Public benchmarks can inspire case formats and graders, but the most valuable suite reflects your agent's own tools, users, policies, and failure modes. See [Public Benchmarks](concepts-benchmarks.md).
 
 **Core mental model:** evaluate outcomes, not just outputs; trajectories, not just final responses; and every meaningful change against a stable baseline.
+
+## References
+
+- [OpenAI API — Working with evals](https://developers.openai.com/api/docs/guides/evals)
+- [Public Benchmarks](concepts-benchmarks.md)

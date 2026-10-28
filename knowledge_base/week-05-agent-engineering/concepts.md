@@ -98,3 +98,8 @@ Each handoff should include inputs, allowed tools, expected outputs, and exit cr
 Measure task success as well as behavior: correct route, valid tool sequence, state updates, approval handling, retries, and termination. Record a trace for every run so a failure can be diagnosed without guessing what the model saw or did.
 
 **Core mental model:** the model proposes the next step; the workflow and runtime control what may happen.
+
+## References
+
+- [OpenAI API — Agents](https://developers.openai.com/api/docs/guides/agents)
+- [OpenAI API — Function calling](https://developers.openai.com/api/docs/guides/function-calling)

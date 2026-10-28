@@ -286,3 +286,8 @@ Once you understand the fundamentals, these concepts will help you design more c
 | LLM-as-a-Judge | Using an LLM to evaluate another model's output against defined criteria. |
 | Prompt Evaluation | Testing how changes in instructions affect model performance. |
 | Agent Trace | A record of the model calls, tool calls, decisions, and results during an agent execution. |
+
+## References
+
+- [OpenAI API — Text generation](https://developers.openai.com/api/docs/guides/text)
+- [OpenAI API — Prompt engineering](https://developers.openai.com/api/docs/guides/prompt-engineering)

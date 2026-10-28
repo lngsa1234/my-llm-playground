@@ -38,3 +38,8 @@ Samples, a download script, and a BFCL scorer are in the [`benchmark/` folder on
 ```
 
 Two cautions: popular public tasks may have appeared in model training data, and a strong benchmark score may not transfer to your product. The right question is always: **does the agent work reliably for our users and constraints?**
+
+## References
+
+- [OpenAI API — Working with evals](https://developers.openai.com/api/docs/guides/evals)
+- [BFCL](https://gorilla.cs.berkeley.edu/leaderboard.html), [τ-bench](https://github.com/sierra-research/tau-bench), and [BEIR](https://github.com/beir-cellar/beir)
