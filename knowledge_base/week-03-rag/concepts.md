@@ -1,5 +1,11 @@
 # Week 3 · RAG — Concepts
 
+## At a glance
+
+| Learn | Build | Key terms | Watch for |
+| --- | --- | --- | --- |
+| Retrieve evidence before asking the model to answer | A searchable document index and grounded-answer flow | Chunks, embeddings, Top-K, reranking, Recall@K | A fluent answer can still be wrong when evidence was not retrieved |
+
 **Learning goal:** understand when Retrieval-Augmented Generation (RAG) is useful, how a basic pipeline works, and how to improve it when answers are wrong.
 
 ## 1. RAG in one sentence

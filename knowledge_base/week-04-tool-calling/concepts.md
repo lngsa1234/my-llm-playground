@@ -1,5 +1,11 @@
 # Week 4 · Tool Calling — Concepts
 
+## At a glance
+
+| Learn | Build | Key terms | Watch for |
+| --- | --- | --- | --- |
+| Let a model request reliable actions and data from external systems | A tool-calling loop with validated inputs and tool results | Tool schema, arguments, function call, validation, approval | The model requests a tool; your application decides whether to run it |
+
 ## 1. What is Tool Calling?
 
 **Tool calling is the mechanism that allows an LLM or AI agent to request an external function or system to perform an action or retrieve information.**
