@@ -6,26 +6,6 @@
 | --- | --- | --- | --- |
 | How an LLM generates tokens and where it fits in an app | A first API call with structured output | Tokens, context, prompts, temperature, API | An LLM does not retain prior API calls unless the app supplies history |
 
-Since we're learning LLM basics with the goal of building AI agents, I would organize the concepts into three layers:
-
-```graphviz
-// width: 360
-// center
-digraph learning_layers {
-  rankdir=BT; bgcolor="transparent"; nodesep=.25; ranksep=.3;
-  node [shape=box style="rounded,filled" fontname="Arial" fontsize=9 fontcolor="#202124" margin=".12,.06"];
-  fundamentals [label="Layer 1 — LLM Fundamentals\nTokens · Embeddings · Transformers\nAttention · Inference" fillcolor="#F5E9FF" color="#C5A5E9"];
-  application [label="Layer 2 — LLM Application Engineering\nAPIs · Prompts · Context Engineering\nRAG · Structured Outputs" fillcolor="#E8F7F2" color="#86CDB7"];
-  agents [label="Layer 3 — Agent Engineering\nTools · State · Control Loops\nMemory · Workflows" fillcolor="#E8F0FF" color="#92AFE8"];
-  fundamentals -> application [dir=both color="#606770" penwidth=2];
-  application -> agents [dir=both color="#606770" penwidth=2];
-}
-```
-
-The distinction is important: an LLM generates predictions, an application manages context, and an agent uses the LLM within a system that can take actions toward a goal.
-
-Below is a reference guide to the key concepts, their definitions, and how they relate to each other.
-
 ## 1. Core LLM concepts
 
 These describe what an LLM is and how it works.
@@ -42,6 +22,24 @@ These describe what an LLM is and how it works.
 | Parameters / Weights | Learned numerical values that determine how the model transforms inputs into outputs. |
 | Inference | Running a trained model to produce an output from an input. |
 | Next-token prediction | Predicting the probability distribution of the next token given the preceding tokens. A common foundation of LLM training and generation. |
+
+Since we're learning LLM basics with the goal of building AI agents, it helps to organize the ideas into three layers:
+
+```graphviz
+// width: 360
+// center
+digraph learning_layers {
+  rankdir=BT; bgcolor="transparent"; nodesep=.25; ranksep=.3;
+  node [shape=box style="rounded,filled" fontname="Arial" fontsize=9 fontcolor="#202124" margin=".12,.06"];
+  fundamentals [label="Layer 1 — LLM Fundamentals\nTokens · Embeddings · Transformers\nAttention · Inference" fillcolor="#F5E9FF" color="#C5A5E9"];
+  application [label="Layer 2 — LLM Application Engineering\nAPIs · Prompts · Context Engineering\nRAG · Structured Outputs" fillcolor="#E8F7F2" color="#86CDB7"];
+  agents [label="Layer 3 — Agent Engineering\nTools · State · Control Loops\nMemory · Workflows" fillcolor="#E8F0FF" color="#92AFE8"];
+  fundamentals -> application [dir=both color="#606770" penwidth=2];
+  application -> agents [dir=both color="#606770" penwidth=2];
+}
+```
+
+An LLM generates predictions, an application manages context, and an agent uses the LLM within a system that can take actions toward a goal. This guide introduces the concepts and how they relate.
 
 ### How an LLM generates text
 
