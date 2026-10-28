@@ -3,8 +3,9 @@
 Since we're learning LLM basics with the goal of building AI agents, I would organize the concepts into three layers:
 
 ```graphviz
+// width: 360
 digraph learning_layers {
-  rankdir=BT; bgcolor="transparent"; nodesep=.25; ranksep=.3; size="4,3!";
+  rankdir=BT; bgcolor="transparent"; nodesep=.25; ranksep=.3;
   node [shape=box style="rounded,filled" fontname="Arial" fontsize=10 fontcolor="#202124" margin=".12,.06"];
   fundamentals [label="Layer 1 — LLM Fundamentals\nTokens · Embeddings · Transformers\nAttention · Inference" fillcolor="#F5E9FF" color="#C5A5E9"];
   application [label="Layer 2 — LLM Application Engineering\nAPIs · Prompts · Context Engineering\nRAG · Structured Outputs" fillcolor="#E8F7F2" color="#86CDB7"];

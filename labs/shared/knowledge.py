@@ -61,7 +61,12 @@ def render_concept(path: Path) -> None:
     pieces = re.split(r"```graphviz\s*\n(.*?)```", content, flags=re.DOTALL)
     for index, piece in enumerate(pieces):
         if index % 2:
-            st.graphviz_chart(piece, use_container_width=True)
+            # A diagram may opt into a smaller fixed display width with a
+            # leading ``// width: N`` Graphviz comment.
+            width_match = re.match(r"\s*//\s*width:\s*(\d+)\s*\n", piece)
+            width = int(width_match.group(1)) if width_match else "content"
+            dot = piece[width_match.end():] if width_match else piece
+            st.graphviz_chart(dot, width=width)
         elif piece.strip():
             st.markdown(piece)
     st.caption("Source: `knowledge_base/" + path.relative_to(KNOWLEDGE_BASE).as_posix()
