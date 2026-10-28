@@ -8,6 +8,7 @@ labs/shared/ui.py.
 
 import os
 import sys
+from pathlib import Path
 
 import streamlit as st
 from dotenv import load_dotenv
@@ -65,22 +66,33 @@ st.markdown(
 CONCEPTS = available_concepts()
 KB_OFF = "— Hide —"
 QUIZ_OFF = "— Hide —"
+GUIDE_OFF = "— Hide —"
+PROGRAM_GUIDE = Path(__file__).resolve().parent / "knowledge_base" / "plan.md"
 
 
 def _show_labs() -> None:
     """Picking a week in the lab nav leaves the Knowledge Base view."""
     st.session_state.nav_concept = KB_OFF
     st.session_state.nav_quiz = QUIZ_OFF
+    st.session_state.nav_guide = GUIDE_OFF
 
 
 def _show_concept() -> None:
     """Opening Knowledge Base hides the quiz view."""
     st.session_state.nav_quiz = QUIZ_OFF
+    st.session_state.nav_guide = GUIDE_OFF
 
 
 def _show_quiz() -> None:
     """Opening a quiz hides the Knowledge Base view."""
     st.session_state.nav_concept = KB_OFF
+    st.session_state.nav_guide = GUIDE_OFF
+
+
+def _show_guide() -> None:
+    """Opening the Program Guide hides other document views."""
+    st.session_state.nav_concept = KB_OFF
+    st.session_state.nav_quiz = QUIZ_OFF
 
 
 with st.sidebar:
@@ -94,10 +106,16 @@ with st.sidebar:
     with st.expander("🧠 Quizzes"):
         quiz = st.radio("Quiz", [QUIZ_OFF, *QUIZZES], label_visibility="collapsed",
                         key="nav_quiz", on_change=_show_quiz)
+    with st.expander("🗺️ Program Guide"):
+        guide = st.radio("Program guide", [GUIDE_OFF, "8-Week Program Guide"], label_visibility="collapsed",
+                         key="nav_guide", on_change=_show_guide)
     st.divider()
     api_key_notice()
 
-if quiz != QUIZ_OFF:
+if guide != GUIDE_OFF:
+    st.markdown(PROGRAM_GUIDE.read_text(encoding="utf-8"))
+    st.caption("Source: `knowledge_base/plan.md` · pick **— Hide —** in the sidebar to return to the labs.")
+elif quiz != QUIZ_OFF:
     render_quiz(quiz)
 elif concept != KB_OFF:
     render_concept(CONCEPTS[concept])
