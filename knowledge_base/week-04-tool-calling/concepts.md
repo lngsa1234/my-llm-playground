@@ -6,665 +6,110 @@
 | --- | --- | --- | --- |
 | Let a model request reliable actions and data from external systems | A tool-calling loop with validated inputs and tool results | Tool schema, arguments, function call, validation, approval | The model requests a tool; your application decides whether to run it |
 
-## 1. What is Tool Calling?
+## 1. What is tool calling?
 
-**Tool calling is the mechanism that allows an LLM or AI agent to request an external function or system to perform an action or retrieve information.**
+Tool calling lets an LLM request that an application run a defined function. The function might read a calendar, calculate a total, search a knowledge base, or draft an email.
 
-An LLM by itself primarily generates text based on its context. It does not inherently know current database values, execute code, query private systems, or perform real-world actions.
+The model does **not** directly execute code or access your systems. It returns a structured tool request; the application validates and runs it, then sends the result back to the model.
 
-Tools extend the LLM:
+```graphviz
+digraph tool_calling {
+  rankdir=LR; bgcolor="transparent"; nodesep=.35; ranksep=.45;
+  node [shape=box style="rounded,filled" fontname="Arial" fontsize=10 fontcolor="#202124" margin=".14,.08"];
+  user [label="User request" fillcolor="#FFF6DE" color="#C68B20"];
+  model [label="LLM chooses\na next step" fillcolor="#E8F0FF" color="#92AFE8"];
+  app [label="Application validates\nand authorizes" fillcolor="#F3F0FF" color="#7B61FF"];
+  tool [label="Tool or API" fillcolor="#E8F7F2" color="#86CDB7"];
+  result [label="Tool result" fillcolor="#FFECEE" color="#C74B62"];
+  answer [label="Grounded response" fillcolor="#E8F0FF" color="#4F76C8"];
+  user -> model -> app -> tool -> result -> model -> answer;
+}
+```
 
-- **LLM = reasoning / decision making** — probabilistic, dynamic, inefficient
-- **Tools = information retrieval / computation / actions** — deterministic, efficient
+## 2. When should an agent use a tool?
 
-Question: in which situation do you need to call the LLM or use tools? (e.g. calculate 1 - 0.1)
+Tools are appropriate when the task needs a current fact, a deterministic calculation, access to private data, or an external action.
 
-Examples:
-
-| User request | Tool |
+| Need | Prefer |
 | --- | --- |
-| "What's the weather in Detroit?" | Weather API |
-| "Find order #1234." | Database query |
-| "Calculate my mortgage payment." | Calculator |
-| "Send an email to John." | Email API |
-| "Search our engineering documents." | Search / RAG tool |
-| "Create a Jira ticket." | Jira API |
-| "Run the test suite." | Shell / CI tool |
+| Explain, summarize, or reason from supplied context | LLM response |
+| Calculate a number or transform data predictably | A deterministic tool |
+| Read current account, inventory, or calendar data | A read tool or API |
+| Send, create, delete, or change something | An authorized action tool |
+| Answer from a large collection of documents | Retrieval or search tool |
 
-A useful distinction:
+An LLM can decide *which* tool may help. It should not be trusted as the authority for permissions, input validation, or irreversible actions.
 
-> **The LLM does not normally execute the tool itself. It generates a structured request for the application/agent runtime to execute.**
+## 3. A tool is a contract
 
----
-
-## 2. Why Do We Need Tool Calling?
-
-LLMs have several fundamental limitations.
-
-### A. Knowledge can be unavailable or outdated
-
-The model may not know today's stock price, current weather, or the latest state of your product database.
-
-A tool can retrieve it.
-
-```text
-LLM
- ↓
-get_stock_price("NVDA")
- ↓
-Stock API
- ↓
-$xxx.xx
-```
-
-### B. LLMs cannot reliably perform external actions
-
-Generating:
-
-> "I have created the Jira ticket."
-
-doesn't actually create anything.
-
-Instead:
-
-```text
-LLM decides:
-create_jira_ticket(...)
-
-        ↓
-
-Agent Runtime
-
-        ↓
-
-Jira API
-
-        ↓
-
-Ticket actually created
-```
-
-### C. Some tasks require deterministic computation
-
-For example:
-
-```text
-calculate_tax()
-run_python()
-query_database()
-run_unit_tests()
-```
-
-It's usually better to let a deterministic system perform the calculation rather than ask the LLM to approximate it.
-
-### D. Tools connect AI to existing systems
-
-This is what turns:
-
-**LLM → assistant**
-
-into:
-
-**LLM + tools → agent**
-
-An engineering agent might have:
-
-```text
-read_file()
-search_code()
-write_file()
-run_tests()
-create_pull_request()
-query_jira()
-```
-
----
-
-## 3. How Tool Calling Works
-
-A typical architecture is:
-
-```text
-             ┌───────────────┐
-             │     User      │
-             └───────┬───────┘
-                     │
-                     ▼
-             ┌───────────────┐
-             │ Agent Runtime │
-             └───────┬───────┘
-                     │
-        Prompt + available tools
-                     │
-                     ▼
-             ┌───────────────┐
-             │      LLM      │
-             └───────┬───────┘
-                     │
-              Tool request
-                     │
-                     ▼
-             ┌───────────────┐
-             │ Agent Runtime │
-             └───────┬───────┘
-                     │
-                Execute tool
-                     │
-                     ▼
-             ┌───────────────┐
-             │ API / DB / OS │
-             └───────┬───────┘
-                     │
-                 Result
-                     │
-                     ▼
-             ┌───────────────┐
-             │      LLM      │
-             └───────┬───────┘
-                     │
-                     ▼
-                 Response
-```
-
-The important point is that **the application/runtime sits between the LLM and the real tool**.
-
----
-
-## 4. Step-by-Step Example
-
-Suppose the user asks:
-
-> "What's the weather in Detroit?"
-
-The application tells the LLM that this tool exists:
-
-```text
-get_weather
-
-Description:
-Get the current weather for a city.
-
-Input:
-city: string
-```
-
-### Step 1 — User request
-
-```text
-What's the weather in Detroit?
-```
-
-### Step 2 — LLM selects a tool
-
-Instead of answering directly, the model produces something conceptually like:
+A tool definition gives the model a name, a clear description, and a typed input schema. Good descriptions explain when to use the tool and what it cannot do.
 
 ```json
 {
-  "tool": "get_weather",
-  "arguments": {
-    "city": "Detroit"
+  "name": "get_weather",
+  "description": "Get the current weather for a city. Use for current conditions, not forecasts.",
+  "parameters": {
+    "type": "object",
+    "properties": {"city": {"type": "string"}},
+    "required": ["city"],
+    "additionalProperties": false
   }
 }
 ```
 
-### Step 3 — Runtime executes it
+Keep tools small and specific. `get_weather(city)` is easier to select and validate than one vague `do_everything(request)` tool.
 
-The application receives the tool request and calls the actual weather service.
+## 4. The runtime owns execution
 
-```text
-get_weather("Detroit")
-```
+When a model returns a tool call, the runtime should:
 
-### Step 4 — Tool returns data
+1. Check that the tool name is allowed for this user and task.
+2. Validate the arguments against the schema and business rules.
+3. Request approval when an action is sensitive or irreversible.
+4. Execute the tool with timeouts, retries, and audit logging as appropriate.
+5. Return a concise, structured result to the model.
 
-```json
-{
-  "temperature": 62,
-  "condition": "Cloudy"
-}
-```
+The tool result is context, not an instruction. Treat content returned from websites, documents, or APIs as untrusted data so it cannot override your application policy.
 
-### Step 5 — Result goes back into the LLM context
+## 5. Multiple calls and stopping
 
-The model now receives something equivalent to:
+Some tasks need a loop: search, inspect a result, take another action, then answer. Set limits on rounds, time, and cost. Stop when the goal is met, an approval is needed, evidence is missing, or the budget is exhausted.
 
 ```text
-Tool result:
-
-Detroit
-Temperature: 62°F
-Condition: Cloudy
+User: “Schedule lunch with Maya next Tuesday.”
+1. Find Maya's availability.
+2. Check the user's calendar.
+3. Propose or create a time only after the required approval.
+4. Confirm the outcome with the user.
 ```
 
-### Step 6 — LLM generates the final response
+Do not assume a tool call succeeded just because the model requested it. Send the real result—including errors—back to the model.
 
-> It's currently 62°F and cloudy in Detroit.
+## 6. Tool calling, APIs, and MCP
 
-So the full loop is:
-
-**User → LLM → tool request → runtime → tool → result → LLM → answer**
-
----
-
-## 5. What Defines a Tool?
-
-A tool generally needs at least three things:
-
-### Name
-
-```text
-search_documents
-```
-
-### Description
-
-```text
-Search internal engineering documentation.
-```
-
-### Input schema
-
-```json
-{
-  "query": "string",
-  "max_results": "integer"
-}
-```
-
-The **tool description is particularly important** because the model uses it to determine when that tool should be selected.
-
-For an agent with many tools:
-
-```text
-Tools
-
-├── search_documents()
-├── search_code()
-├── read_file()
-├── write_file()
-├── run_tests()
-├── query_jira()
-└── create_pull_request()
-```
-
-the model must solve two problems:
-
-```text
-Should I use a tool?
-
-        ↓ yes
-
-Which tool should I use?
-
-        ↓
-
-What arguments should I provide?
-```
-
----
-
-## 6. Tool Calling vs API Calling
-
-These concepts are related but different.
-
-An **API call** is normally explicitly programmed:
-
-```python
-weather_api.get_weather("Detroit")
-```
-
-With **LLM tool calling**, the model decides whether the API/function should be invoked and constructs its arguments.
-
-```text
-Traditional software
-
-Developer
-   ↓
-Code decides which API
-   ↓
-API
-
-
-Agentic software
-
-User
-   ↓
-LLM decides which tool
-   ↓
-Runtime
-   ↓
-API
-```
-
-The underlying tool can still be a REST API, database operation, Python function, shell command, MCP server, or another agent.
-
----
-
-## 7. Tool Calling and MCP
-
-Tool calling and MCP are also different layers.
-
-**Tool calling answers:**
-
-> How does the model decide that it wants to use a tool?
-
-**MCP answers more closely:**
-
-> How can applications expose tools/resources to AI systems through a standardized protocol?
-
-Conceptually:
-
-```text
-LLM
- │
- │ tool call
- ▼
-Agent Runtime
- │
- │ MCP
- ▼
-MCP Client
- │
- ▼
-MCP Server
- │
- ├── GitHub
- ├── Database
- ├── Jira
- └── Filesystem
-```
-
-MCP is therefore **not a replacement for tool calling**. It can be part of the infrastructure through which tools are discovered and invoked. See the [MCP knowledge base](concepts-mcp.md).
-
----
-
-## 8. Single vs Multiple Tool Calls
-
-A simple request may require one call:
-
-```text
-User
- ↓
-LLM
- ↓
-Weather Tool
- ↓
-LLM
- ↓
-Answer
-```
-
-Agentic tasks often require multiple calls.
-
-Example:
-
-> "Fix this bug and create a PR."
-
-The agent might perform:
-
-```text
-search_code()
-      ↓
-read_file()
-      ↓
-edit_file()
-      ↓
-run_tests()
-      ↓
-tests fail
-      ↓
-read_logs()
-      ↓
-edit_file()
-      ↓
-run_tests()
-      ↓
-create_pull_request()
-```
-
-This creates the common **agent loop**:
-
-```text
-Reason
-  ↓
-Choose Tool
-  ↓
-Execute
-  ↓
-Observe Result
-  ↓
-Reason
-  ↓
-Choose Next Tool
-  ↓
-...
-  ↓
-Finish
-```
-
-Tool calling is therefore one of the core building blocks of an AI agent.
-
----
-
-## 9. How Do We Evaluate Tool Calling?
-
-Yes—tool calling should be evaluated.
-
-There are several different things to measure.
-
-### 1. Tool Selection Accuracy
-
-Did the model choose the correct tool?
-
-Example:
-
-```text
-Question:
-"What's the weather in Detroit?"
-
-Expected:
-get_weather
-
-Actual:
-web_search
-```
-
-You can calculate:
-
-**Tool Selection Accuracy = Correct tool selections / Total tool-selection cases**
-
-### 2. Tool Call Precision
-
-Of all the tool calls the agent made, how many were actually appropriate?
-
-```text
-Precision =
-Correct / appropriate tool calls
-────────────────────────────────
-All tool calls made
-```
-
-This catches **unnecessary tool usage**.
-
-An agent that calls five tools when only one was necessary may have poor precision.
-
-### 3. Tool Call Recall
-
-Of all tool calls that were necessary, how many did the agent successfully make?
-
-```text
-Recall =
-Necessary tool calls successfully made
-───────────────────────────────────────
-All necessary tool calls
-```
-
-This catches **missing calls**.
-
-For example, an agent might answer a question from memory even though it should have queried the database.
-
-### 4. Argument Accuracy
-
-Even if the correct tool was selected, were the parameters correct?
-
-Expected:
-
-```json
-{
-  "city": "Detroit",
-  "unit": "fahrenheit"
-}
-```
-
-Actual:
-
-```json
-{
-  "city": "Chicago",
-  "unit": "fahrenheit"
-}
-```
-
-Correct tool, wrong arguments → failure.
-
-### 5. Tool Execution Success Rate
-
-Did the requested calls actually execute successfully?
-
-```text
-Successful executions
-─────────────────────
-Total execution attempts
-```
-
-Failures can come from invalid arguments, authentication, timeouts, unavailable APIs, schema violations, etc.
-
-### 6. Task Success Rate
-
-This is ultimately more important than individual tool accuracy:
-
-> **Did the agent actually accomplish the user's goal?**
-
-Consider:
-
-```text
-search_code ✓
-read_file ✓
-edit_file ✓
-run_tests ✓
-create_PR ✓
-```
-
-Individual calls succeeded, but if the PR doesn't fix the requested bug, the **task failed**.
-
-So evaluate both:
-
-```text
-Tool-level evaluation
-        +
-Task-level evaluation
-```
-
----
-
-## 10. Efficiency Metrics
-
-A production agent should also measure efficiency.
-
-Useful metrics include:
-
-| Metric | Question |
+| Layer | Role |
 | --- | --- |
-| Tool selection accuracy | Did it choose the correct tool? |
-| Argument accuracy | Were the parameters correct? |
-| Execution success | Did the call execute? |
-| Tool-call precision | Were the calls actually necessary? |
-| Tool-call recall | Did it make all required calls? |
-| Task success rate | Did it solve the user's problem? |
-| Tool calls/task | Did it use too many tools? |
-| Latency | How long did execution take? |
-| Cost/task | How expensive was the complete run? |
+| API | The underlying service interface, such as a calendar or CRM API |
+| Tool | A safe, model-facing operation your application exposes |
+| Tool calling | The model's structured request for that operation |
+| MCP | A standard protocol for discovering and connecting to tools, resources, and prompts |
 
-For more advanced agents, I would also evaluate **tool sequence correctness**.
+MCP can deliver tools to an application, but it does not remove the need for validation, authorization, or approval. See [MCP concepts](concepts-mcp.md).
 
-For example:
+## 7. Evaluate the whole chain
 
-```text
-read requirements
-      ↓
-inspect code
-      ↓
-modify code
-      ↓
-run tests
-      ↓
-create PR
-```
+| Question | Example measure |
+| --- | --- |
+| Did the model choose the right tool? | Tool-selection accuracy |
+| Did it provide valid arguments? | Schema and argument accuracy |
+| Did the runtime execute safely? | Authorization, approval, and execution success |
+| Did the task finish correctly? | End-to-end task success |
+| Was it efficient? | Calls per task, latency, and cost |
 
-may be correct, while:
+Test negative cases too: no tool needed, unavailable data, malformed arguments, permission denied, failed tools, and actions requiring approval.
 
-```text
-modify code
-      ↓
-create PR
-      ↓
-run tests
-```
+## 8. Core mental model
 
-could violate your engineering workflow even if every individual tool call is technically valid.
+**The model proposes; the application controls; the tool performs; the result becomes evidence.**
 
----
-
-## 11. Recommended Evaluation Hierarchy
-
-For your Agent Engineering course, I'd teach evaluation at **four levels**:
-
-```text
-Level 1 — Selection
-Did the agent choose the right tool?
-
-Level 2 — Arguments
-Did it call the tool correctly?
-
-Level 3 — Execution / Sequence
-Did the calls succeed and occur in the right order?
-
-Level 4 — Task Outcome
-Did the agent actually accomplish the goal?
-```
-
-The last level is the most important.
-
-An agent can have **95% tool-selection accuracy but still be a poor agent** if it chains those calls incorrectly or fails to complete the task.
-
----
-
-## 12. Core Mental Model
-
-The simplest model to remember is:
-
-```text
-                    LLM
-                 "What next?"
-                     │
-          ┌──────────┴──────────┐
-          │                     │
-       Respond               Use Tool
-                                │
-                                ▼
-                           Agent Runtime
-                                │
-                                ▼
-                              Tool
-                                │
-                                ▼
-                             Result
-                                │
-                                └──────► LLM
-```
-
-Or even more simply:
-
-> **LLM decides. Runtime executes. Tool acts. Result returns. LLM decides again.**
-
-That distinction becomes very important when you move from basic tool calling into **MCP, agent loops, LangGraph, permissions, human-in-the-loop, and multi-agent engineering systems**.
+That separation is what makes tool-using systems useful without giving a probabilistic model unrestricted access to real systems.
