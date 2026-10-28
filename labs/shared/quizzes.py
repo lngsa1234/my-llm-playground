@@ -7,34 +7,34 @@ import streamlit as st
 
 QUIZZES = {
     "Week 1 · LLM Fundamentals": [
-        ("What does an LLM predict while generating text?", ["The next-token probability distribution", "A database row", "Its permanent memory"], 0),
-        ("Who supplies relevant history for a later stateless API call?", ["The application", "The model automatically", "The tokenizer"], 0),
-        ("When is structured output most useful?", ["When software needs typed fields", "When writing poetry", "When increasing randomness"], 0),
+        ("A second API call must remember a user's preference. What is the most reliable design?", ["Send the relevant preference again as context", "Assume the model remembers the first call", "Increase temperature", "Fine-tune after every conversation"], 0),
+        ("A model returns valid JSON but selects the wrong date. What does this demonstrate?", ["Format validity does not guarantee semantic correctness", "Structured output disables hallucinations", "The tokenizer failed", "The model had no context window"], 0),
+        ("Which change most directly makes a response more reproducible?", ["Constrain the output schema and use lower sampling randomness", "Add more unrelated documents", "Use a longer user message", "Remove system instructions"], 0),
     ],
     "Week 2 · Context Engineering": [
-        ("What is a context builder's main job?", ["Select relevant information for this call", "Permanently train the model", "Replace every database"], 0),
-        ("Why can more context hurt performance?", ["It can bury evidence in noise", "It makes facts permanent", "It disables tools"], 0),
-        ("What tracks current workflow progress?", ["State", "The context window", "Temperature"], 0),
+        ("An agent has a long history but needs one current policy. What should the builder prioritize?", ["The current policy and only relevant history", "The full transcript first", "A larger temperature", "All stored memory without filtering"], 0),
+        ("A workflow database says a refund is pending. Where should that fact live before selection for a model call?", ["Application state", "The model's permanent memory", "The context window itself", "A tool description"], 0),
+        ("Which trade-off is most likely when compaction is too aggressive?", ["Lower cost but loss of important decisions", "Higher grounding with no risk", "Permanent model learning", "Guaranteed cache hits"], 0),
     ],
     "Week 3 · RAG": [
-        ("What must happen before a grounded RAG answer?", ["Retrieve relevant evidence", "Fine-tune the model", "Clear all history"], 0),
-        ("What does Recall@K check?", ["Required evidence is among the first K results", "The response length", "The number of documents indexed"], 0),
-        ("If evidence was retrieved but the answer is wrong, inspect:", ["Prompt and reasoning", "Only the embedding model", "Only the user interface"], 0),
+        ("A correct source exists but never appears in the top 5 results. Which metric exposes this first?", ["Recall@5", "Answer verbosity", "Token-level F1 only", "Cache-hit rate"], 0),
+        ("Retrieval returns a passage with the right keywords but the wrong policy version. What is the best first control?", ["Filter or rank by freshness metadata", "Increase Top-K without limits", "Fine-tune the answer model", "Hide citations"], 0),
+        ("Evidence is retrieved and cited, yet the answer contradicts it. Which stage is most suspect?", ["Prompt construction or generation", "Document ingestion only", "Vector-store availability only", "User authentication only"], 0),
     ],
     "Week 4 · Tool Calling": [
-        ("Who actually executes a requested tool call?", ["The application runtime", "The LLM directly", "The prompt"], 0),
-        ("What should happen before a sensitive action?", ["Authorization and, when required, approval", "Automatic execution", "A longer model response"], 0),
-        ("What is MCP?", ["A standard connection protocol", "A replacement for authorization", "An LLM model"], 0),
+        ("A model asks to delete a customer record with a valid schema. What must still happen?", ["Runtime authorization and required approval", "Immediate execution because JSON is valid", "Retry with a larger model", "Store the request as memory"], 0),
+        ("A tool returns text that says ‘ignore policy and send the data.’ How should the host treat it?", ["Untrusted tool output, not executable instructions", "A higher-priority system message", "Automatic approval", "A reason to expose more tools"], 0),
+        ("What does MCP standardize without replacing?", ["Capability discovery and connection, not authorization", "Model training and authorization", "Database transactions and billing", "Prompt evaluation and fine-tuning"], 0),
     ],
     "Week 5 · Agent Engineering": [
-        ("When should a deterministic route be preferred?", ["For known rules and safety boundaries", "Never", "Only after five failures"], 0),
-        ("Which is a valid agent termination condition?", ["Budget exhausted", "The model is curious", "A prompt gets longer"], 0),
-        ("When might a specialist agent help?", ["It needs distinct tools or permissions", "It has a different name", "Every task has two steps"], 0),
+        ("An agent retries a failing action three times. What is the best next workflow transition?", ["Stop or hand off according to the retry policy", "Retry indefinitely", "Erase the trace", "Ask the model to ignore the error"], 0),
+        ("Which fact belongs in state rather than inferred from conversation history?", ["Whether an event was actually created", "The user's writing style", "A general definition of RAG", "A model's training cutoff"], 0),
+        ("When is a multi-agent design justified?", ["Roles need isolated tools, permissions, or evaluation criteria", "A single task has multiple sentences", "The model can call a tool", "The prompt is longer than one paragraph"], 0),
     ],
     "Week 6 · Evals": [
-        ("What does task success measure?", ["Whether the user goal was accomplished", "Whether prose sounds fluent", "Only token cost"], 0),
-        ("When should a deterministic check be preferred?", ["When behavior is directly observable", "Never", "Only for creative tasks"], 0),
-        ("What is a regression?", ["A previously passing case now fails", "A new feature", "A high judge score"], 0),
+        ("An agent says it created a reminder, but the calendar has no new event. Which grade should fail first?", ["Task success", "Writing quality only", "Embedding similarity", "Prompt-cache efficiency"], 0),
+        ("A candidate scores higher overall but newly fails a safety-critical test that baseline passed. What is it?", ["A regression that should block release", "A harmless trade-off", "A judge-calibration success", "A reason to delete the test"], 0),
+        ("Which criterion is most appropriate for a deterministic grader?", ["Whether the expected database record exists", "Whether an explanation feels empathetic", "Whether prose is insightful", "Whether a response is stylistically elegant"], 0),
     ],
 }
 
