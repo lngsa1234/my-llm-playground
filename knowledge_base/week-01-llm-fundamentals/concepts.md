@@ -249,17 +249,17 @@ This layer combines the LLM with tools, state management, and an execution proce
 
 ### Agent categories and examples
 
-"Agent" is a broad term. The categories below describe common system designs, and a real product can combine more than one of them. For example, a customer-support agent might retrieve policy documents, call order-management tools, and follow a fixed approval workflow.
+"Agent" is a broad term. The categories below describe common system designs, and a real product can combine more than one of them. The final column names well-known companies and products rather than hypothetical use cases.
 
-| Category | What it does | Example |
+| Category | What it does | Notable companies and products |
 | --- | --- | --- |
-| Conversational agent | Responds to a user in a dialogue, usually using the current conversation as context. | A study assistant that explains a concept, then answers follow-up questions. |
-| Retrieval agent | Finds relevant information before responding so its answer can be grounded in external sources. | An internal help-desk assistant that searches the employee handbook to answer a benefits question. |
-| Tool-using agent | Chooses from defined tools to read data or take bounded actions. | A travel assistant that checks flight options, looks up hotel availability, and drafts an itinerary. |
-| Workflow agent | Follows a predefined sequence or state graph; the model may fill in decisions at selected steps. | An expense-review system that extracts receipt details, validates policy rules, and sends exceptions to a manager. |
-| Planning agent | Breaks a goal into sub-tasks, carries out or delegates them, and revises the plan as results arrive. | A research assistant that creates a research plan, gathers sources, compares findings, and prepares a brief. |
-| Multi-agent system | Coordinates specialized agents that divide work and share results through an orchestrator or another protocol. | A software-delivery system with separate agents for implementation, testing, and code review. |
-| Human-supervised agent | Performs work autonomously within limits but pauses for review before a consequential action. | A finance assistant that prepares vendor payments but requires a person to approve submission. |
+| General-purpose agent | Handles open-ended, multi-step work in a conversation. | OpenAI — ChatGPT agent; Anthropic — Claude; Google — Gemini; Microsoft — Copilot. |
+| Research agent | Searches, gathers sources, synthesizes findings, and prepares a report. | OpenAI — Deep Research; Perplexity — Deep Research; Google — Gemini Deep Research. |
+| Coding agent | Reads and changes a codebase, runs commands or tests, and helps deliver software. | OpenAI — Codex; Anthropic — Claude Code; Cognition — Devin; Cursor — Cursor. |
+| Browser or computer-use agent | Uses a browser or computer interface to navigate sites and complete tasks. | OpenAI — ChatGPT agent; Anthropic — Claude in Chrome; Manus — Manus. |
+| Enterprise knowledge and workflow agent | Uses company data and business tools within defined permissions and workflows. | Microsoft — Copilot Studio; Salesforce — Agentforce; Glean — Glean Agents; ServiceNow — AI Agents. |
+| Customer-service agent | Resolves support questions and, where permitted, completes service actions. | Intercom — Fin; Zendesk — AI agents; Ada — Ada. |
+| Multi-agent platform | Coordinates specialist agents or provides the framework to build them. | Microsoft — AutoGen; Google — Agent Development Kit; CrewAI — CrewAI; LangChain — LangGraph. |
 
 The safest starting point is usually a narrow workflow or tool-using agent with explicit permissions, clear stop conditions, and human approval for consequential actions. Add planning, additional tools, or multiple agents only when the task genuinely needs them.
 
