@@ -27,7 +27,7 @@ This course is for anyone looking to systematically learn AI agent concepts, arc
 Each weekly session has three parts:
 
 1. **20 minutes — Learn the essential concept.**
-2. **30 minutes — Work through the lab and Mini Muse demo, using parameters to experiment with and apply the concept.**
+2. **30 minutes — Use the lab to experiment with parameters and apply the concept, then walk through the Mini Muse Task Assistant as a reference project demo.**
 3. **25 minutes — Open discussion.**
 
 ## Learning modules roadmap
