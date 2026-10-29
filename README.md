@@ -13,7 +13,7 @@ labs/                          one self-contained folder per lab
   week2_context_engineering/   what the model sees: five context strategies on one question
   week3_rag/                   RAG pipeline, its documents/ and questions/, benchmark scoring
   week4_tool_calling/          weather tools, command-line agent, MCP server and client
-  week5_agent_workflow/        stateful workflow agent: state, router, repair budget, bounded loop
+  week5_agent_workflow/        Mini Muse agent step: state, tools, bounded loop, approval
   week6_agent_eval/            Muse agent, golden dataset, five evaluation steps, LLM judge
   week7_production/            reliability drill: injected failures, retries, timeouts, validation, fallback
 knowledge_base/                the Program Guide, weekly concepts and lab guides

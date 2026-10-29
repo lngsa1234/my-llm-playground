@@ -14,7 +14,7 @@ Notes for the Agent Engineering Peer Learning Circle, exported from Notion on 20
 | 2 · Context Engineering | [Context engineering](week-02-context-engineering/concepts.md) | [From single-call context to multi-run AI systems](week-02-context-engineering/lab.md) |
 | 3 · RAG | [Retrieval-augmented generation](week-03-rag/concepts.md) | [Build a RAG system from scratch](week-03-rag/lab.md) |
 | 4 · Tool Calling | [Tool calling](week-04-tool-calling/concepts.md) · [MCP](week-04-tool-calling/concepts-mcp.md) | [Weather assistant with tool calling & MCP](week-04-tool-calling/lab.md) |
-| 5 · Agent Engineering | [State, workflow, control loop, routing](week-05-agent-engineering/concepts.md) | [Stateful agent workflow in TypeScript](week-05-agent-engineering/lab.md) (Python app version in [`labs/week5_agent_workflow/`](../labs/week5_agent_workflow/)) |
+| 5 · Agent Engineering | [State, workflow, control loop, routing](week-05-agent-engineering/concepts.md) | [Stateful agent workflow in TypeScript](week-05-agent-engineering/lab.md) (Mini Muse agent step in [`labs/week5_agent_workflow/`](../labs/week5_agent_workflow/)) |
 | 6 · Evals | [Agent evaluation fundamentals](week-06-evals/concepts.md) · [Public benchmarks](week-06-evals/concepts-benchmarks.md) | [Evaluate and regression-test an agent](week-06-evals/lab.md) (code in [`labs/week6_agent_eval/`](../labs/week6_agent_eval/)) |
 | 7 · Production AI | not written yet | [Production reliability drill](../labs/week7_production/README.md) |
 
