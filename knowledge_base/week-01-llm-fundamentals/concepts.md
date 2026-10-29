@@ -253,7 +253,7 @@ This layer combines the LLM with tools, state management, and an execution proce
 
 | Category | What it does | Notable companies and products |
 | --- | --- | --- |
-| General-purpose agent | Handles open-ended, multi-step work in a conversation. | OpenAI — ChatGPT agent; Anthropic — Claude; Google — Gemini; Microsoft — Copilot. |
+| General-purpose or personal agent | Handles open-ended, multi-step work in a conversation and may use personal context or connected apps. | OpenAI — ChatGPT agent; Anthropic — Claude; Google — Gemini; Meta — Muse; xAI — Grok; Microsoft — Copilot. |
 | Research agent | Searches, gathers sources, synthesizes findings, and prepares a report. | OpenAI — Deep Research; Perplexity — Deep Research; Google — Gemini Deep Research. |
 | Coding agent | Reads and changes a codebase, runs commands or tests, and helps deliver software. | OpenAI — Codex; Anthropic — Claude Code; Cognition — Devin; Cursor — Cursor. |
 | Browser or computer-use agent | Uses a browser or computer interface to navigate sites and complete tasks. | OpenAI — ChatGPT agent; Anthropic — Claude in Chrome; Manus — Manus. |
