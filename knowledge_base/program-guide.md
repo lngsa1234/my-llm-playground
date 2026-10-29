@@ -55,6 +55,8 @@ Choose one of two project scopes. Both apply the course concepts; Option 1 is in
 
 Build a **single-task assistant** that does one useful job well. Choose a focused task—such as answering questions from a small set of notes, drafting an email, planning a trip, or helping with a specific workflow—and clearly define what it can and cannot do.
 
+**Project location:** embedded in the [lngsa1234/my-llm-playground](https://github.com/lngsa1234/my-llm-playground) course repository.
+
 Your demo should include:
 
 - A chat-style input and a useful assistant response.
