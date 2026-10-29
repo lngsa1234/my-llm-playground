@@ -102,6 +102,10 @@ def _render_ask(settings, offered: list[str], max_rounds: int) -> None:
         if "calls" not in tooled:  # saved before model-call details were recorded
             st.caption("Ask again to see each model call.")
             return
+        st.markdown("**Before Step 1 · App offers tools to the model**")
+        st.caption("The app sends these tool definitions with the instructions and your question. No tool has run yet.")
+        for tool in saved["offered"]:
+            st.markdown(f"- `{tool}` — {_tool_purpose(tool)}")
         st.markdown("**Start · Your question**")
         st.info(saved["prompt"])
         runs = {}  # tool results, grouped by the model call that asked for them
@@ -153,6 +157,14 @@ def _result_summary(entry: dict) -> str:
     if "temperature_f" in result:
         return f"The app returned current weather for {location}: {result['temperature_f']}°F, feels like {result['feels_like_f']}°F."
     return f"The app ran `{entry['tool']}` and returned data for {location}."
+
+
+def _tool_purpose(tool: str) -> str:
+    purposes = {
+        "get_weather": "gets the current temperature for a location",
+        "get_weekend_forecast": "gets Saturday and Sunday forecast data for a location",
+    }
+    return purposes.get(tool, "is available for the model to request")
 
 
 def _args(raw: str) -> str:
