@@ -49,7 +49,7 @@ For each week, use the matching **Knowledge Base** guide, lab, and quiz in the s
 
 ## Course project: Mini Muse
 
-Choose one of two project scopes. Both apply the course concepts; Option 1 is intentionally the simpler starting point.
+Choose one of three project scopes. All apply the course concepts; Option 1 is intentionally the simpler starting point.
 
 ### Option 1: Mini Muse Demo
 
@@ -80,6 +80,10 @@ Build a **minimum viable product**: a small personal-assistant experience with c
 The features should work together where practical—for example, chat can help turn an idea into a goal or answer a question using material from the library. Define a small, testable scope for each feature and demonstrate the user journey end to end.
 
 You may build Option 2 on your own or with others. In a team, each person can focus on one feature or one part of the product.
+
+### Option 3: Your Own Project
+
+Build any AI or agent project you want. Choose a problem, audience, and scope that interest you, then apply relevant course concepts such as prompts, context, retrieval, tools, workflows, evaluation, or reliability. You may work independently or with others.
 
 Open **Week 8 · Mini Muse Demo** in the sidebar to explore the course reference implementation.
 
