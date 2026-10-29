@@ -26,7 +26,7 @@ from labs.shared.ui import (can_run, connectors_panel, example_text_area, get_mo
 from mini_muse import week1_understand, week2_memory, week3_knowledge, week4_tools, week5_agent, week6_eval
 from mini_muse.llm import LLM
 from mini_muse.week7_reliability import FAULTS, Runtime
-from mini_muse.world import NOTES_DIR, TODAY, WORLD_TEMPLATE, new_world, today_line
+from mini_muse.world import TODAY, WORLD_TEMPLATE, new_world, today_line
 
 COMPONENTS = {
     1: ("Understand", "week1_understand", "Turn a request into structured fields with one API call."),
@@ -271,42 +271,50 @@ def step2(main, panel, settings) -> None:
 
 
 # ------------------------------------------------------------------ week 3
-def _notes_index(settings, semantic: bool):
-    key = ("semantic", settings.embedding_model) if semantic else ("keyword",)
+def _notes_index(settings, semantic: bool, chunks=None):
+    """Build a cached index; Week 3 supplies user chunks, Week 8 keeps its demo data."""
+    chunks = week3_knowledge.load_chunks() if chunks is None else chunks
+    note_key = tuple((chunk.note, chunk.section, chunk.text, chunk.file) for chunk in chunks)
+    key = (("semantic", settings.embedding_model) if semantic else ("keyword",)) + note_key
     cache = st.session_state.setdefault("muse_w3_index", {})
     if key not in cache:
-        cache[key] = week3_knowledge.build_index(LLM(settings) if semantic else None)
+        cache[key] = week3_knowledge.build_index(LLM(settings) if semantic else None, chunks=chunks)
     return cache[key]
 
 
 def step3(main, panel, settings) -> None:
     with lab_parameters(panel):
+        uploads = st.file_uploader("Upload notes", type=["md", "txt"], accept_multiple_files=True,
+                                   key="muse_w3_uploads", help="Text and Markdown files only. They remain in this browser session.")
+        pasted_notes = st.text_area("Or paste notes", key="muse_w3_pasted_notes", height=140,
+                                    placeholder="Paste one or more notes here.")
         mode = st.radio("Search", week3_knowledge.MODES, key="muse_w3_mode", horizontal=True,
-                        help="keyword is offline and free; semantic and hybrid embed your notes once.")
+                        help="Keyword is offline and free; semantic and hybrid embed your notes once.")
         settings = _with_embedding(settings, "week3_embedding_model", disabled=mode == "keyword")
         top_k = st.slider("Top-K sections", 1, 6, 3, key="muse_w3_k")
+    notes = [(upload.name, upload.getvalue().decode("utf-8", errors="replace")) for upload in (uploads or [])]
+    if pasted_notes.strip():
+        notes.append(("Pasted notes.md", pasted_notes.strip()))
+    chunks = week3_knowledge.load_chunks_from_texts(notes)
     with main:
-        _step_header(3, ["**Search only** is free: compare keyword with hybrid for “How much is the venue Jordan likes?”.",
-                         "Ask something that isn't in the notes: Mini Muse should say so instead of guessing.",
-                         "Use different words from the notes (“lodging in Chicago”) and compare keyword with semantic."])
-        question = _example("muse_w3", "Question about your notes", [
-            "What did Jordan say about the offsite budget?",
-            "Which hotel am I staying at in Chicago?",
-            "What's on the agenda for my Monday 1:1 with Maya?",
-            "How long do I boil the dumplings?",
-            "lodging in Chicago",
-            "What's my dentist's phone number?",
-        ], height=60)
+        _step_header(3, ["Upload a text or Markdown note, or paste notes directly into the right panel.",
+                         "**Search only** is free; semantic and hybrid search embed your supplied notes.",
+                         "Ask a question that is not in the notes: Mini Muse should say so instead of guessing."])
+        st.info("Only the notes you add for this session are searched. They are not saved to this project.")
+        question = st.text_area("Question about your notes", key="muse_w3_user_question", height=60,
+                                placeholder="Ask a question about the notes you uploaded or pasted.")
         search_col, answer_col, _ = st.columns([1, 1, 2])
         do_search = search_col.button("Search only", width="stretch", key="muse_w3_search",
                                       help="Free with keyword search: no model call.")
         do_answer = answer_col.button("Answer from notes", type="primary", width="stretch", key="muse_w3_answer")
         needs_model = mode != "keyword" or do_answer
         try:
-            if (do_search or do_answer) and (not needs_model or can_run(settings, question)):
+            if (do_search or do_answer) and not chunks:
+                st.warning("Upload or paste at least one note before searching.")
+            elif (do_search or do_answer) and (not needs_model or can_run(settings, question)):
                 semantic = mode != "keyword"
                 llm = LLM(settings) if needs_model else None
-                index = _notes_index(settings, semantic)
+                index = _notes_index(settings, semantic, chunks)
                 started = time.perf_counter()
                 if do_answer:
                     result = week3_knowledge.answer(llm, index, question, top_k, mode)
@@ -338,10 +346,12 @@ def step3(main, panel, settings) -> None:
                 if result["llm"]:
                     llm = result["llm"]
                     usage_line(llm.usage.input_tokens, llm.usage.output_tokens, result["seconds"], llm.cost())
-        with st.expander("Your notes"):
-            for path in sorted(NOTES_DIR.glob("*.md")):
-                st.markdown(f"**{path.name}**")
-                st.code(path.read_text(encoding="utf-8"), language=None, wrap_lines=True)
+        with st.expander("Notes available for retrieval"):
+            if not notes:
+                st.caption("Upload or paste notes to see them here.")
+            for filename, content in notes:
+                st.markdown(f"**{filename}**")
+                st.code(content, language=None, wrap_lines=True)
 
 
 # ------------------------------------------------------------------ week 4

@@ -52,18 +52,18 @@ class NotesIndex:
         return bool(self.vectors)
 
 
-def load_chunks(directory: Path = NOTES_DIR) -> list[Chunk]:
-    """One chunk per `## ` section. Short, self-contained sections make good chunks."""
+def load_chunks_from_texts(notes: list[tuple[str, str]]) -> list[Chunk]:
+    """Split uploaded or pasted Markdown/text notes into one chunk per `## ` section."""
     chunks = []
-    for path in sorted(directory.glob("*.md")):
-        lines = path.read_text(encoding="utf-8").splitlines()
-        title = next((line[2:].strip() for line in lines if line.startswith("# ")), path.stem)
+    for filename, content in notes:
+        lines = content.splitlines()
+        title = next((line[2:].strip() for line in lines if line.startswith("# ")), Path(filename).stem)
         section, body = "Overview", []
 
         def flush():
             text = "\n".join(body).strip()
             if text:
-                chunks.append(Chunk(title, section, text, path.name))
+                chunks.append(Chunk(title, section, text, filename))
 
         for line in lines:
             if line.startswith("## "):
@@ -75,9 +75,15 @@ def load_chunks(directory: Path = NOTES_DIR) -> list[Chunk]:
     return chunks
 
 
-def build_index(llm=None, directory: Path = NOTES_DIR) -> NotesIndex:
+def load_chunks(directory: Path = NOTES_DIR) -> list[Chunk]:
+    """Load the bundled command-line sample notes."""
+    notes = [(path.name, path.read_text(encoding="utf-8")) for path in sorted(directory.glob("*.md"))]
+    return load_chunks_from_texts(notes)
+
+
+def build_index(llm=None, directory: Path = NOTES_DIR, chunks: list[Chunk] | None = None) -> NotesIndex:
     """Keyword search works without a model. Pass `llm` to embed chunks for semantic search."""
-    chunks = load_chunks(directory)
+    chunks = chunks if chunks is not None else load_chunks(directory)
     vectors = llm.embed([f"{c.label}\n{c.text}" for c in chunks]) if llm is not None else []
     return NotesIndex(chunks, vectors)
 

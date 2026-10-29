@@ -141,6 +141,18 @@ def test_notes_are_chunked_by_section():
     assert all(c.text for c in chunks)
 
 
+def test_uploaded_or_pasted_notes_are_chunked_by_section():
+    chunks = week3_knowledge.load_chunks_from_texts([
+        ("project.md", "# Project plan\n\n## Timeline\nLaunch in June.\n\n## Budget\n$5,000."),
+        ("ideas.txt", "Collect customer feedback."),
+    ])
+    assert [(c.label, c.file) for c in chunks] == [
+        ("Project plan › Timeline", "project.md"),
+        ("Project plan › Budget", "project.md"),
+        ("ideas › Overview", "ideas.txt"),
+    ]
+
+
 @pytest.mark.parametrize("question, source", [
     ("What did Jordan say about the offsite budget?", "Team offsite planning › Budget"),
     ("Which hotel am I staying at in Chicago?", "Chicago trip › Hotel"),
