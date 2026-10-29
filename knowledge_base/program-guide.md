@@ -66,7 +66,7 @@ Your demo should include:
 
 Build a **minimum viable product**: a small personal-assistant experience with connected features rather than a single task. The MVP includes:
 
-**Project repository:** [lngsa1234/mini-muse-project](https://github.com/lngsa1234/mini-muse-project)
+**Project repository:** [lngsa1234/mini-muse-mvp](https://github.com/lngsa1234/mini-muse-mvp)
 
 - **Chat** — a conversational home for interacting with Mini Muse.
 - **Ideas** — capture, organize, and develop ideas with the assistant.
