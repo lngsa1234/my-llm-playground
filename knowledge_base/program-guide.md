@@ -51,9 +51,9 @@ For each week, use the matching **Knowledge Base** guide, lab, and quiz in the s
 
 Choose one of three project scopes. All apply the course concepts; Option 1 is intentionally the simpler starting point.
 
-### Option 1: Mini Muse Demo
+### Option 1: Mini Muse Task Assistant
 
-Build a **single-task assistant** that does one useful job well. Choose a focused task—such as answering questions from a small set of notes, drafting an email, planning a trip, or helping with a specific workflow—and clearly define what it can and cannot do.
+Build a **task assistant** that does one useful job well. Choose a focused task—such as answering questions from a small set of notes, drafting an email, planning a trip, or helping with a specific workflow—and clearly define what it can and cannot do.
 
 **Project location:** embedded in the [lngsa1234/my-llm-playground](https://github.com/lngsa1234/my-llm-playground) course repository.
 
