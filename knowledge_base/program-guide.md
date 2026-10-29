@@ -49,6 +49,8 @@ For each week, use the matching **Knowledge Base** guide, lab, and quiz in the s
 
 ## Course project: Mini Muse
 
+**Mini Muse repository:** [lngsa1234/mini-muse-project](https://github.com/lngsa1234/mini-muse-project)
+
 Choose one of two project scopes. Both apply the course concepts; Option 1 is intentionally the simpler starting point.
 
 ### Option 1: Mini Muse Demo
