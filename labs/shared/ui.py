@@ -87,7 +87,6 @@ _MODEL_WIDGET_KEYS = {
     "max_output_tokens": "settings_max_tokens",
     "input_price": "settings_input_price",
     "output_price": "settings_output_price",
-    "embedding_model": "settings_embedding_model",
 }
 
 
@@ -99,7 +98,7 @@ def get_model_settings() -> ModelSettings:
         max_output_tokens=values.get("max_output_tokens", DEFAULT_MAX_OUTPUT_TOKENS),
         input_price=values.get("input_price", DEFAULT_INPUT_PRICE),
         output_price=values.get("output_price", DEFAULT_OUTPUT_PRICE),
-        embedding_model=values.get("embedding_model", DEFAULT_EMBEDDING_MODEL),
+        embedding_model=DEFAULT_EMBEDDING_MODEL,
     )
 
 
@@ -111,7 +110,6 @@ def _save_model_settings() -> None:
         "max_output_tokens": int(st.session_state.get(_MODEL_WIDGET_KEYS["max_output_tokens"], current.max_output_tokens)),
         "input_price": float(st.session_state.get(_MODEL_WIDGET_KEYS["input_price"], current.input_price)),
         "output_price": float(st.session_state.get(_MODEL_WIDGET_KEYS["output_price"], current.output_price)),
-        "embedding_model": st.session_state.get(_MODEL_WIDGET_KEYS["embedding_model"], current.embedding_model).strip(),
     }
 
 
@@ -126,7 +124,6 @@ def model_settings(panel) -> ModelSettings:
         st.caption("Saved for this session and used by every week.")
         st.text_input("Model", key=_MODEL_WIDGET_KEYS["model"], on_change=_save_model_settings)
         with st.expander("Model options"):
-            st.text_input("Embedding model", key=_MODEL_WIDGET_KEYS["embedding_model"], on_change=_save_model_settings)
             st.number_input("Max output tokens", 100, 8000, step=100,
                             key=_MODEL_WIDGET_KEYS["max_output_tokens"], on_change=_save_model_settings)
             st.number_input("Input $ / 1M tokens", 0.0, 100.0, format="%.2f",

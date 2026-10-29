@@ -139,7 +139,7 @@ def _registry(panel):
 
 # ------------------------------------------------------------------ week 1
 W1_EXAMPLES = [
-    "Lunch with Maya on Tuesday at noon",
+    "Tuesday at noon",
     "Team check-in next week",
     "Weather in Chicago",
     "Jordan — offsite venue",
