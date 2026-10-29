@@ -146,7 +146,7 @@ def step1(main, panel, settings) -> None:
                          "Incomplete text leaves fields empty and identifies missing details instead of guessing.",
                          "Unrelated text is classified as **other**."])
         st.info("This is one structured-output API call only. Week 1 does not search, use tools, send email, or create events.")
-        text = st.text_area("Enter any question or request", key="muse_w1_text", height=68,
+        text = st.text_area("Enter any question or request", key="muse_w1_freeform_text", height=68,
                             placeholder="Type anything you would like the model to structure.")
         if st.button("Create structured output", type="primary", key="muse_w1_run") and (llm := _run(settings, text)):
             try:
