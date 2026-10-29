@@ -57,6 +57,8 @@ Build a **single-task assistant** that does one useful job well. Choose a focuse
 
 **Project location:** embedded in the [lngsa1234/my-llm-playground](https://github.com/lngsa1234/my-llm-playground) course repository.
 
+Complete Option 1 **by yourself** from start to finish.
+
 Your demo should include:
 
 - A chat-style input and a useful assistant response.
@@ -76,6 +78,8 @@ Build a **minimum viable product**: a small personal-assistant experience with c
 - **Library** — save and retrieve notes, resources, and other useful reference material.
 
 The features should work together where practical—for example, chat can help turn an idea into a goal or answer a question using material from the library. Define a small, testable scope for each feature and demonstrate the user journey end to end.
+
+You may build Option 2 on your own or with others. In a team, each person can focus on one feature or one part of the product.
 
 Open **Week 8 · Mini Muse Demo** in the sidebar to explore the course reference implementation.
 
