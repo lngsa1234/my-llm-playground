@@ -30,6 +30,8 @@ Each weekly session has three parts:
 2. **30 minutes — Use the lab to experiment with parameters and apply the concept, then walk through the Mini Muse Task Assistant as a reference project demo.**
 3. **25 minutes — Open discussion.**
 
+Each session needs **1–2 volunteers** to help facilitate a more interactive discussion.
+
 ## Learning modules roadmap
 
 > **Note:** This guide includes eight learning modules, delivered across six calendar weeks. Some modules are combined within the same weekly session.
