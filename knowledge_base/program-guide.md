@@ -49,8 +49,6 @@ For each week, use the matching **Knowledge Base** guide, lab, and quiz in the s
 
 ## Course project: Mini Muse
 
-**Mini Muse repository:** [lngsa1234/mini-muse-project](https://github.com/lngsa1234/mini-muse-project)
-
 Choose one of two project scopes. Both apply the course concepts; Option 1 is intentionally the simpler starting point.
 
 ### Option 1: Mini Muse Demo
@@ -67,6 +65,8 @@ Your demo should include:
 ### Option 2: Mini Muse MVP
 
 Build a **minimum viable product**: a small personal-assistant experience with connected features rather than a single task. The MVP includes:
+
+**Project repository:** [lngsa1234/mini-muse-project](https://github.com/lngsa1234/mini-muse-project)
 
 - **Chat** — a conversational home for interacting with Mini Muse.
 - **Ideas** — capture, organize, and develop ideas with the assistant.
