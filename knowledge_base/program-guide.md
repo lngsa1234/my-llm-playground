@@ -85,8 +85,6 @@ You may build Option 2 on your own or with others. In a team, each person can fo
 
 Build any AI or agent project you want. Choose a problem, audience, and scope that interest you, then apply relevant course concepts such as prompts, context, retrieval, tools, workflows, evaluation, or reliability. You may work independently or with others.
 
-Open **Week 8 · Mini Muse Demo** in the sidebar to explore the course reference implementation.
-
 ## Communication
 
 - [Download the CircleW iOS app](https://apps.apple.com/us/app/circlew/id6780248349) to receive real-time notifications.
