@@ -627,62 +627,52 @@ def step8(main, panel, settings) -> None:
         _step_header(8, ["“I prefer mornings. Am I free on 2026-10-28?” then “Book coffee with Maya then at 9:00.”",
                          "“What did Jordan say about the offsite budget? Email him a short summary.”: notes + contacts + approval.",
                          "“What's the weather in Chicago, and what should I pack for my trip?”"])
-        chat, side = st.columns([3, 2], gap="large")
-        with chat:
-            for t, turn in enumerate(session["turns"]):
-                with st.chat_message("user"):
-                    st.write(turn["query"])
-                with st.chat_message("assistant"):
-                    st.write(turn["answer"])
-                    with st.expander("Behind this answer"):
-                        if turn.get("request"):
-                            st.markdown(f"**🧠 Understood as:** `{turn['request']['intent']}` · {turn['request']['summary']}")
-                        if turn["new_facts"]:
-                            st.markdown("**🗂️ Remembered:** " + "; ".join(turn["new_facts"]))
-                        _steps_view(turn["steps"])
-                        st.markdown("**🛡️ Trace**")
-                        st.dataframe(turn["spans"], width="stretch", hide_index=True)
-                    for i, action in enumerate(turn["pending_actions"]):
-                        key = f"{t}:{i}"
-                        if key in session["approved"]:
-                            st.success(f"Approved: {action['tool']} to {action['args'].get('to', '')}")
-                        elif st.button(f"Approve {action['tool']} to {action['args'].get('to', '')}",
-                                       key=f"muse_w8_approve_{key}", type="primary"):
-                            muse = _assistant(settings, memory, session, use_understanding, learn, max_turns, mode,
-                                              max_steps, retries)
-                            muse.approve(action)
-                            session["approved"].append(key)
-                            session["memory"] = memory.to_dict()
-                            st.rerun()
-            with st.form("muse_w8_form", clear_on_submit=True, border=False):
-                text = st.text_input("Message", placeholder="Ask Mini Muse anything it can help with…", key="muse_w8_input")
-                sent = st.form_submit_button("Send", type="primary")
-            if sent and can_run(settings, text):
-                try:
-                    muse = _assistant(settings, memory, session, use_understanding, learn, max_turns, mode,
-                                      max_steps, retries)
-                    started = time.perf_counter()
-                    trace = muse.ask(text)
-                    session["turns"].append({k: trace.get(k) for k in ("query", "answer", "request", "new_facts", "steps",
-                                                                      "spans", "pending_actions")})
-                    session["memory"] = memory.to_dict()
-                    session["last_usage"] = {"llm": muse.llm, "seconds": time.perf_counter() - started}
-                    st.rerun()
-                except Exception as exc:  # noqa: BLE001
-                    show_error("Mini Muse", exc)
-            if session.get("last_usage"):
-                _usage(session["last_usage"]["llm"], session["last_usage"]["seconds"])
-        with side:
-            st.markdown("**🗂️ Memory**")
-            st.write("\n".join(f"- {f}" for f in memory.facts) or "_No saved facts yet._")
-            st.markdown("**Side effects (fake world)**")
-            metric_row({"Events": len(session["world"]["events_created"]), "Emails": len(session["world"]["emails_sent"])})
-            if session["world"]["events_created"] or session["world"]["emails_sent"]:
-                st.json({"events_created": session["world"]["events_created"],
-                         "emails_sent": session["world"]["emails_sent"]}, expanded=False)
-            if st.button("Start over", key="muse_w8_reset"):
-                st.session_state.pop("muse_w8", None)
+        for t, turn in enumerate(session["turns"]):
+            with st.chat_message("user"):
+                st.write(turn["query"])
+            with st.chat_message("assistant"):
+                st.write(turn["answer"])
+                with st.expander("Behind this answer"):
+                    if turn.get("request"):
+                        st.markdown(f"**🧠 Understood as:** `{turn['request']['intent']}` · {turn['request']['summary']}")
+                    if turn["new_facts"]:
+                        st.markdown("**🗂️ Remembered:** " + "; ".join(turn["new_facts"]))
+                    _steps_view(turn["steps"])
+                    st.markdown("**🛡️ Trace**")
+                    st.dataframe(turn["spans"], width="stretch", hide_index=True)
+                for i, action in enumerate(turn["pending_actions"]):
+                    key = f"{t}:{i}"
+                    if key in session["approved"]:
+                        st.success(f"Approved: {action['tool']} to {action['args'].get('to', '')}")
+                    elif st.button(f"Approve {action['tool']} to {action['args'].get('to', '')}",
+                                   key=f"muse_w8_approve_{key}", type="primary"):
+                        muse = _assistant(settings, memory, session, use_understanding, learn, max_turns, mode,
+                                          max_steps, retries)
+                        muse.approve(action)
+                        session["approved"].append(key)
+                        session["memory"] = memory.to_dict()
+                        st.rerun()
+        with st.form("muse_w8_form", clear_on_submit=True, border=False):
+            text = st.text_input("Message", placeholder="Ask Mini Muse anything it can help with…", key="muse_w8_input")
+            sent = st.form_submit_button("Send", type="primary")
+        if sent and can_run(settings, text):
+            try:
+                muse = _assistant(settings, memory, session, use_understanding, learn, max_turns, mode,
+                                  max_steps, retries)
+                started = time.perf_counter()
+                trace = muse.ask(text)
+                session["turns"].append({k: trace.get(k) for k in ("query", "answer", "request", "new_facts", "steps",
+                                                                  "spans", "pending_actions")})
+                session["memory"] = memory.to_dict()
+                session["last_usage"] = {"llm": muse.llm, "seconds": time.perf_counter() - started}
                 st.rerun()
+            except Exception as exc:  # noqa: BLE001
+                show_error("Mini Muse", exc)
+        if session.get("last_usage"):
+            _usage(session["last_usage"]["llm"], session["last_usage"]["seconds"])
+        if st.button("Start over", key="muse_w8_reset"):
+            st.session_state.pop("muse_w8", None)
+            st.rerun()
         with st.expander("Architecture"):
             st.graphviz_chart(ARCHITECTURE)
 
@@ -706,8 +696,8 @@ def render_step(week: int, main, panel, settings) -> None:
 
 
 def render() -> None:
-    """The Week 8 Mini Muse demo: the assembled assistant only."""
-    main, panel = page_layout("Week 8 · Mini Muse Demo", "Try the assembled personal assistant built throughout the course.")
+    """The Week 8 Demo Day: the assembled assistant only."""
+    main, panel = page_layout("Week 8 · Demo Day", "Try the assembled personal assistant built throughout the course.")
     settings = model_settings(panel)
     render_step(8, main, panel, settings)
 

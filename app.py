@@ -45,7 +45,7 @@ PAGES = {
     "Week 5 · Agent workflow": week5.render,
     "Week 6 · Evaluation": week6.render,
     "Week 7 · Reliability": week7.render,
-    "Week 8 · Mini Muse Demo": mini_muse.render,
+    "Week 8 · Demo Day": mini_muse.render,
 }
 
 st.set_page_config(page_title="Agent Engineering Peer Learning", page_icon="🧭", layout="wide")
