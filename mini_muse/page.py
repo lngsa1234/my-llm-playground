@@ -138,22 +138,13 @@ def _registry(panel):
 
 
 # ------------------------------------------------------------------ week 1
-NEXT_ACTION = {
-    "weather": "look up the weather (`get_weather`)",
-    "calendar": "read the calendar for that day (`check_calendar`)",
-    "schedule": "check the calendar for a clash, then book it (`check_calendar` → `create_event`)",
-    "email": "find the contact, then draft the email for approval (`lookup_contact`)",
-    "notes": "search your notes for the answer (Week 3)",
-    "math": "work it out with the calculator (`calculator`)",
-    "other": "explain that it can't help with this",
-}
 W1_EXAMPLES = [
-    "Book lunch with Maya on Tuesday at noon",
-    "What's the weather in Chicago?",
-    "Email Jordan about the offsite venue",
-    "Schedule a call with the team next week",
-    "What did Jordan say about the offsite budget?",
-    "Can you book me a flight to Beijing?",
+    "Lunch with Maya on Tuesday at noon",
+    "Team check-in next week",
+    "Weather in Chicago",
+    "Jordan — offsite venue",
+    "18% tip on $42",
+    "Explain photosynthesis",
 ]
 
 
@@ -162,10 +153,11 @@ def step1(main, panel, settings) -> None:
         st.caption("No extra parameters this week. The model and token limit come from Model settings.")
     with main:
         _step_header(1, ["A relative date (\"Tuesday\") becomes a real date because today's date is in the instructions.",
-                         "A vague request fills **missing_info** with what Mini Muse would have to ask.",
-                         "A request it can't handle gets the intent **other**."])
-        text = _example("muse_w1", "Request", W1_EXAMPLES, height=68)
-        if st.button("Understand", type="primary", key="muse_w1_run") and (llm := _run(settings, text)):
+                         "Incomplete text leaves fields empty and identifies missing details instead of guessing.",
+                         "Unrelated text is classified as **other**."])
+        st.info("This is one structured-output API call only. Week 1 does not search, use tools, send email, or create events.")
+        text = _example("muse_w1", "Text to structure", W1_EXAMPLES, height=68)
+        if st.button("Create structured output", type="primary", key="muse_w1_run") and (llm := _run(settings, text)):
             try:
                 started = time.perf_counter()
                 request = week1_understand.understand(llm, text)
@@ -208,14 +200,13 @@ def step1(main, panel, settings) -> None:
         if result:
             req = result["request"]
             with st.container(border=True):
-                st.markdown("**What Mini Muse can do with it**")
-                st.markdown(f"Intent **{req['intent']}** → {NEXT_ACTION[req['intent']]}")
+                st.markdown("**What this one call demonstrates**")
+                st.markdown(f"The model classified the text as **{req['intent']}** and returned fields with fixed names and types.")
                 if req["missing_info"]:
-                    st.warning(f"Missing: {', '.join(req['missing_info'])}. Mini Muse would ask you for this first.")
+                    st.warning(f"Missing: {', '.join(req['missing_info'])}. The model did not invent those details.")
                 else:
-                    st.success("Nothing missing (`missing_info` is empty), so Mini Muse could act right away.")
-                st.caption("Tools arrive in Week 4. Code can already route on `intent` because it is a fixed field, "
-                           "not free text.")
+                    st.success("No required details are missing in the structured response.")
+                st.caption("Later weeks can use `intent` to route to retrieval or tools. Week 1 only shows how one API call turns text into reliable data.")
             _usage(result["llm"], result["seconds"])
 
 
