@@ -138,16 +138,6 @@ def _registry(panel):
 
 
 # ------------------------------------------------------------------ week 1
-W1_EXAMPLES = [
-    "Tuesday at noon",
-    "Team check-in next week",
-    "Weather in Chicago",
-    "Jordan — offsite venue",
-    "18% tip on $42",
-    "Explain photosynthesis",
-]
-
-
 def step1(main, panel, settings) -> None:
     with lab_parameters(panel):
         st.caption("No extra parameters this week. The model and token limit come from Model settings.")
@@ -156,7 +146,8 @@ def step1(main, panel, settings) -> None:
                          "Incomplete text leaves fields empty and identifies missing details instead of guessing.",
                          "Unrelated text is classified as **other**."])
         st.info("This is one structured-output API call only. Week 1 does not search, use tools, send email, or create events.")
-        text = _example("muse_w1", "Text to structure", W1_EXAMPLES, height=68)
+        text = st.text_area("Enter any question or request", key="muse_w1_text", height=68,
+                            placeholder="Type anything you would like the model to structure.")
         if st.button("Create structured output", type="primary", key="muse_w1_run") and (llm := _run(settings, text)):
             try:
                 started = time.perf_counter()
@@ -168,6 +159,8 @@ def step1(main, panel, settings) -> None:
                 show_error("Structured output", exc)
 
         result = st.session_state.get("muse_w1_result")
+        if result and result["text"] != text:
+            result = None
         sent_col, back_col = st.columns(2, gap="large")
         with sent_col, st.container(border=True):
             st.markdown("**Sent to the model**")
