@@ -247,6 +247,22 @@ This layer combines the LLM with tools, state management, and an execution proce
 | Observability | Collecting traces, logs, metrics, and other evidence to understand system behavior. |
 | Checkpoint | A saved state that allows a workflow to resume or recover. |
 
+### Agent categories and examples
+
+"Agent" is a broad term. The categories below describe common system designs, and a real product can combine more than one of them. For example, a customer-support agent might retrieve policy documents, call order-management tools, and follow a fixed approval workflow.
+
+| Category | What it does | Example |
+| --- | --- | --- |
+| Conversational agent | Responds to a user in a dialogue, usually using the current conversation as context. | A study assistant that explains a concept, then answers follow-up questions. |
+| Retrieval agent | Finds relevant information before responding so its answer can be grounded in external sources. | An internal help-desk assistant that searches the employee handbook to answer a benefits question. |
+| Tool-using agent | Chooses from defined tools to read data or take bounded actions. | A travel assistant that checks flight options, looks up hotel availability, and drafts an itinerary. |
+| Workflow agent | Follows a predefined sequence or state graph; the model may fill in decisions at selected steps. | An expense-review system that extracts receipt details, validates policy rules, and sends exceptions to a manager. |
+| Planning agent | Breaks a goal into sub-tasks, carries out or delegates them, and revises the plan as results arrive. | A research assistant that creates a research plan, gathers sources, compares findings, and prepares a brief. |
+| Multi-agent system | Coordinates specialized agents that divide work and share results through an orchestrator or another protocol. | A software-delivery system with separate agents for implementation, testing, and code review. |
+| Human-supervised agent | Performs work autonomously within limits but pauses for review before a consequential action. | A finance assistant that prepares vendor payments but requires a person to approve submission. |
+
+The safest starting point is usually a narrow workflow or tool-using agent with explicit permissions, clear stop conditions, and human approval for consequential actions. Add planning, additional tools, or multiple agents only when the task genuinely needs them.
+
 ### The agent control loop
 
 ```graphviz
