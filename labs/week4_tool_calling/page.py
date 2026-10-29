@@ -140,8 +140,6 @@ def _tool_result(entry: dict) -> None:
         st.error(f"`{entry['tool']}({_args(entry['arguments'])})` failed: {result['error']}")
         return
     st.success(_result_summary(entry))
-    with st.expander(f"Inspect data from {entry['tool']}"):
-        st.json(entry["result"])
 
 
 def _result_summary(entry: dict) -> str:
