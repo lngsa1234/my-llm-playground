@@ -96,67 +96,65 @@ def _render_ask(settings, offered: list[str], max_rounds: int) -> None:
 
     tooled = saved["tooled"]
     with st.container(border=True):
-        st.markdown("**What happened with tools**")
+        st.markdown("**Tool-use timeline**")
         st.caption(f"{len(tooled['trace'])} tool call{'s' * (len(tooled['trace']) != 1)} · "
                    f"{tooled.get('model_calls', '?')} model calls · tools offered: {', '.join(saved['offered']) or 'none'}")
         if "calls" not in tooled:  # saved before model-call details were recorded
             st.caption("Ask again to see each model call.")
             return
+        st.markdown("**Start · Your question**")
+        st.info(saved["prompt"])
         runs = {}  # tool results, grouped by the model call that asked for them
         for entry in tooled["trace"]:
             runs.setdefault(entry.get("round"), []).append(entry)
         for call in tooled["calls"]:
-            _model_call(call)
-            for entry in runs.get(call["call"], []):
-                _tool_run(entry)
+            _timeline_step(call, runs.get(call["call"], []))
 
 
-def _describe_sent(messages: list[dict], tools: list[str]) -> str:
-    parts = []
-    roles = [m.get("role") for m in messages]
-    if "system" in roles:
-        parts.append("instructions")
-    if "user" in roles:
-        parts.append("your question")
-    if tools:
-        parts.append(f"{len(tools)} tool definition{'s' * (len(tools) != 1)}")
-    requests, results = roles.count("assistant"), roles.count("tool")
-    if requests:
-        parts.append(f"the model's earlier tool request{'s' * (requests != 1)}")
-    if results:
-        parts.append(f"{results} tool result{'s' * (results != 1)}")
-    return ", ".join(parts)
-
-
-def _model_call(call: dict) -> None:
+def _timeline_step(call: dict, tool_runs: list[dict]) -> None:
     returned = call["returned"]
     if "tool_calls" in returned:
-        asked = "; ".join(f"`{c['tool']}({_args(c['arguments'])})`" for c in returned["tool_calls"])
-        outcome = f"asked the app to run {asked}"
+        st.markdown(f"**Step {call['call']} · Model chooses what information it needs**")
+        st.caption("The model cannot look up live weather itself, so it asks the app to run a tool.")
+        for requested in returned["tool_calls"]:
+            st.code(f"{requested['tool']}({_args(requested['arguments'])})", language=None)
+        st.markdown("**App runs the requested tool**")
+        for entry in tool_runs:
+            _tool_result(entry)
     else:
-        outcome = "wrote the answer"
-    st.markdown(f"**Model call {call['call']}** · {call['input_tokens']:,} in / {call['output_tokens']:,} out tokens "
-                f"· {call['seconds']:.2f} s")
-    st.markdown(f"Sent: {_describe_sent(call['messages'], call['tools'])}. The model {outcome}.")
-    with st.expander(f"Request sent in model call {call['call']}"):
-        st.caption("The body of the API request, as sent: `messages` (the conversation so far) and `tools` "
-                   "(the full definition of each tool on offer). The API key travels in a header and isn't shown.")
+        st.markdown(f"**Step {call['call']} · Model writes the final answer**")
+        st.success(returned.get("answer") or "No visible answer was returned.")
+    st.caption(f"Model call {call['call']} · {call['input_tokens']:,} input tokens · "
+               f"{call['output_tokens']:,} output tokens · {call['seconds']:.2f} s")
+    with st.expander("Inspect the raw API request and response"):
+        st.caption("This is the technical version of the step: the conversation and tool definitions sent to the model, then its response.")
+        st.markdown("Request")
         st.json(call.get("request") or {"messages": call["messages"]}, expanded=2)
-    with st.expander(f"Output of model call {call['call']}"):
-        asked = "tool_calls" in call["returned"]
-        st.caption("What the model sent back: "
-                   + ("no text, only `tool_calls`: the tool name and its inputs as JSON. The app runs them next."
-                      if asked else "the answer, in `content`. No `tool_calls`, so the loop stops here."))
-        # Runs saved before the full response was recorded still have the summary in "returned".
-        st.json(call.get("response") or call["returned"], expanded=3)
+        st.markdown("Response")
+        st.json(call.get("response") or call["returned"], expanded=2)
 
 
-def _tool_run(entry: dict) -> None:
-    failed = "error" in entry["result"]
-    st.markdown(f"↳ **App** ran `{entry['tool']}({_args(entry['arguments'])})` "
-                + ("and got an **error**." if failed else "and sent the result to the next model call."))
-    with st.expander(f"Result of {entry['tool']}"):
+def _tool_result(entry: dict) -> None:
+    result = entry["result"]
+    if "error" in result:
+        st.error(f"`{entry['tool']}({_args(entry['arguments'])})` failed: {result['error']}")
+        return
+    st.success(_result_summary(entry))
+    with st.expander(f"Inspect data from {entry['tool']}"):
         st.json(entry["result"])
+
+
+def _result_summary(entry: dict) -> str:
+    """Translate the weather tool's result into the one thing the learner needs to know."""
+    result = entry["result"]
+    location = result.get("location", "the requested location")
+    if "forecast" in result:
+        days = [f"{day['day']}: high {day['high_f']}°F, {day['precipitation_probability_max']}% rain chance"
+                for day in result["forecast"]]
+        return f"The app returned the weekend forecast for {location}: " + "; ".join(days) + "."
+    if "temperature_f" in result:
+        return f"The app returned current weather for {location}: {result['temperature_f']}°F, feels like {result['feels_like_f']}°F."
+    return f"The app ran `{entry['tool']}` and returned data for {location}."
 
 
 def _args(raw: str) -> str:
