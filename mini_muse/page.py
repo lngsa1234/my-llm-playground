@@ -21,8 +21,8 @@ import time
 
 import streamlit as st
 
-from labs.shared.ui import (can_run, example_text_area, usage_line, lab_parameters, metric_row, model_settings, page_layout, run_standalone,
-                            show_error, usage_metrics)
+from labs.shared.ui import (can_run, connectors_panel, example_text_area, usage_line, lab_parameters, metric_row,
+                            model_settings, page_layout, run_standalone, show_error, usage_metrics)
 from mini_muse import week1_understand, week2_memory, week3_knowledge, week4_tools, week5_agent, week6_eval
 from mini_muse.llm import LLM
 from mini_muse.week7_reliability import FAULTS, Runtime
@@ -120,6 +120,21 @@ def _side_effects(state: dict, warn_email: bool = False) -> None:
 def _world_viewer(world: dict | None = None) -> None:
     with st.expander("The fake world the tools act on"):
         st.json({k: v for k, v in (world or WORLD_TEMPLATE).items()}, expanded=False)
+
+
+def _registry(panel):
+    """Render the Connectors panel and return a ToolRegistry, or None if none are enabled.
+
+    None means the agent uses the fake tools exactly as before (the safe default). When a
+    connector is enabled, every connector is included — live where the user opted in and is
+    ready, simulated otherwise — so the full Mini Muse tool set stays available.
+    """
+    from mini_muse.connectors import CONNECTORS, build_registry
+
+    selections = connectors_panel(panel, CONNECTORS)
+    if not any(sel.get("enabled") for sel in selections.values()):
+        return None
+    return build_registry(CONNECTORS, selections, world=new_world())
 
 
 # ------------------------------------------------------------------ week 1
@@ -350,6 +365,7 @@ def step4(main, panel, settings) -> None:
     with lab_parameters(panel):
         tools = st.multiselect("Tools offered", week4_tools.CORE_TOOLS, week4_tools.CORE_TOOLS, key="muse_w4_tools")
         st.caption("Remove a tool and see what the model does without it.")
+    registry = _registry(panel)
     with main:
         _step_header(4, ["“Email Maya about the Monday agenda”: one round has no approval, so it may just send it.",
                          "“Book a haircut on 2026-10-27 at 14:00”: is the calendar checked *before* booking?",
@@ -364,7 +380,7 @@ def step4(main, panel, settings) -> None:
         if st.button("Run one round of tools", type="primary", key="muse_w4_run") and (llm := _run(settings, text)):
             try:
                 started = time.perf_counter()
-                trace = week4_tools.answer_with_tools(llm, text, tool_names=tools)
+                trace = week4_tools.answer_with_tools(llm, text, tool_names=tools, registry=registry)
                 st.session_state.muse_w4_result = {"trace": trace, "llm": llm, "seconds": time.perf_counter() - started}
             except Exception as exc:  # noqa: BLE001
                 show_error("Tool call", exc)
@@ -405,7 +421,7 @@ def step4(main, panel, settings) -> None:
                 else:
                     st.markdown(f"{step}. The model wrote the answer, with no further tools: this week allows one round.")
         with st.expander("Tool definitions sent to the model"):
-            st.json(week4_tools.schemas(tools), expanded=False)
+            st.json(registry.schemas_for(tools) if registry else week4_tools.schemas(tools), expanded=False)
         _world_viewer()
 
 
@@ -425,6 +441,7 @@ def step5(main, panel, settings) -> None:
     with lab_parameters(panel):
         max_steps = st.slider("Max steps", 1, 10, week5_agent.DEFAULT_MAX_STEPS, key="muse_w5_steps",
                               help="The loop stops here even if the model wants to keep going.")
+    registry = _registry(panel)
     with main:
         _step_header(5, ["“Book a haircut on 2026-10-27 at 14:00”: the calendar is checked first, and the conflict stops the booking.",
                          "“Email Maya about the Monday agenda”: the email is held for your approval.",
@@ -440,7 +457,7 @@ def step5(main, panel, settings) -> None:
         if st.button("Run the agent", type="primary", key="muse_w5_run") and (llm := _run(settings, text)):
             try:
                 started = time.perf_counter()
-                trace = week5_agent.run(llm, text, max_steps=max_steps)
+                trace = week5_agent.run(llm, text, max_steps=max_steps, registry=registry)
                 st.session_state.muse_w5_result = {"trace": trace, "llm": llm, "seconds": time.perf_counter() - started,
                                                    "approved": []}
             except Exception as exc:  # noqa: BLE001
@@ -463,7 +480,7 @@ def step5(main, panel, settings) -> None:
                         if i in result["approved"]:
                             st.success("Approved and sent (to the fake outbox).")
                         elif st.button("Approve", key=f"muse_w5_approve_{i}", type="primary"):
-                            week5_agent.approve(trace["world"], action)
+                            week5_agent.approve(trace["world"], action, registry=registry)
                             result["approved"].append(i)
                             st.rerun()
                 _side_effects({"events_created": trace["world"]["events_created"],
@@ -621,6 +638,7 @@ def step8(main, panel, settings) -> None:
         settings = _with_embedding(settings, "muse_w8_embedding", disabled=mode == "keyword")
         max_steps = st.slider("🔁 Max agent steps (Week 5)", 1, 10, week5_agent.DEFAULT_MAX_STEPS, key="muse_w8_steps")
         retries = st.slider("🛡️ Retries (Week 7)", 0, 3, 2, key="muse_w8_retries")
+    registry = _registry(panel)
     session = st.session_state.setdefault("muse_w8", {"memory": {}, "world": new_world(), "turns": [], "approved": []})
     memory = week2_memory.Memory.from_dict(session["memory"])
     with main:
@@ -642,12 +660,13 @@ def step8(main, panel, settings) -> None:
                     st.dataframe(turn["spans"], width="stretch", hide_index=True)
                 for i, action in enumerate(turn["pending_actions"]):
                     key = f"{t}:{i}"
+                    target = action["args"].get("to") or action["args"].get("title") or ""
+                    label = f"{action['tool']} {target}".strip()
                     if key in session["approved"]:
-                        st.success(f"Approved: {action['tool']} to {action['args'].get('to', '')}")
-                    elif st.button(f"Approve {action['tool']} to {action['args'].get('to', '')}",
-                                   key=f"muse_w8_approve_{key}", type="primary"):
+                        st.success(f"Approved: {label}")
+                    elif st.button(f"Approve {label}", key=f"muse_w8_approve_{key}", type="primary"):
                         muse = _assistant(settings, memory, session, use_understanding, learn, max_turns, mode,
-                                          max_steps, retries)
+                                          max_steps, retries, registry)
                         muse.approve(action)
                         session["approved"].append(key)
                         session["memory"] = memory.to_dict()
@@ -658,7 +677,7 @@ def step8(main, panel, settings) -> None:
         if sent and can_run(settings, text):
             try:
                 muse = _assistant(settings, memory, session, use_understanding, learn, max_turns, mode,
-                                  max_steps, retries)
+                                  max_steps, retries, registry)
                 started = time.perf_counter()
                 trace = muse.ask(text)
                 session["turns"].append({k: trace.get(k) for k in ("query", "answer", "request", "new_facts", "steps",
@@ -677,14 +696,14 @@ def step8(main, panel, settings) -> None:
             st.graphviz_chart(ARCHITECTURE)
 
 
-def _assistant(settings, memory, session, use_understanding, learn, max_turns, mode, max_steps, retries):
+def _assistant(settings, memory, session, use_understanding, learn, max_turns, mode, max_steps, retries, registry=None):
     from mini_muse.week8_assistant import MiniMuse
 
     semantic = mode != "keyword"
     return MiniMuse(LLM(settings), memory=memory, world=session["world"],
                     notes_index=_notes_index(settings, semantic), runtime=Runtime(max_retries=retries),
                     use_understanding=use_understanding, learn_facts=learn, max_turns=max_turns,
-                    max_steps=max_steps, search_mode=mode)
+                    max_steps=max_steps, search_mode=mode, registry=registry)
 
 
 STEPS = {1: step1, 2: step2, 3: step3, 4: step4, 5: step5, 6: step6, 7: step7, 8: step8}

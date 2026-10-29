@@ -30,7 +30,8 @@ from mini_muse.world import new_world
 class MiniMuse:
     def __init__(self, llm, *, memory: Memory | None = None, world: dict | None = None, notes_index=None,
                  runtime: Runtime | None = None, use_understanding: bool = True, learn_facts: bool = True,
-                 max_turns: int = 6, max_steps: int = week5_agent.DEFAULT_MAX_STEPS, search_mode: str = "keyword"):
+                 max_turns: int = 6, max_steps: int = week5_agent.DEFAULT_MAX_STEPS, search_mode: str = "keyword",
+                 registry=None, tools=None):
         from mini_muse import week3_knowledge
 
         self.llm = llm
@@ -40,6 +41,7 @@ class MiniMuse:
         self.runtime = runtime or Runtime(max_retries=2)
         self.use_understanding, self.learn_facts = use_understanding, learn_facts
         self.max_turns, self.max_steps, self.search_mode = max_turns, max_steps, search_mode
+        self.registry, self.tools = registry, tools
 
     def ask(self, text: str) -> dict:
         first_span = len(self.runtime.tracer.spans)
@@ -52,8 +54,9 @@ class MiniMuse:
         context = self.memory.history[-self.max_turns * 2:] if self.max_turns > 0 else []
 
         trace = week5_agent.run(
-            self.llm, text, world=self.world, tools=ALL_TOOLS, max_steps=self.max_steps, runtime=self.runtime,
-            context=context, system_extra="\n\n".join(e for e in extra if e), version="mini-muse",
+            self.llm, text, world=self.world, tools=self.tools or ALL_TOOLS, max_steps=self.max_steps,
+            runtime=self.runtime, context=context, system_extra="\n\n".join(e for e in extra if e),
+            version="mini-muse", registry=self.registry,
             tool_options={"notes_index": self.notes_index, "mode": self.search_mode,
                           "llm": self.llm if self.notes_index.semantic else None})
 
@@ -63,8 +66,9 @@ class MiniMuse:
         return trace
 
     def approve(self, action: dict) -> dict:
-        result = week5_agent.approve(self.world, action, self.runtime)
-        note = (f"(The user approved: {action['tool']} to {action['args'].get('to', '')} — "
+        result = week5_agent.approve(self.world, action, self.runtime, registry=self.registry)
+        target = action["args"].get("to") or action["args"].get("title") or ""
+        note = (f"(The user approved: {action['tool']} {target} — "
                 f"{'done' if 'error' not in result else 'failed: ' + result['error']}.)")
         self.memory.history.append({"role": "assistant", "content": note})
         return result

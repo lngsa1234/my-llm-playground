@@ -24,3 +24,7 @@ venv/
 
 # Mini Muse's saved command-line memory
 mini_muse/state/
+
+# Google Calendar connector OAuth files (user-provided client + cached consent token)
+google_credentials.json
+google_token.json

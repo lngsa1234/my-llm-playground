@@ -138,17 +138,24 @@ def system_prompt() -> str:
             "get real data; never invent weather, events or email addresses.")
 
 
-def answer_with_tools(llm, text: str, world: dict | None = None, tool_names=CORE_TOOLS) -> dict:
-    """Model picks tools once, the app runs them, the model answers. Returns a trace."""
+def answer_with_tools(llm, text: str, world: dict | None = None, tool_names=CORE_TOOLS, registry=None) -> dict:
+    """Model picks tools once, the app runs them, the model answers. Returns a trace.
+
+    registry: optional ToolRegistry of enabled connectors; when None, the fake tools are used.
+    Week 4 deliberately sends email without asking, so there is no approval gate here even
+    when a live email connector is behind send_email.
+    """
     world = world if world is not None else new_world()
+    runner = registry.execute if registry else execute
+    tool_schemas = registry.schemas_for(tool_names) if registry else schemas(tool_names)
     messages = [{"role": "system", "content": system_prompt()}, {"role": "user", "content": text}]
-    first = llm.chat(messages, tools=schemas(tool_names))
+    first = llm.chat(messages, tools=tool_schemas)
     calls = []
     if first.tool_calls:
         messages.append(first.as_message())
         for call in first.tool_calls:
             args, error = parse_arguments(call.arguments)
-            result = {"error": error} if error else execute(world, call.name, args)
+            result = {"error": error} if error else runner(world, call.name, args)
             calls.append({"tool": call.name, "args": args, "result": result})
             messages.append({"role": "tool", "tool_call_id": call.id, "content": json.dumps(result)})
         answer = llm.chat(messages).content  # no tools offered: the round is over

@@ -56,22 +56,26 @@ def system_prompt(extra: str = "") -> str:
 
 def run(llm, text: str, *, world: dict | None = None, tools=CORE_TOOLS, max_steps: int = DEFAULT_MAX_STEPS,
         runtime: Runtime | None = None, context: list[dict] | None = None, system_extra: str = "",
-        version: str = "mini-muse", tool_options: dict | None = None) -> dict:
+        version: str = "mini-muse", tool_options: dict | None = None, registry=None) -> dict:
     """Run the agent loop on one request and return its trace.
 
     context:      earlier messages to include (Week 2 memory), placed after the system prompt
     system_extra: more system text, e.g. saved facts or Week 1's parsed request
     tool_options: passed to tools that need them (search_notes takes notes_index, llm, mode)
+    registry:     optional ToolRegistry of enabled connectors; when None, the fake tools are used
     """
     world = world if world is not None else new_world()
     runtime = runtime or Runtime()
+    runner = registry.execute if registry else execute
+    tool_schemas = registry.schemas_for(tools) if registry else schemas(tools)
+    risky = RISKY_TOOLS | (registry.risky if registry else set())
     messages = [{"role": "system", "content": system_prompt(system_extra)}, *(context or []),
                 {"role": "user", "content": text}]
     tool_calls, pending, steps = [], [], []
     status, answer = "max_steps", ""
 
     for step in range(1, max_steps + 1):
-        reply = runtime.call_llm(llm, messages, tools=schemas(tools))
+        reply = runtime.call_llm(llm, messages, tools=tool_schemas)
         if not reply.tool_calls:  # the model answered: the goal is done
             status, answer = "done", reply.content
             steps.append({"step": step, "decision": "answer", "text": reply.content})
@@ -84,11 +88,11 @@ def run(llm, text: str, *, world: dict | None = None, tools=CORE_TOOLS, max_step
                 result = {"error": error}
             elif call.name not in tools:
                 result = {"error": f"Tool {call.name!r} is not available."}
-            elif call.name in RISKY_TOOLS:
+            elif call.name in risky:
                 pending.append({"tool": call.name, "args": args})
                 result = {"status": "not_sent", "reason": "Needs the user's approval. Show the draft and ask."}
             else:
-                result = runtime.call_tool(execute, world, call.name, args, **(tool_options or {}))
+                result = runtime.call_tool(runner, world, call.name, args, **(tool_options or {}))
                 tool_calls.append({"tool": call.name, "args": args, "result": result, "step": step})
             step_calls.append({"tool": call.name, "args": args, "result": result})
             messages.append({"role": "tool", "tool_call_id": call.id, "content": json.dumps(result)})
@@ -101,9 +105,10 @@ def run(llm, text: str, *, world: dict | None = None, tools=CORE_TOOLS, max_step
             "status": status, "messages": messages, "world": world}
 
 
-def approve(world: dict, action: dict, runtime: Runtime | None = None) -> dict:
-    """The user clicked Approve: run the held-back action for real (in the fake world)."""
-    return (runtime or Runtime()).call_tool(execute, world, action["tool"], action["args"])
+def approve(world: dict, action: dict, runtime: Runtime | None = None, registry=None) -> dict:
+    """The user clicked Approve: run the held-back action for real (live or in the fake world)."""
+    runner = registry.execute if registry else execute
+    return (runtime or Runtime()).call_tool(runner, world, action["tool"], action["args"])
 
 
 if __name__ == "__main__":
