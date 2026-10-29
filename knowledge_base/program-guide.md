@@ -49,20 +49,31 @@ For each week, use the matching **Knowledge Base** guide, lab, and quiz in the s
 
 ## Course project: Mini Muse
 
-Mini Muse is the small personal assistant built across the program. Complete one action each week:
+Choose one of two project scopes. Both apply the course concepts; Option 1 is intentionally the simpler starting point.
 
-| Week | Action | What you do |
-| --- | --- | --- |
-| 1 | **Understand** | Turn a request into structured fields. |
-| 2 | **Remember** | Save useful facts and recent conversation context. |
-| 3 | **Know** | Search notes and answer from retrieved evidence. |
-| 4 | **Act** | Use calendar, contacts, email, weather, and calculator tools. |
-| 5 | **Agent loop** | Plan, act, observe, and stop safely. |
-| 6 | **Prove** | Run a golden dataset against the real assistant. |
-| 7 | **Harden** | Trace calls, retry failures, and enforce timeouts. |
-| 8 | **Demo** | Show the assembled assistant. |
+### Option 1: Mini Muse Demo
 
-Open **Week 8 · Mini Muse Demo** in the sidebar to try the completed assistant.
+Build a **single-task assistant** that does one useful job well. Choose a focused task—such as answering questions from a small set of notes, drafting an email, planning a trip, or helping with a specific workflow—and clearly define what it can and cannot do.
+
+Your demo should include:
+
+- A chat-style input and a useful assistant response.
+- A focused task, clear instructions, and an example user workflow.
+- At least one course concept applied to the task, such as structured output, memory, retrieval, tool calling, or an evaluation.
+- A short demo showing the task working and at least one limitation or safety boundary.
+
+### Option 2: Mini Muse MVP
+
+Build a **minimum viable product**: a small personal-assistant experience with connected features rather than a single task. The MVP includes:
+
+- **Chat** — a conversational home for interacting with Mini Muse.
+- **Ideas** — capture, organize, and develop ideas with the assistant.
+- **Goals** — create, review, and make progress on goals.
+- **Library** — save and retrieve notes, resources, and other useful reference material.
+
+The features should work together where practical—for example, chat can help turn an idea into a goal or answer a question using material from the library. Define a small, testable scope for each feature and demonstrate the user journey end to end.
+
+Open **Week 8 · Mini Muse Demo** in the sidebar to explore the course reference implementation.
 
 ## Communication
 
