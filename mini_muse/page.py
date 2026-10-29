@@ -21,8 +21,8 @@ import time
 
 import streamlit as st
 
-from labs.shared.ui import (can_run, connectors_panel, example_text_area, usage_line, lab_parameters, metric_row,
-                            model_settings, page_layout, run_standalone, show_error, usage_metrics)
+from labs.shared.ui import (can_run, connectors_panel, example_text_area, get_model_settings, usage_line,
+                            lab_parameters, metric_row, page_layout, run_standalone, show_error, usage_metrics)
 from mini_muse import week1_understand, week2_memory, week3_knowledge, week4_tools, week5_agent, week6_eval
 from mini_muse.llm import LLM
 from mini_muse.week7_reliability import FAULTS, Runtime
@@ -717,7 +717,7 @@ def render_step(week: int, main, panel, settings) -> None:
 def render() -> None:
     """The Week 8 Demo Day: the assembled assistant only."""
     main, panel = page_layout("Week 8 · Demo Day", "Try the assembled personal assistant built throughout the course.")
-    settings = model_settings(panel)
+    settings = get_model_settings()
     render_step(8, main, panel, settings)
 
 

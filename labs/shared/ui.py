@@ -7,7 +7,7 @@ Page layout used by every week:
                        Concept demo:    caption → "How this lab works" → inputs → results
                        Build Mini Muse: the step's own caption → "How this step works" → inputs → results
     Right panel      one box, one column:
-                       Model settings   the model; "Model options" folds away tokens and prices
+                       Model settings   Week 1 only; saved for every lab in this session
                        Lab parameters   the week's own controls
 
 Usage in a page:
@@ -15,7 +15,7 @@ Usage in a page:
     main, panel = page_layout(title)
     if mini_muse_part(main, panel, week, caption=caption, how_it_works=how_it_works):
         return  # the Mini Muse step drew itself
-    settings = model_settings(panel)
+    settings = get_model_settings()
     with lab_parameters(panel):
         ...widgets...
     with main:
@@ -81,33 +81,60 @@ def page_layout(title: str, caption: str | None = None, how_it_works: str | None
     return main, column.container(border=True)
 
 
-def model_settings(panel, *, max_tokens: bool = True, prices: bool = True, embedding: bool = False) -> ModelSettings:
-    """Render the shared Model settings at the top of the right column and return their values.
+_MODEL_SETTINGS_KEY = "shared_model_settings"
+_MODEL_WIDGET_KEYS = {
+    "model": "settings_model",
+    "max_output_tokens": "settings_max_tokens",
+    "input_price": "settings_input_price",
+    "output_price": "settings_output_price",
+    "embedding_model": "settings_embedding_model",
+}
 
-    Only the model is always visible; token limit, prices and the embedding model sit in
-    "Model options". The widget keys are the same on every page, so a choice made in one
-    week carries over to the next. Weeks hide the fields they don't use.
-    """
+
+def get_model_settings() -> ModelSettings:
+    """Return the model configuration saved from Week 1, or the course defaults."""
+    values = st.session_state.get(_MODEL_SETTINGS_KEY, {})
+    return ModelSettings(
+        model=values.get("model", DEFAULT_MODEL),
+        max_output_tokens=values.get("max_output_tokens", DEFAULT_MAX_OUTPUT_TOKENS),
+        input_price=values.get("input_price", DEFAULT_INPUT_PRICE),
+        output_price=values.get("output_price", DEFAULT_OUTPUT_PRICE),
+        embedding_model=values.get("embedding_model", DEFAULT_EMBEDDING_MODEL),
+    )
+
+
+def _save_model_settings() -> None:
+    """Copy widget state into a non-widget key that survives page navigation."""
+    current = get_model_settings()
+    st.session_state[_MODEL_SETTINGS_KEY] = {
+        "model": st.session_state.get(_MODEL_WIDGET_KEYS["model"], current.model).strip(),
+        "max_output_tokens": int(st.session_state.get(_MODEL_WIDGET_KEYS["max_output_tokens"], current.max_output_tokens)),
+        "input_price": float(st.session_state.get(_MODEL_WIDGET_KEYS["input_price"], current.input_price)),
+        "output_price": float(st.session_state.get(_MODEL_WIDGET_KEYS["output_price"], current.output_price)),
+        "embedding_model": st.session_state.get(_MODEL_WIDGET_KEYS["embedding_model"], current.embedding_model).strip(),
+    }
+
+
+def model_settings(panel) -> ModelSettings:
+    """Render the one shared configuration panel on Week 1 and save it for all labs."""
+    current = get_model_settings()
+    for field, key in _MODEL_WIDGET_KEYS.items():
+        if key not in st.session_state:
+            st.session_state[key] = getattr(current, field)
     with panel:
         st.markdown("**Model settings**")
-        model = st.text_input("Model", DEFAULT_MODEL, key="settings_model").strip()
-        embedding_model, max_output_tokens = DEFAULT_EMBEDDING_MODEL, DEFAULT_MAX_OUTPUT_TOKENS
-        input_price, output_price = DEFAULT_INPUT_PRICE, DEFAULT_OUTPUT_PRICE
-        if embedding or max_tokens or prices:
-            with st.expander("Model options"):
-                if embedding:
-                    embedding_model = st.text_input("Embedding model", DEFAULT_EMBEDDING_MODEL,
-                                                    key="settings_embedding_model").strip()
-                if max_tokens:
-                    max_output_tokens = int(st.number_input("Max output tokens", 100, 8000, DEFAULT_MAX_OUTPUT_TOKENS,
-                                                            100, key="settings_max_tokens"))
-                if prices:
-                    input_price = st.number_input("Input $ / 1M tokens", 0.0, 100.0, DEFAULT_INPUT_PRICE,
-                                                  format="%.2f", key="settings_input_price")
-                    output_price = st.number_input("Output $ / 1M tokens", 0.0, 200.0, DEFAULT_OUTPUT_PRICE,
-                                                   format="%.2f", key="settings_output_price")
-    return ModelSettings(model=model, max_output_tokens=max_output_tokens, input_price=input_price,
-                         output_price=output_price, embedding_model=embedding_model)
+        st.caption("Saved for this session and used by every week.")
+        st.text_input("Model", key=_MODEL_WIDGET_KEYS["model"], on_change=_save_model_settings)
+        with st.expander("Model options"):
+            st.text_input("Embedding model", key=_MODEL_WIDGET_KEYS["embedding_model"], on_change=_save_model_settings)
+            st.number_input("Max output tokens", 100, 8000, step=100,
+                            key=_MODEL_WIDGET_KEYS["max_output_tokens"], on_change=_save_model_settings)
+            st.number_input("Input $ / 1M tokens", 0.0, 100.0, format="%.2f",
+                            key=_MODEL_WIDGET_KEYS["input_price"], on_change=_save_model_settings)
+            st.number_input("Output $ / 1M tokens", 0.0, 200.0, format="%.2f",
+                            key=_MODEL_WIDGET_KEYS["output_price"], on_change=_save_model_settings)
+    _save_model_settings()
+    return get_model_settings()
 
 
 def api_key_notice() -> None:
@@ -256,8 +283,8 @@ def mini_muse_part(main, panel, week: int, caption: str | None = None, how_it_wo
                    **settings_options) -> bool:
     """The switch at the top of each week page: the week's concept demo, or its Mini Muse step.
 
-    When the Mini Muse step is chosen, this renders it (with its own Model settings and
-    Lab parameters) and returns True, so the page can stop there:
+    When the Mini Muse step is chosen, this renders it with the settings saved on Week 1
+    and its own Lab parameters, then returns True so the page can stop there:
 
         if mini_muse_part(main, panel, 1):
             return
@@ -279,7 +306,7 @@ def mini_muse_part(main, panel, week: int, caption: str | None = None, how_it_wo
         return False
     from mini_muse.page import render_step  # the project's screens live with its code, in mini_muse/
 
-    render_step(week, main, panel, model_settings(panel, **settings_options))
+    render_step(week, main, panel, get_model_settings())
     return True
 
 

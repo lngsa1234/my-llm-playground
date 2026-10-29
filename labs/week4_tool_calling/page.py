@@ -16,7 +16,7 @@ import json
 
 import streamlit as st
 
-from labs.shared.ui import (can_run, example_text_area, lab_parameters, mini_muse_part, model_settings,
+from labs.shared.ui import (can_run, example_text_area, get_model_settings, lab_parameters, mini_muse_part,
                             page_layout, run_standalone, show_error, usage_line)
 from labs.week4_tool_calling import weather
 
@@ -54,7 +54,7 @@ def render() -> None:
                       caption="Let the model ask the app to run a function, here a live weather lookup, and answer from the result.",
                       how_it_works=HOW_IT_WORKS):
         return
-    settings = model_settings(panel)
+    settings = get_model_settings()
     with lab_parameters(panel):
         offered = st.multiselect("Tools offered", list(TOOLS), list(TOOLS), key="week4_tools",
                                  help="Remove a tool to see what the model does without it.")

@@ -29,11 +29,11 @@ HOW_IT_WORKS = """
 
 def render() -> None:
     main, panel = page_layout("Week 1 · Single API call")
+    settings = model_settings(panel)
     if mini_muse_part(main, panel, 1,
                       caption="Send one request to a model and see exactly what comes back: the response, tokens, latency and cost.",
                       how_it_works=HOW_IT_WORKS):
         return
-    settings = model_settings(panel)
     with lab_parameters(panel):
         output_format = st.radio("Output format", ["Text", "Structured output"], horizontal=True, key="week1_format")
         schema_text = None

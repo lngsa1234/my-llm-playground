@@ -16,7 +16,7 @@ import streamlit as st
 
 from labs.shared.settings import ModelSettings
 from labs.week6_agent_eval import evals
-from labs.shared.ui import mini_muse_part, can_run, lab_parameters, metric_row, model_settings, page_layout, show_error, run_standalone
+from labs.shared.ui import mini_muse_part, can_run, get_model_settings, lab_parameters, metric_row, page_layout, show_error, run_standalone
 
 HOW_IT_WORKS = """
 You evaluate **Muse**, a small personal-assistant agent that checks weather, reads and books calendar events, drafts emails and does tip math. **v1** is in production; **v2** is a “faster, friendlier” update. Is v2 safe to ship?
@@ -44,7 +44,7 @@ def render() -> None:
                       caption="Goal: decide whether Muse v2 is safe to ship, using evidence instead of a demo, and catch what the update broke before users do.",
                       how_it_works=HOW_IT_WORKS):
         return
-    settings = model_settings(panel)
+    settings = get_model_settings()
     with lab_parameters(panel):
         step = st.radio("Step", STEPS, key="week6_step")
         st.divider()

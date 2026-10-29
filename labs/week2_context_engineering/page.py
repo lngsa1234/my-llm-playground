@@ -14,7 +14,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 import streamlit as st
 
-from labs.shared.ui import (can_run, lab_parameters, mini_muse_part, model_settings, page_layout,
+from labs.shared.ui import (can_run, get_model_settings, lab_parameters, mini_muse_part, page_layout,
                             run_standalone, show_error)
 from labs.week2_context_engineering import strategy_benchmark as bench
 
@@ -49,7 +49,7 @@ def render() -> None:
                       caption="The model only knows what you put in its context. Choose what goes in, and see what it changes.",
                       how_it_works=HOW_IT_WORKS):
         return
-    settings = model_settings(panel)
+    settings = get_model_settings()
     with lab_parameters(panel):
         scenario = st.selectbox("Sample conversation", list(bench.DATASETS), format_func=_label, key="week2_scenario",
                                 help="A past chat, plus a question asked at the end of it.")

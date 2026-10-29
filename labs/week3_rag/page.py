@@ -16,7 +16,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 import streamlit as st
 
 from labs.shared.settings import ModelSettings
-from labs.shared.ui import (can_run, example_text_area, lab_parameters, metric_row, mini_muse_part, model_settings,
+from labs.shared.ui import (can_run, example_text_area, get_model_settings, lab_parameters, metric_row, mini_muse_part,
                             page_layout, run_standalone, show_error, usage_line)
 from labs.week3_rag import evaluation as ev
 from labs.week3_rag.rag import (CHUNK_STRATEGIES, EMBEDDING_MODELS, SEARCH_METHODS, build_index, chunk_documents,
@@ -76,7 +76,7 @@ def render() -> None:
                       caption="Give the model passages from your own documents, and compare its answer with and without them.",
                       how_it_works=HOW_IT_WORKS):
         return
-    settings = model_settings(panel, max_tokens=False)
+    settings = get_model_settings()
     names = list(ev.DATASETS)
     with lab_parameters(panel):
         dataset_name = st.selectbox("Documents", names, index=len(names) - 1, key="week3_dataset",

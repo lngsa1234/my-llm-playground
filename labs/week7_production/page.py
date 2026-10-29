@@ -14,7 +14,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 import streamlit as st
 
-from labs.shared.ui import (can_run, lab_parameters, metric_row, mini_muse_part, model_settings, page_layout,
+from labs.shared.ui import (can_run, get_model_settings, lab_parameters, metric_row, mini_muse_part, page_layout,
                             run_standalone, show_error)
 from labs.week7_production import reliability as rel
 
@@ -45,7 +45,7 @@ def render() -> None:
                       caption="Inject failures into an LLM feature, then compare a naive and a hardened policy.",
                       how_it_works=HOW_IT_WORKS):
         return
-    settings = model_settings(panel)
+    settings = get_model_settings()
     with lab_parameters(panel):
         mode = st.radio("Mode", ["Simulated (free)", "Live API calls"], key="week7_mode")
         live = mode == "Live API calls"
