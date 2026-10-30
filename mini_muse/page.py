@@ -344,16 +344,12 @@ def step3(main, panel, settings) -> None:
 
 # ------------------------------------------------------------------ week 4
 def step4(main, panel, settings) -> None:
-    with lab_parameters(panel):
-        tools = st.multiselect("Tools offered", week4_tools.CORE_TOOLS, week4_tools.CORE_TOOLS, key="muse_w4_tools")
-        st.caption("Remove a tool and see what the model does without it.")
     registry = _registry(panel)
-    available_tools = [name for name in tools if name in registry.names]
-    unavailable_tools = [name for name in tools if name not in registry.names]
+    available_tools = registry.names
     with main:
         _step_header(4, ["“Email Maya about the Monday agenda”: one round has no approval, so it may just send it.",
                          "“Book a haircut on 2026-10-27 at 14:00”: is the calendar checked *before* booking?",
-                         "Remove `calculator` and ask for a tip."])
+                         "Connect a real service in the right panel, then try a request that needs it."])
         text = _example("muse_w4", "Request", [
             "What's the weather in Detroit?",
             "What's on my calendar on 2026-10-29?",
@@ -361,8 +357,6 @@ def step4(main, panel, settings) -> None:
             "Book a haircut on 2026-10-27 at 14:00",
             "What's a 20% tip on $85?",
         ], height=60)
-        if unavailable_tools:
-            st.warning("Not connected, so not offered to the model: " + ", ".join(unavailable_tools) + ".")
         if st.button("Run one round of tools", type="primary", key="muse_w4_run") and (llm := _run(settings, text)):
             try:
                 started = time.perf_counter()
