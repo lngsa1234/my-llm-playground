@@ -108,6 +108,16 @@ def test_calendar_expands_user_supplied_paths():
     assert google_calendar._credentials_path({"google_credentials_path": "~/private-google-client.json"}) == str(path)
 
 
+def test_hosted_oauth_callback_state_survives_a_redirect(monkeypatch):
+    config = {"client_secret": "not-a-real-secret"}
+    monkeypatch.setattr(google_calendar.time, "time", lambda: 1_000)
+
+    state = google_calendar._callback_state(config)
+
+    assert google_calendar._valid_callback_state(state, config)
+    assert not google_calendar._valid_callback_state(state + "x", config)
+
+
 # ------------------------------------------------------------------ weather (live, stubbed)
 def test_weather_live_normalizes_to_the_fake_shape(monkeypatch):
     monkeypatch.setattr(

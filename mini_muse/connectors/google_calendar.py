@@ -17,6 +17,10 @@ installed; the tools then return a clear error instead of crashing.
 from __future__ import annotations
 
 import json
+import hashlib
+import hmac
+import secrets
+import time
 from pathlib import Path
 from typing import Callable
 
@@ -67,6 +71,25 @@ def _web_oauth_config() -> dict | None:
     if not all((client_id, client_secret, redirect_uri)):
         return None
     return {"client_id": client_id, "client_secret": client_secret, "redirect_uri": redirect_uri}
+
+
+def _callback_state(config: dict) -> str:
+    """Create a short-lived, signed state that survives a Streamlit OAuth redirect."""
+    payload = f"{secrets.token_urlsafe(24)}.{int(time.time()) + 600}"
+    signature = hmac.new(config["client_secret"].encode(), payload.encode(), hashlib.sha256).hexdigest()
+    return f"{payload}.{signature}"
+
+
+def _valid_callback_state(state: str | None, config: dict) -> bool:
+    if not state:
+        return False
+    try:
+        nonce, expires, signature = state.rsplit(".", 2)
+        payload = f"{nonce}.{expires}"
+        expected = hmac.new(config["client_secret"].encode(), payload.encode(), hashlib.sha256).hexdigest()
+        return hmac.compare_digest(signature, expected) and int(expires) >= time.time()
+    except (TypeError, ValueError):
+        return False
 
 
 def _session_token() -> str | None:
@@ -132,8 +155,9 @@ def connect(creds: dict) -> ConnectorStatus:
                           "token_uri": "https://oauth2.googleapis.com/token"}},
                 scopes=SCOPES, redirect_uri=web_config["redirect_uri"],
             )
-            authorization_url, state = flow.authorization_url(access_type="offline", prompt="consent")
-            st.session_state["google_calendar_oauth_state"] = state
+            authorization_url, _ = flow.authorization_url(
+                access_type="offline", prompt="consent", state=_callback_state(web_config)
+            )
         except Exception as exc:  # noqa: BLE001
             return ConnectorStatus(False, f"Could not start Google sign-in: {exc}")
         return ConnectorStatus(False, "Continue to Google to authorize calendar access.", authorization_url)
@@ -164,7 +188,7 @@ def handle_callback() -> ConnectorStatus | None:
         if not code:
             return None
         state = st.query_params.get("state")
-        if state != st.session_state.get("google_calendar_oauth_state"):
+        if not _valid_callback_state(state, web_config):
             return ConnectorStatus(False, "Google sign-in could not be verified. Please try again.")
         flow = Flow.from_client_config(
             {"web": {**web_config, "auth_uri": "https://accounts.google.com/o/oauth2/auth",

@@ -25,6 +25,7 @@ Usage in a page:
 from __future__ import annotations
 
 from contextlib import contextmanager
+from html import escape
 from typing import Callable
 
 import streamlit as st
@@ -187,7 +188,11 @@ def connectors_panel(panel, connectors, *, key_prefix: str = "connectors") -> di
                         if saved is not None:
                             (st.success if saved.ready else st.error)(saved.detail)
                             if saved.authorization_url:
-                                st.link_button("Continue to Google", saved.authorization_url)
+                                st.markdown(
+                                    f'<a href="{escape(saved.authorization_url, quote=True)}" target="_self">'
+                                    "Continue to Google</a>",
+                                    unsafe_allow_html=True,
+                                )
                     status = conn.readiness("live", creds)
                     (st.caption if status.ready else st.warning)(status.detail)
                 selections[conn.name] = {"enabled": enabled, "mode": "live", "creds": creds}
