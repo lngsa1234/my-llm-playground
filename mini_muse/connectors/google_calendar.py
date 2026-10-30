@@ -24,13 +24,58 @@ from mini_muse.connectors.base import ConnectorStatus, CredentialField, Mode
 SCOPES = ["https://www.googleapis.com/auth/calendar.events"]
 
 CREDENTIALS = [
-    CredentialField("google_credentials_path", "OAuth client file", default="google_credentials.json",
-                    help="Path to the credentials.json you downloaded from Google Cloud."),
-    CredentialField("google_token_path", "Token cache file", default="google_token.json",
-                    help="Where the connector saves your consent token. Created on Connect."),
+    CredentialField("google_mcp_access_token", "Google MCP OAuth access token", secret=True,
+                    help="OAuth token for an AI-powered-agent client configured for Google Calendar MCP."),
     CredentialField("google_calendar_id", "Calendar ID", default="primary",
                     help="'primary' is your main calendar."),
 ]
+
+MCP_ENDPOINT = "https://calendarmcp.googleapis.com/mcp/v1"
+
+
+def _mcp_call(creds: dict, tool: str, arguments: dict) -> dict:
+    """Call Google's remote Calendar MCP server over Streamable HTTP."""
+    import requests
+
+    token = str(creds.get("google_mcp_access_token", "")).strip()
+    try:
+        response = requests.post(MCP_ENDPOINT, headers={"Authorization": f"Bearer {token}",
+                                 "Content-Type": "application/json", "Accept": "application/json, text/event-stream"},
+                                 json={"jsonrpc": "2.0", "id": 1, "method": "tools/call",
+                                       "params": {"name": tool, "arguments": arguments}}, timeout=30)
+        response.raise_for_status()
+        payload = response.json()
+    except Exception as exc:  # noqa: BLE001
+        return {"error": f"Google Calendar MCP unavailable: {exc}"}
+    if "error" in payload:
+        return {"error": str(payload["error"])}
+    result = payload.get("result", {})
+    return result.get("structuredContent") or result
+
+
+def _mcp_check_calendar(creds: dict):
+    def check_calendar(world, date):
+        data = _mcp_call(creds, "list_events", {"calendarId": _calendar_id(creds),
+                         "startTime": f"{date}T00:00:00", "endTime": f"{date}T23:59:59"})
+        if "error" in data:
+            return data
+        return {"date": date, "events": [{"title": e.get("summary", "(no title)"),
+                 "time": (e.get("start", {}).get("dateTime", "")[11:16])} for e in data.get("events", [])]}
+    return check_calendar
+
+
+def _mcp_create_event(creds: dict):
+    def create_event(world, title, date, time):
+        end_hour = f"{(int(time[:2]) + 1) % 24:02d}{time[2:]}"
+        data = _mcp_call(creds, "create_event", {"calendarId": _calendar_id(creds), "event": {
+            "summary": title, "start": {"dateTime": f"{date}T{time}:00"},
+            "end": {"dateTime": f"{date}T{end_hour}:00"}}})
+        if "error" in data:
+            return data
+        event = {"status": "created", "title": title, "date": date, "time": time}
+        world.setdefault("events_created", []).append({k: event[k] for k in ("title", "date", "time")})
+        return event
+    return create_event
 
 
 def _token_path(creds: dict) -> str:
@@ -141,26 +186,18 @@ class GoogleCalendarConnector:
     title = "Google Calendar"
     tool_names = ["check_calendar", "create_event"]
     credentials = CREDENTIALS
-    action_label = "Connect Google Calendar"
-
-    def run_action(self, creds: dict) -> ConnectorStatus:
-        return connect(creds)
 
     def schemas(self) -> list[dict]:
         return [week4_tools.SCHEMAS[n] for n in self.tool_names]
 
     def functions(self, mode: Mode, creds: dict, *, world: dict) -> dict[str, Callable]:
-        return {"check_calendar": _live_check_calendar(creds),
-                "create_event": _live_create_event(creds)}
+        return {"check_calendar": _mcp_check_calendar(creds),
+                "create_event": _mcp_create_event(creds)}
 
     def readiness(self, mode: Mode, creds: dict) -> ConnectorStatus:
-        import os
-
-        if not os.path.exists(_credentials_path(creds)):
-            return ConnectorStatus(False, f"OAuth client file not found: {_credentials_path(creds)}")
-        if not os.path.exists(_token_path(creds)):
-            return ConnectorStatus(False, "Not connected yet. Click 'Connect Google Calendar'.")
-        return ConnectorStatus(True, "Connected to Google Calendar.")
+        if not str(creds.get("google_mcp_access_token", "")).strip():
+            return ConnectorStatus(False, "Enter a Google Calendar MCP OAuth access token.")
+        return ConnectorStatus(True, "Google Calendar MCP is ready.")
 
     def risky_tools(self, mode: Mode) -> set[str]:
         return {"create_event"}
