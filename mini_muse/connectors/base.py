@@ -36,6 +36,7 @@ class ConnectorStatus:
 
     ready: bool
     detail: str = ""
+    authorization_url: str | None = None
 
 
 @runtime_checkable

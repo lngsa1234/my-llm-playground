@@ -174,6 +174,11 @@ def connectors_panel(panel, connectors, *, key_prefix: str = "connectors") -> di
                             placeholder=field.placeholder,
                             type="password" if field.secret else "default")
                     action_label = getattr(conn, "action_label", None)
+                    callback = getattr(conn, "handle_callback", None)
+                    if callback:
+                        callback_status = callback(creds)
+                        if callback_status is not None:
+                            st.session_state[f"{key_prefix}_{conn.name}_status"] = callback_status
                     if action_label:
                         status_key = f"{key_prefix}_{conn.name}_status"
                         if st.button(action_label, key=f"{key_prefix}_{conn.name}_action"):
@@ -181,6 +186,8 @@ def connectors_panel(panel, connectors, *, key_prefix: str = "connectors") -> di
                         saved = st.session_state.get(status_key)
                         if saved is not None:
                             (st.success if saved.ready else st.error)(saved.detail)
+                            if saved.authorization_url:
+                                st.link_button("Continue to Google", saved.authorization_url)
                     status = conn.readiness("live", creds)
                     (st.caption if status.ready else st.warning)(status.detail)
                 selections[conn.name] = {"enabled": enabled, "mode": "live", "creds": creds}
