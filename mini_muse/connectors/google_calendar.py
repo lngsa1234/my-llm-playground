@@ -73,9 +73,12 @@ def _web_oauth_config() -> dict | None:
     return {"client_id": client_id, "client_secret": client_secret, "redirect_uri": redirect_uri}
 
 
+STATE_TTL_SECONDS = 1800  # 30 min: the user navigates back and re-opens the connector by hand.
+
+
 def _callback_state(config: dict) -> str:
     """Create a short-lived, signed state that survives a Streamlit OAuth redirect."""
-    payload = f"{secrets.token_urlsafe(24)}.{int(time.time()) + 600}"
+    payload = f"{secrets.token_urlsafe(24)}.{int(time.time()) + STATE_TTL_SECONDS}"
     signature = hmac.new(config["client_secret"].encode(), payload.encode(), hashlib.sha256).hexdigest()
     return f"{payload}.{signature}"
 

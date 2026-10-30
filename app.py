@@ -34,6 +34,7 @@ from labs.week5_agent_workflow import page as week5  # noqa: E402
 from labs.week6_agent_eval import page as week6  # noqa: E402
 from labs.week7_production import page as week7  # noqa: E402
 from mini_muse import page as mini_muse  # noqa: E402
+from mini_muse.connectors import google_calendar  # noqa: E402
 
 load_dotenv()
 
@@ -49,6 +50,21 @@ PAGES = {
 }
 
 st.set_page_config(page_title="Agent Engineering Peer Learning", page_icon="🧭", layout="wide")
+
+# Finish a Google Calendar OAuth redirect the moment it returns to the app, on any page.
+# Google sends the browser back to the site root in a fresh session, so complete the
+# exchange here (not only inside the connector panel) and mark the connector connected.
+# Each authorization code is processed once; handle_callback clears it on success.
+_oauth_code = st.query_params.get("code")
+if _oauth_code and st.session_state.get("_google_oauth_code") != _oauth_code:
+    _oauth_status = google_calendar.handle_callback()
+    if _oauth_status is not None:
+        st.session_state["_google_oauth_code"] = _oauth_code
+        st.session_state["connectors_calendar_status"] = _oauth_status
+        if _oauth_status.ready:
+            st.session_state["connectors_calendar_enabled"] = True
+        st.toast(_oauth_status.detail, icon="✅" if _oauth_status.ready else "⚠️")
+
 apply_page_style()
 st.markdown(
     """
