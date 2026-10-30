@@ -1,7 +1,7 @@
 """Offline tests for the connectors: schema strictness, the registry, and live paths.
 
 Every live path is exercised with the real service stubbed out (no network, no Google
-libraries required): the weather client, `smtplib`, and the Calendar `_service` are all
+libraries required): the weather client and the Gmail/Calendar `_service` builders are all
 monkeypatched. The point is to prove the *normalization* and *approval gating*, not the
 third-party SDKs.
 """
@@ -14,7 +14,7 @@ import pytest
 
 from mini_muse import week4_tools
 from mini_muse.connectors import CONNECTORS, build_registry
-from mini_muse.connectors import email_smtp, google_calendar, weather
+from mini_muse.connectors import gmail, google_calendar, weather
 from mini_muse.world import new_world
 
 
@@ -70,10 +70,16 @@ def _ready_calendar(monkeypatch):
     monkeypatch.setattr(os.path, "exists", lambda path: True)
 
 
-def test_live_email_makes_send_email_risky():
-    sel = {"email": {"enabled": True, "mode": "live",
-                     "creds": {"smtp_host": "h", "smtp_port": "587",
-                               "smtp_username": "u", "smtp_app_password": "p"}}}
+def _ready_gmail(monkeypatch):
+    """Make the Gmail connector report live-ready without touching Streamlit or the network."""
+    monkeypatch.setattr(gmail, "_web_oauth_config",
+                        lambda: {"client_id": "x", "client_secret": "y", "redirect_uri": "z"})
+    monkeypatch.setattr(gmail, "_session_token", lambda: "tok")
+
+
+def test_live_email_makes_send_email_risky(monkeypatch):
+    _ready_gmail(monkeypatch)
+    sel = {"email": {"enabled": True, "mode": "live", "creds": {}}}
     reg = build_registry(CONNECTORS, sel, world=new_world())
     assert "send_email" in reg.risky
 
@@ -145,73 +151,84 @@ def test_weather_live_never_raises(monkeypatch):
     assert "error" in result  # caught, not raised
 
 
-# ------------------------------------------------------------------ email (live, stubbed smtp)
-class _FakeSMTP:
-    """Stands in for smtplib.SMTP / SMTP_SSL. Records what it was asked to send."""
+# ------------------------------------------------------------------ email (Gmail API, stubbed service)
+class _FakeMessages:
+    def __init__(self, service):
+        self.service = service
 
-    sent: list = []
-    logins: list = []
-
-    def __init__(self, host, port, timeout=None):
-        self.host, self.port = host, port
-
-    def starttls(self):
-        pass
-
-    def login(self, username, password):
-        _FakeSMTP.logins.append((username, password))
-
-    def send_message(self, message):
-        _FakeSMTP.sent.append(message)
-
-    def quit(self):
-        pass
+    def send(self, userId, body):
+        self.service.sent.append({"userId": userId, "body": body})
+        return _Result({"id": "msg1"})
 
 
-@pytest.fixture
-def smtp(monkeypatch):
-    _FakeSMTP.sent, _FakeSMTP.logins = [], []
-    monkeypatch.setattr(email_smtp.smtplib, "SMTP", _FakeSMTP)
-    monkeypatch.setattr(email_smtp.smtplib, "SMTP_SSL", _FakeSMTP)
-    return _FakeSMTP
+class _FakeUsers:
+    def __init__(self, service):
+        self.service = service
+
+    def messages(self):
+        return _FakeMessages(self.service)
 
 
-def _email_creds():
-    return {"smtp_host": "smtp.example.com", "smtp_port": "587",
-            "smtp_username": "me@example.com", "smtp_app_password": "secret",
-            "smtp_from": "me@example.com"}
+class _FakeGmailService:
+    def __init__(self):
+        self.sent = []
+
+    def users(self):
+        return _FakeUsers(self)
 
 
-def test_email_live_send_mirrors_into_world_and_normalizes(smtp):
+def test_gmail_live_send_mirrors_into_world_and_normalizes(monkeypatch):
+    service = _FakeGmailService()
+    monkeypatch.setattr(gmail, "_service", lambda: service)
+
     world = new_world()
-    send = email_smtp._live_send_email(_email_creds())
+    send = gmail._live_send_email({})
     result = send(world, "maya@example.com", "Lunch?", "Noon tomorrow")
     assert result == {"status": "sent", "to": "maya@example.com"}
     assert world["emails_sent"] == [{"to": "maya@example.com", "subject": "Lunch?", "body": "Noon tomorrow"}]
-    assert len(smtp.sent) == 1 and smtp.sent[0]["To"] == "maya@example.com"
-    assert smtp.logins == [("me@example.com", "secret")]
+    assert len(service.sent) == 1 and service.sent[0]["userId"] == "me"
+    assert "raw" in service.sent[0]["body"]  # a base64url-encoded MIME message
 
 
-def test_email_live_never_raises_on_failure(monkeypatch):
-    def boom(*a, **k):
-        raise OSError("connection refused")
-
-    monkeypatch.setattr(email_smtp, "_connection", boom)
+def test_gmail_live_never_raises_on_failure(monkeypatch):
+    monkeypatch.setattr(gmail, "_service",
+                        lambda: (_ for _ in ()).throw(RuntimeError("no token")))
     world = new_world()
-    result = email_smtp._live_send_email(_email_creds())(world, "x@y.com", "s", "b")
+    result = gmail._live_send_email({})(world, "x@y.com", "s", "b")
     assert "error" in result
     assert world["emails_sent"] == []  # nothing recorded on failure
 
 
-def test_email_send_is_risky():
-    conn = email_smtp.EmailConnector()
+def test_gmail_send_is_risky():
+    conn = gmail.GmailConnector()
     assert conn.risky_tools("live") == {"send_email"}
 
 
-def test_email_readiness_reports_missing_credentials():
-    conn = email_smtp.EmailConnector()
-    status = conn.readiness("live", {"smtp_host": "h"})
-    assert not status.ready and "Missing" in status.detail
+def test_gmail_readiness_requires_connection(monkeypatch):
+    monkeypatch.setattr(gmail, "_web_oauth_config",
+                        lambda: {"client_id": "x", "client_secret": "y", "redirect_uri": "z"})
+    monkeypatch.setattr(gmail, "_session_token", lambda: None)
+    assert not gmail.GmailConnector().readiness("live", {}).ready
+    monkeypatch.setattr(gmail, "_session_token", lambda: "tok")
+    assert gmail.GmailConnector().readiness("live", {}).ready
+
+
+def test_gmail_readiness_without_hosted_secrets_is_not_ready(monkeypatch):
+    monkeypatch.setattr(gmail, "_web_oauth_config", lambda: None)
+    assert not gmail.GmailConnector().readiness("live", {}).ready
+
+
+def test_gmail_callback_state_is_tagged_and_survives_a_redirect(monkeypatch):
+    config = {"client_secret": "not-a-real-secret"}
+    monkeypatch.setattr(gmail.time, "time", lambda: 1_000)
+
+    state = gmail._callback_state(config)
+
+    assert state.split(".")[0] == "gmail"  # tagged so the shared redirect routes correctly
+    assert gmail._valid_callback_state(state, config)
+    assert not gmail._valid_callback_state(state + "x", config)
+    # A calendar-tagged state must not validate as a Gmail callback.
+    assert not gmail._valid_callback_state("calendar." + state.split(".", 1)[1], config)
 
 
 # ------------------------------------------------------------------ calendar (live, stubbed service)

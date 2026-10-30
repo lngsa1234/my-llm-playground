@@ -64,11 +64,12 @@ def _web_oauth_config() -> dict | None:
 
 
 STATE_TTL_SECONDS = 1800  # 30 min: the user navigates back and re-opens the connector by hand.
+CONNECTOR_KEY = "calendar"  # tags the state so a shared redirect URL routes to this connector.
 
 
 def _callback_state(config: dict) -> str:
     """Create a short-lived, signed state that survives a Streamlit OAuth redirect."""
-    payload = f"{secrets.token_urlsafe(24)}.{int(time.time()) + STATE_TTL_SECONDS}"
+    payload = f"{CONNECTOR_KEY}.{secrets.token_urlsafe(24)}.{int(time.time()) + STATE_TTL_SECONDS}"
     signature = hmac.new(config["client_secret"].encode(), payload.encode(), hashlib.sha256).hexdigest()
     return f"{payload}.{signature}"
 
@@ -182,6 +183,8 @@ def handle_callback() -> ConnectorStatus | None:
         if not code:
             return None
         state = st.query_params.get("state")
+        if not state or state.split(".")[0] != CONNECTOR_KEY:
+            return None  # this redirect belongs to a different connector; let it handle the code.
         if not _valid_callback_state(state, web_config):
             return ConnectorStatus(False, "Google sign-in could not be verified. Please try again.")
         flow = Flow.from_client_config(

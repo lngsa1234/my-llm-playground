@@ -34,7 +34,7 @@ from labs.week5_agent_workflow import page as week5  # noqa: E402
 from labs.week6_agent_eval import page as week6  # noqa: E402
 from labs.week7_production import page as week7  # noqa: E402
 from mini_muse import page as mini_muse  # noqa: E402
-from mini_muse.connectors import google_calendar  # noqa: E402
+from mini_muse.connectors import CONNECTORS  # noqa: E402
 
 load_dotenv()
 
@@ -51,19 +51,26 @@ PAGES = {
 
 st.set_page_config(page_title="Agent Engineering Peer Learning", page_icon="🧭", layout="wide")
 
-# Finish a Google Calendar OAuth redirect the moment it returns to the app, on any page.
-# Google sends the browser back to the site root in a fresh session, so complete the
-# exchange here (not only inside the connector panel) and mark the connector connected.
-# Each authorization code is processed once; handle_callback clears it on success.
+# Finish a Google OAuth redirect the moment it returns to the app, on any page. Google
+# sends the browser back to the site root in a fresh session, so complete the exchange
+# here (not only inside the connector panel) and mark the connector connected. Calendar
+# and Gmail share one redirect URL, so each connector's handle_callback returns None
+# unless the signed state is tagged for it; the first match consumes the code.
 _oauth_code = st.query_params.get("code")
 if _oauth_code and st.session_state.get("_google_oauth_code") != _oauth_code:
-    _oauth_status = google_calendar.handle_callback()
-    if _oauth_status is not None:
+    for _conn in CONNECTORS:
+        _handle = getattr(_conn, "handle_callback", None)
+        if _handle is None:
+            continue
+        _oauth_status = _handle({})
+        if _oauth_status is None:
+            continue
         st.session_state["_google_oauth_code"] = _oauth_code
-        st.session_state["connectors_calendar_status"] = _oauth_status
+        st.session_state[f"connectors_{_conn.name}_status"] = _oauth_status
         if _oauth_status.ready:
-            st.session_state["connectors_calendar_enabled"] = True
+            st.session_state[f"connectors_{_conn.name}_enabled"] = True
         st.toast(_oauth_status.detail, icon="✅" if _oauth_status.ready else "⚠️")
+        break
 
 apply_page_style()
 st.markdown(

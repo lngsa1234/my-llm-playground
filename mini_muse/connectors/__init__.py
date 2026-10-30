@@ -13,7 +13,7 @@ from mini_muse.connectors.base import (
     CredentialField,
     Mode,
 )
-from mini_muse.connectors.email_smtp import EmailConnector
+from mini_muse.connectors.gmail import GmailConnector
 from mini_muse.connectors.google_calendar import GoogleCalendarConnector
 from mini_muse.connectors.registry import ToolRegistry, build_registry
 from mini_muse.connectors.weather import WeatherConnector
@@ -22,7 +22,7 @@ from mini_muse.connectors.weather import WeatherConnector
 CONNECTORS: list[Connector] = [
     WeatherConnector(),
     GoogleCalendarConnector(),
-    EmailConnector(),
+    GmailConnector(),
 ]
 
 __all__ = [
