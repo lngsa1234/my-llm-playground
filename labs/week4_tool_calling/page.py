@@ -102,12 +102,12 @@ def _render_ask(settings, offered: list[str], max_rounds: int) -> None:
         if "calls" not in tooled:  # saved before model-call details were recorded
             st.caption("Ask again to see each model call.")
             return
-        st.markdown("**Before Step 1 · App offers tools to the model**")
-        st.caption("The app sends these tool definitions with the instructions and your question. No tool has run yet.")
+        st.markdown("**Start · You send a question to the app**")
+        st.info(saved["prompt"])
+        st.markdown("**Step 1 · App sends the question and tool definitions to the model**")
+        st.caption("One model request includes the instructions, your question, and these available tools. No tool has run yet.")
         for tool in saved["offered"]:
             st.markdown(f"- `{tool}` — {_tool_purpose(tool)}")
-        st.markdown("**Start · Your question**")
-        st.info(saved["prompt"])
         runs = {}  # tool results, grouped by the model call that asked for them
         for entry in tooled["trace"]:
             runs.setdefault(entry.get("round"), []).append(entry)
@@ -118,7 +118,7 @@ def _render_ask(settings, offered: list[str], max_rounds: int) -> None:
 def _timeline_step(call: dict, tool_runs: list[dict]) -> None:
     returned = call["returned"]
     if "tool_calls" in returned:
-        st.markdown(f"**Step {call['call']} · Model chooses what information it needs**")
+        st.markdown(f"**Step {call['call'] + 1} · Model chooses what information it needs**")
         st.caption("The model cannot look up live weather itself, so it asks the app to run a tool.")
         for requested in returned["tool_calls"]:
             st.code(f"{requested['tool']}({_args(requested['arguments'])})", language=None)
@@ -126,7 +126,7 @@ def _timeline_step(call: dict, tool_runs: list[dict]) -> None:
         for entry in tool_runs:
             _tool_result(entry)
     else:
-        st.markdown(f"**Step {call['call']} · Model writes the final answer**")
+        st.markdown(f"**Step {call['call'] + 1} · Model writes the final answer**")
         st.success(returned.get("answer") or "No visible answer was returned.")
     st.caption(f"Model call {call['call']} · {call['input_tokens']:,} input tokens · "
                f"{call['output_tokens']:,} output tokens · {call['seconds']:.2f} s")
