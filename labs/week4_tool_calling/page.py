@@ -130,12 +130,6 @@ def _timeline_step(call: dict, tool_runs: list[dict]) -> None:
         st.success(returned.get("answer") or "No visible answer was returned.")
     st.caption(f"Model call {call['call']} · {call['input_tokens']:,} input tokens · "
                f"{call['output_tokens']:,} output tokens · {call['seconds']:.2f} s")
-    with st.expander("Inspect the raw API request and response"):
-        st.caption("This is the technical version of the step: the conversation and tool definitions sent to the model, then its response.")
-        st.markdown("Request")
-        st.json(call.get("request") or {"messages": call["messages"]}, expanded=2)
-        st.markdown("Response")
-        st.json(call.get("response") or call["returned"], expanded=2)
 
 
 def _tool_result(entry: dict) -> None:
