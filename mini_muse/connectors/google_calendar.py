@@ -154,6 +154,7 @@ def connect(creds: dict) -> ConnectorStatus:
                 {"web": {**web_config, "auth_uri": "https://accounts.google.com/o/oauth2/auth",
                           "token_uri": "https://oauth2.googleapis.com/token"}},
                 scopes=SCOPES, redirect_uri=web_config["redirect_uri"],
+                autogenerate_code_verifier=False,
             )
             authorization_url, _ = flow.authorization_url(
                 access_type="offline", prompt="consent", state=_callback_state(web_config)
@@ -194,6 +195,7 @@ def handle_callback() -> ConnectorStatus | None:
             {"web": {**web_config, "auth_uri": "https://accounts.google.com/o/oauth2/auth",
                       "token_uri": "https://oauth2.googleapis.com/token"}},
             scopes=SCOPES, state=state, redirect_uri=web_config["redirect_uri"],
+            autogenerate_code_verifier=False,
         )
         flow.fetch_token(code=code)
         _save_session_token(flow.credentials.to_json())
