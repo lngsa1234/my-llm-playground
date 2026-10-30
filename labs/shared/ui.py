@@ -160,12 +160,38 @@ def connectors_panel(panel, connectors, *, key_prefix: str = "connectors") -> di
     with panel:
         st.divider()
         st.markdown("**Connectors**")
-        st.caption("Connect real services for Mini Muse. Disabled or unconnected services are not offered to the model.")
+        st.caption("Connect a real service to offer its tools to Mini Muse. Disconnected services are not offered to the model.")
         for conn in connectors:
             with st.expander(conn.title):
-                enabled = st.toggle("Enable", key=f"{key_prefix}_{conn.name}_enabled")
-                creds = {}
-                if enabled:
+                enabled_key = f"{key_prefix}_{conn.name}_enabled"
+                status_key = f"{key_prefix}_{conn.name}_status"
+                enabled = bool(st.session_state.get(enabled_key, False))
+
+                # Current credential values (defaults applied), used to judge readiness.
+                creds = {field.key: st.session_state.get(f"{key_prefix}_{conn.name}_{field.key}", field.default)
+                         for field in conn.credentials}
+
+                # Finish a pending OAuth callback if one landed here (no-op otherwise).
+                callback = getattr(conn, "handle_callback", None)
+                if callback:
+                    callback_status = callback(creds)
+                    if callback_status is not None:
+                        st.session_state[status_key] = callback_status
+                        if callback_status.ready:
+                            st.session_state[enabled_key] = True
+                            enabled = True
+
+                status = conn.readiness("live", creds)
+                connected = enabled and status.ready
+
+                if connected:
+                    st.success(status.detail)
+                    if st.button("Disable", key=f"{key_prefix}_{conn.name}_disable"):
+                        st.session_state[enabled_key] = False
+                        st.session_state.pop(status_key, None)
+                        st.rerun()
+                else:
+                    # Collect any credentials the connector needs before connecting.
                     for field in conn.credentials:
                         field_key = f"{key_prefix}_{conn.name}_{field.key}"
                         if field_key not in st.session_state and field.default:
@@ -174,27 +200,26 @@ def connectors_panel(panel, connectors, *, key_prefix: str = "connectors") -> di
                             field.label, key=field_key, help=field.help or None,
                             placeholder=field.placeholder,
                             type="password" if field.secret else "default")
-                    action_label = getattr(conn, "action_label", None)
-                    callback = getattr(conn, "handle_callback", None)
-                    if callback:
-                        callback_status = callback(creds)
-                        if callback_status is not None:
-                            st.session_state[f"{key_prefix}_{conn.name}_status"] = callback_status
-                    if action_label:
-                        status_key = f"{key_prefix}_{conn.name}_status"
-                        if st.button(action_label, key=f"{key_prefix}_{conn.name}_action"):
+
+                    action_label = getattr(conn, "action_label", None) or "Connect"
+                    if st.button(action_label, key=f"{key_prefix}_{conn.name}_action"):
+                        st.session_state[enabled_key] = True
+                        if hasattr(conn, "run_action"):
                             st.session_state[status_key] = conn.run_action(creds)
-                        saved = st.session_state.get(status_key)
-                        if saved is not None:
-                            (st.success if saved.ready else st.error)(saved.detail)
-                            if saved.authorization_url:
-                                st.markdown(
-                                    f'<a href="{escape(saved.authorization_url, quote=True)}" target="_self">'
-                                    "Continue to Google</a>",
-                                    unsafe_allow_html=True,
-                                )
-                    status = conn.readiness("live", creds)
-                    (st.caption if status.ready else st.warning)(status.detail)
+                        st.rerun()
+
+                    saved = st.session_state.get(status_key)
+                    if saved is not None and not saved.ready:
+                        st.error(saved.detail)
+                        if saved.authorization_url:
+                            st.markdown(
+                                f'<a href="{escape(saved.authorization_url, quote=True)}" target="_self">'
+                                "Continue to Google</a>",
+                                unsafe_allow_html=True,
+                            )
+                    elif not status.ready:
+                        st.caption(status.detail)
+
                 selections[conn.name] = {"enabled": enabled, "mode": "live", "creds": creds}
     return selections
 
