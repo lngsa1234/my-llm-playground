@@ -30,16 +30,6 @@ from mini_muse.connectors.base import ConnectorStatus, CredentialField, Mode
 SCOPES = ["https://www.googleapis.com/auth/calendar.events"]
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
-CREDENTIALS = [
-    CredentialField("google_credentials_path", "OAuth client file", default="google_credentials.json",
-                    help="Local development only. Streamlit Cloud uses deployment secrets instead."),
-    CredentialField("google_token_path", "Token cache file", default="google_token.json",
-                    help="Where the connector saves your consent token. Created on Connect."),
-    CredentialField("google_calendar_id", "Calendar ID", default="primary",
-                    help="'primary' is your main calendar."),
-]
-
-
 def _project_path(value: str) -> str:
     """Resolve user paths consistently when Streamlit starts from another directory."""
     path = Path(value).expanduser()
@@ -257,7 +247,7 @@ class GoogleCalendarConnector:
     name = "calendar"
     title = "Google Calendar"
     tool_names = ["check_calendar", "create_event"]
-    credentials = CREDENTIALS
+    credentials: list[CredentialField] = []  # hosted uses deployment secrets; paths default in code
     action_label = "Connect Google Calendar"
 
     def run_action(self, creds: dict) -> ConnectorStatus:
