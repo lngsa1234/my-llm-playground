@@ -213,9 +213,9 @@ def connectors_panel(panel, connectors, *, key_prefix: str = "connectors") -> di
                         st.error(saved.detail)
                         if saved.authorization_url:
                             st.markdown(
-                                f'<a href="{escape(saved.authorization_url, quote=True)}" target="_top"'
+                                f'<a href="{escape(saved.authorization_url, quote=True)}" target="_blank"'
                                 ' rel="noopener noreferrer" referrerpolicy="no-referrer">'
-                                "Continue to Google</a>",
+                                "Continue to Google (opens a new tab)</a>",
                                 unsafe_allow_html=True,
                             )
                     elif not status.ready:
