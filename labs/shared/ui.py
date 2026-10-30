@@ -145,7 +145,6 @@ def api_key_notice() -> None:
 def lab_parameters(panel):
     """The week's Lab parameters, below Model settings in the same right-hand panel."""
     with panel:
-        st.divider()
         st.markdown("**Lab parameters**")
         yield
 
