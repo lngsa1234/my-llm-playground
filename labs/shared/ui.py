@@ -151,48 +151,40 @@ def lab_parameters(panel):
 
 
 def connectors_panel(panel, connectors, *, key_prefix: str = "connectors") -> dict:
-    """Right-panel UI to enable connectors and pick a backend. Returns the user's selections.
+    """Render live-only connector controls and return the user's selections.
 
-    Like Claude/ChatGPT connectors: each is off by default; turning one on reveals a
-    Simulated/Live switch and, for Live, its credential fields plus a readiness line and
-    an optional action button (Test connection / Connect). Credentials live only in
-    session_state. The returned dict feeds mini_muse.connectors.build_registry:
-
-        {name: {"enabled": bool, "mode": "simulated"|"live", "creds": {...}}}
+    A connector is unavailable until the user enables and connects it; the app never
+    substitutes a simulated service. Credentials live only in session_state.
     """
     selections: dict[str, dict] = {}
     with panel:
         st.divider()
         st.markdown("**Connectors**")
-        st.caption("Give the agent real tools. Each is Simulated unless you switch it to Live.")
+        st.caption("Connect real services for Mini Muse. Disabled or unconnected services are not offered to the model.")
         for conn in connectors:
             with st.expander(conn.title):
                 enabled = st.toggle("Enable", key=f"{key_prefix}_{conn.name}_enabled")
-                mode, creds = "simulated", {}
+                creds = {}
                 if enabled:
-                    choice = st.radio("Backend", ["Simulated", "Live"], horizontal=True,
-                                      key=f"{key_prefix}_{conn.name}_mode")
-                    mode = "live" if choice == "Live" else "simulated"
-                    if mode == "live":
-                        for field in conn.credentials:
-                            field_key = f"{key_prefix}_{conn.name}_{field.key}"
-                            if field_key not in st.session_state and field.default:
-                                st.session_state[field_key] = field.default
-                            creds[field.key] = st.text_input(
-                                field.label, key=field_key, help=field.help or None,
-                                placeholder=field.placeholder,
-                                type="password" if field.secret else "default")
-                        action_label = getattr(conn, "action_label", None)
-                        if action_label:
-                            status_key = f"{key_prefix}_{conn.name}_status"
-                            if st.button(action_label, key=f"{key_prefix}_{conn.name}_action"):
-                                st.session_state[status_key] = conn.run_action(creds)
-                            saved = st.session_state.get(status_key)
-                            if saved is not None:
-                                (st.success if saved.ready else st.error)(saved.detail)
-                    status = conn.readiness(mode, creds)
+                    for field in conn.credentials:
+                        field_key = f"{key_prefix}_{conn.name}_{field.key}"
+                        if field_key not in st.session_state and field.default:
+                            st.session_state[field_key] = field.default
+                        creds[field.key] = st.text_input(
+                            field.label, key=field_key, help=field.help or None,
+                            placeholder=field.placeholder,
+                            type="password" if field.secret else "default")
+                    action_label = getattr(conn, "action_label", None)
+                    if action_label:
+                        status_key = f"{key_prefix}_{conn.name}_status"
+                        if st.button(action_label, key=f"{key_prefix}_{conn.name}_action"):
+                            st.session_state[status_key] = conn.run_action(creds)
+                        saved = st.session_state.get(status_key)
+                        if saved is not None:
+                            (st.success if saved.ready else st.error)(saved.detail)
+                    status = conn.readiness("live", creds)
                     (st.caption if status.ready else st.warning)(status.detail)
-                selections[conn.name] = {"enabled": enabled, "mode": mode, "creds": creds}
+                selections[conn.name] = {"enabled": enabled, "mode": "live", "creds": creds}
     return selections
 
 

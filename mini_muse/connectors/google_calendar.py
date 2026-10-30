@@ -6,8 +6,7 @@ creates an OAuth client in Google Cloud, downloads its `credentials.json`, and c
 `token.json`. Both files live at user-set paths and are .gitignore'd. The one-time
 consent runs `InstalledAppFlow.run_local_server` outside the agent loop, never inside it.
 
-`check_calendar` has no side effects. `create_event` is approval-gated in live mode only
-(in simulated mode it writes to the fake world, matching the default behavior and Week 6).
+`check_calendar` has no side effects. `create_event` is approval-gated.
 Live results are normalized to the fake shapes (`{"date", "events":[{"title","time"}]}`
 and `{"status":"created", ...}`), and mirrored into `world` so the trace stays consistent.
 
@@ -151,17 +150,12 @@ class GoogleCalendarConnector:
         return [week4_tools.SCHEMAS[n] for n in self.tool_names]
 
     def functions(self, mode: Mode, creds: dict, *, world: dict) -> dict[str, Callable]:
-        if mode == "live":
-            return {"check_calendar": _live_check_calendar(creds),
-                    "create_event": _live_create_event(creds)}
-        return {"check_calendar": week4_tools.check_calendar,
-                "create_event": week4_tools.create_event}
+        return {"check_calendar": _live_check_calendar(creds),
+                "create_event": _live_create_event(creds)}
 
     def readiness(self, mode: Mode, creds: dict) -> ConnectorStatus:
         import os
 
-        if mode != "live":
-            return ConnectorStatus(True, "Simulated calendar from the fake world.")
         if not os.path.exists(_credentials_path(creds)):
             return ConnectorStatus(False, f"OAuth client file not found: {_credentials_path(creds)}")
         if not os.path.exists(_token_path(creds)):
@@ -169,4 +163,4 @@ class GoogleCalendarConnector:
         return ConnectorStatus(True, "Connected to Google Calendar.")
 
     def risky_tools(self, mode: Mode) -> set[str]:
-        return {"create_event"} if mode == "live" else set()
+        return {"create_event"}

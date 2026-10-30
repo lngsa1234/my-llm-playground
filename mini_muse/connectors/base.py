@@ -3,8 +3,6 @@
 A connector is like a Claude/ChatGPT connector: the user turns it on in the UI and
 the agent gains real tools. Every connector offers the *same tools* in two backends:
 
-    simulated   the fake `world` from mini_muse.world (deterministic; used by tests
-                and the Week 6 evals, and the safe default)
     live        the real service (Open-Meteo, SMTP, Google Calendar)
 
 The tool names and argument names a connector exposes MUST match
@@ -17,7 +15,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Callable, Literal, Protocol, runtime_checkable
 
-Mode = Literal["simulated", "live"]
+Mode = Literal["live"]
 
 
 @dataclass(frozen=True)
@@ -42,7 +40,7 @@ class ConnectorStatus:
 
 @runtime_checkable
 class Connector(Protocol):
-    """A real service the agent can use, with a simulated fallback.
+    """A real service the agent can use.
 
     Implementations keep tool functions as `fn(world, **args) -> dict`. Live functions
     ignore `world` and MUST NOT raise: catch everything and return `{"error": ...}`,
@@ -65,7 +63,7 @@ class Connector(Protocol):
         ...
 
     def readiness(self, mode: Mode, creds: dict) -> ConnectorStatus:
-        """Can the connector run in this mode right now? Simulated is always ready."""
+        """Can the connector run with the supplied credentials?"""
         ...
 
     def risky_tools(self, mode: Mode) -> set[str]:

@@ -32,35 +32,24 @@ def test_every_schema_tool_is_covered_by_exactly_one_connector_or_is_a_builtin()
     assert sorted(owned) == sorted(owned[:]) and len(owned) == len(set(owned)), "tools double-owned"
     from mini_muse.connectors.registry import BUILTIN_TOOLS
 
-    assert set(owned) | set(BUILTIN_TOOLS) == set(week4_tools.ALL_TOOLS)
+    # Contact lookup and note search are absent: Mini Muse no longer uses bundled fake data.
+    assert set(owned) | set(BUILTIN_TOOLS) == set(week4_tools.ALL_TOOLS) - {"lookup_contact", "search_notes"}
 
 
-# ------------------------------------------------------------------ registry == default (simulated)
-def test_all_simulated_registry_is_a_drop_in_for_week4_tools():
+# ------------------------------------------------------------------ live-only registry
+def test_empty_registry_exposes_only_offline_builtins():
     world = new_world()
-    reg = build_registry(CONNECTORS, {}, world=world)  # nothing enabled -> all simulated
+    reg = build_registry(CONNECTORS, {}, world=world)
 
-    assert reg.names == week4_tools.ALL_TOOLS
-    assert reg.schemas_for(week4_tools.ALL_TOOLS) == week4_tools.schemas(week4_tools.ALL_TOOLS)
-    assert reg.schemas_for(week4_tools.CORE_TOOLS) == week4_tools.schemas(week4_tools.CORE_TOOLS)
-    # No live backend => only send_email is risky, exactly like Week 5's RISKY_TOOLS.
-    assert reg.risky == {"send_email"}
+    assert reg.names == ["calculator"]
+    assert reg.schemas_for(week4_tools.ALL_TOOLS) == week4_tools.schemas(["calculator"])
+    assert reg.risky == set()
 
 
-def test_simulated_execute_matches_week4_execute_for_every_tool():
+def test_empty_registry_does_not_fall_back_to_fake_tools():
     reg = build_registry(CONNECTORS, {}, world=new_world())
-    cases = [
-        ("get_weather", {"city": "Detroit"}),
-        ("check_calendar", {"date": "2026-10-27"}),
-        ("create_event", {"title": "Haircut", "date": "2026-10-27", "time": "14:00"}),
-        ("lookup_contact", {"name": "Maya"}),
-        ("send_email", {"to": "maya@example.com", "subject": "Hi", "body": "Hello"}),
-        ("calculator", {"expression": "85 * 20 / 100"}),
-    ]
-    for name, args in cases:
-        w_reg, w_ref = new_world(), new_world()
-        assert reg.execute(w_reg, name, args) == week4_tools.execute(w_ref, name, args)
-        assert w_reg == w_ref  # identical world mutations
+    assert "error" in reg.execute(new_world(), "get_weather", {"city": "Detroit"})
+    assert reg.execute(new_world(), "calculator", {"expression": "85 * 20 / 100"}) == {"expression": "85 * 20 / 100", "result": 17.0}
 
 
 def test_unknown_tool_and_bad_arguments_become_results_not_crashes():
@@ -94,14 +83,13 @@ def test_live_calendar_makes_create_event_risky_when_ready(monkeypatch):
     assert "create_event" in reg.risky
 
 
-def test_live_requested_but_not_ready_falls_back_to_simulated(monkeypatch):
-    # Calendar: creds/token files do not exist -> readiness is False -> simulated.
+def test_live_requested_but_not_ready_is_not_exposed(monkeypatch):
     import os
 
     monkeypatch.setattr(os.path, "exists", lambda path: False)
     sel = {"calendar": {"enabled": True, "mode": "live", "creds": {}}}
     reg = build_registry(CONNECTORS, sel, world=new_world())
-    assert "create_event" not in reg.risky  # simulated create_event is not gated
+    assert "create_event" not in reg.names
 
 
 # ------------------------------------------------------------------ weather (live, stubbed)
@@ -189,9 +177,8 @@ def test_email_live_never_raises_on_failure(monkeypatch):
     assert world["emails_sent"] == []  # nothing recorded on failure
 
 
-def test_email_send_is_risky_in_both_modes():
+def test_email_send_is_risky():
     conn = email_smtp.EmailConnector()
-    assert conn.risky_tools("simulated") == {"send_email"}
     assert conn.risky_tools("live") == {"send_email"}
 
 
@@ -199,7 +186,6 @@ def test_email_readiness_reports_missing_credentials():
     conn = email_smtp.EmailConnector()
     status = conn.readiness("live", {"smtp_host": "h"})
     assert not status.ready and "Missing" in status.detail
-    assert conn.readiness("simulated", {}).ready
 
 
 # ------------------------------------------------------------------ calendar (live, stubbed service)
@@ -287,7 +273,6 @@ def test_calendar_live_create_event_never_raises(monkeypatch):
     assert "error" in result
 
 
-def test_calendar_risky_only_live():
+def test_calendar_create_event_is_risky():
     conn = google_calendar.GoogleCalendarConnector()
     assert conn.risky_tools("live") == {"create_event"}
-    assert conn.risky_tools("simulated") == set()

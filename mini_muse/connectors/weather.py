@@ -1,4 +1,4 @@
-"""Weather connector: live Open-Meteo data, or the fake world.
+"""Weather connector: live Open-Meteo data.
 
 Live mode reuses the Week 4 lab's Open-Meteo client (`labs/week4_tool_calling/weather.py`)
 and normalizes its result to the fake tool's shape (`{"city", "temp_f", "conditions"}`)
@@ -57,14 +57,10 @@ class WeatherConnector:
         return [week4_tools.SCHEMAS[n] for n in self.tool_names]
 
     def functions(self, mode: Mode, creds: dict, *, world: dict) -> dict[str, Callable]:
-        if mode == "live":
-            return {"get_weather": _live_get_weather}
-        return {"get_weather": week4_tools.get_weather}
+        return {"get_weather": _live_get_weather}
 
     def readiness(self, mode: Mode, creds: dict) -> ConnectorStatus:
-        if mode == "live":
-            return ConnectorStatus(True, "Live Open-Meteo data (no key needed).")
-        return ConnectorStatus(True, "Simulated weather from the fake world.")
+        return ConnectorStatus(True, "Live Open-Meteo data (no key needed).")
 
     def risky_tools(self, mode: Mode) -> set[str]:
         return set()

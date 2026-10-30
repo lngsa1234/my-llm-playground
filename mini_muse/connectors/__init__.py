@@ -1,4 +1,4 @@
-"""User-enablable connectors: real tools for Mini Muse, with a simulated fallback.
+"""User-enablable, real-service connectors for Mini Muse.
 
 `CONNECTORS` is the list the UI renders; `build_registry` turns the user's choices into
 a `ToolRegistry` the agent can take in place of the fake tools. Pass no registry and the
@@ -18,8 +18,7 @@ from mini_muse.connectors.google_calendar import GoogleCalendarConnector
 from mini_muse.connectors.registry import ToolRegistry, build_registry
 from mini_muse.connectors.weather import WeatherConnector
 
-# Order matches week4_tools' tool order so an all-simulated registry lists tools the
-# same way: weather, calendar, email, then the offline built-ins.
+# Order matches the course's tool sequence: weather, calendar, then email.
 CONNECTORS: list[Connector] = [
     WeatherConnector(),
     GoogleCalendarConnector(),

@@ -26,7 +26,7 @@ from labs.shared.ui import (can_run, connectors_panel, example_text_area, get_mo
 from mini_muse import week1_understand, week2_memory, week3_knowledge, week4_tools, week5_agent, week6_eval
 from mini_muse.llm import LLM
 from mini_muse.week7_reliability import FAULTS, Runtime
-from mini_muse.world import TODAY, WORLD_TEMPLATE, new_world, today_line
+from mini_muse.world import TODAY, new_world, today_line
 
 COMPONENTS = {
     1: ("Understand", "week1_understand", "Turn a request into structured fields with one API call."),
@@ -50,7 +50,7 @@ Mini Muse is the personal assistant the circle builds over the 8 weeks. Each wee
 |---|---|---|---|
 {ROADMAP}
 
-Every tool acts on a **fake world**: a calendar, two contacts, an outbox, weather for three cities and five personal notes. Nothing is ever really booked or sent. {today_line()}
+Mini Muse only receives real connected services: weather from Open-Meteo, Google Calendar, and SMTP email. A service is unavailable until you enable and connect it. {today_line()}
 """
 
 
@@ -117,23 +117,11 @@ def _side_effects(state: dict, warn_email: bool = False) -> None:
         st.json(state, expanded=False)
 
 
-def _world_viewer(world: dict | None = None) -> None:
-    with st.expander("The fake world the tools act on"):
-        st.json({k: v for k, v in (world or WORLD_TEMPLATE).items()}, expanded=False)
-
-
 def _registry(panel):
-    """Render the Connectors panel and return a ToolRegistry, or None if none are enabled.
-
-    None means the agent uses the fake tools exactly as before (the safe default). When a
-    connector is enabled, every connector is included — live where the user opted in and is
-    ready, simulated otherwise — so the full Mini Muse tool set stays available.
-    """
+    """Render live connectors and return only tools that are connected and ready."""
     from mini_muse.connectors import CONNECTORS, build_registry
 
     selections = connectors_panel(panel, CONNECTORS)
-    if not any(sel.get("enabled") for sel in selections.values()):
-        return None
     return build_registry(CONNECTORS, selections, world=new_world())
 
 
@@ -360,6 +348,8 @@ def step4(main, panel, settings) -> None:
         tools = st.multiselect("Tools offered", week4_tools.CORE_TOOLS, week4_tools.CORE_TOOLS, key="muse_w4_tools")
         st.caption("Remove a tool and see what the model does without it.")
     registry = _registry(panel)
+    available_tools = [name for name in tools if name in registry.names]
+    unavailable_tools = [name for name in tools if name not in registry.names]
     with main:
         _step_header(4, ["“Email Maya about the Monday agenda”: one round has no approval, so it may just send it.",
                          "“Book a haircut on 2026-10-27 at 14:00”: is the calendar checked *before* booking?",
@@ -371,10 +361,12 @@ def step4(main, panel, settings) -> None:
             "Book a haircut on 2026-10-27 at 14:00",
             "What's a 20% tip on $85?",
         ], height=60)
+        if unavailable_tools:
+            st.warning("Not connected, so not offered to the model: " + ", ".join(unavailable_tools) + ".")
         if st.button("Run one round of tools", type="primary", key="muse_w4_run") and (llm := _run(settings, text)):
             try:
                 started = time.perf_counter()
-                trace = week4_tools.answer_with_tools(llm, text, tool_names=tools, registry=registry)
+                trace = week4_tools.answer_with_tools(llm, text, tool_names=available_tools, registry=registry)
                 st.session_state.muse_w4_result = {"trace": trace, "llm": llm, "seconds": time.perf_counter() - started}
             except Exception as exc:  # noqa: BLE001
                 show_error("Tool call", exc)
@@ -389,7 +381,7 @@ def step4(main, panel, settings) -> None:
                 st.markdown(trace["answer"] or "_No text returned._")
                 usage_line(llm.usage.input_tokens, llm.usage.output_tokens, result["seconds"], llm.cost())
             with world_col, st.container(border=True):
-                st.markdown("**What changed in the fake world**")
+                st.markdown("**Actions recorded this run**")
                 state = trace["final_state"]
                 st.markdown(f"Events created: **{len(state['events_created'])}** · Emails sent: **{len(state['emails_sent'])}**")
                 for event in state["events_created"]:
@@ -415,8 +407,7 @@ def step4(main, panel, settings) -> None:
                 else:
                     st.markdown(f"{step}. The model wrote the answer, with no further tools: this week allows one round.")
         with st.expander("Tool definitions sent to the model"):
-            st.json(registry.schemas_for(tools) if registry else week4_tools.schemas(tools), expanded=False)
-        _world_viewer()
+            st.json(registry.schemas_for(available_tools), expanded=False)
 
 
 # ------------------------------------------------------------------ week 5
@@ -472,7 +463,7 @@ def step5(main, panel, settings) -> None:
                         st.markdown(f"**⏸️ Waiting for approval: `{action['tool']}`**")
                         st.json(action["args"])
                         if i in result["approved"]:
-                            st.success("Approved and sent (to the fake outbox).")
+                            st.success("Approved and sent.")
                         elif st.button("Approve", key=f"muse_w5_approve_{i}", type="primary"):
                             week5_agent.approve(trace["world"], action, registry=registry)
                             result["approved"].append(i)
@@ -482,7 +473,6 @@ def step5(main, panel, settings) -> None:
             _usage(result["llm"], result["seconds"])
         with st.expander("Agent rules (system prompt)"):
             st.code(week5_agent.system_prompt(), language=None)
-        _world_viewer()
 
 
 # ------------------------------------------------------------------ week 6
@@ -609,11 +599,11 @@ digraph {
   understand [label="🧠 Week 1 · Understand\\nstructured request"];
   memory [label="🗂️ Week 2 · Memory\\nfacts · summary · recent turns"];
   agent [label="🔁 Week 5 · Agent loop\\ndecide → act → observe → stop", fillcolor="#e6eefc"];
-  tools [label="🛠️ Week 4 · Tools\\ncalendar · contacts · email · weather · calc"];
-  notes [label="📚 Week 3 · search_notes\\nRAG over your notes"];
+  tools [label="🛠️ Week 4 · Connected tools\\ncalendar · email · weather · calc"];
+  notes [label="📚 Week 3 · Your uploaded notes\\nRAG over your notes"];
   runtime [label="🛡️ Week 7 · Runtime\\ntraces · retries · timeouts · fallback"];
   approval [label="⏸️ Approval\\nbefore send_email", fillcolor="#fff4d6"];
-  world [label="Fake world\\n(nothing real is sent)", shape=cylinder, fillcolor="#ffffff"];
+  world [label="Connected services\\n(real actions need approval)", shape=cylinder, fillcolor="#ffffff"];
   evals [label="✅ Week 6 · Golden dataset\\nproves it still works", fillcolor="#e8f5e9"];
   user -> understand -> agent; user -> memory -> agent;
   agent -> runtime [label="every call"]; runtime -> tools; runtime -> notes; tools -> world;

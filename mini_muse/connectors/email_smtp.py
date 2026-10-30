@@ -1,9 +1,9 @@
-"""Email connector: send real mail over SMTP, or write to the fake outbox.
+"""Email connector: send real mail over SMTP.
 
 Live mode uses the stdlib `smtplib` with an app password the user enters in the UI
 (STARTTLS on 587, implicit TLS on 465). `send_email` is always approval-gated, in both
-modes, matching Week 5's RISKY_TOOLS. `lookup_contact` stays simulated for now: it reads
-the fake world's contact book, so the email flow still works end to end.
+modes, matching Week 5's RISKY_TOOLS. A live contact lookup is not configured, so
+users must provide the recipient's email address directly.
 
 Live results are normalized to the fake tool's shape (`{"status": "sent", "to": ...}`),
 and the sent message is also mirrored into `world["emails_sent"]` so the trace and the
@@ -94,7 +94,7 @@ def test_connection(creds: dict) -> ConnectorStatus:
 class EmailConnector:
     name = "email"
     title = "Email (SMTP)"
-    tool_names = ["lookup_contact", "send_email"]
+    tool_names = ["send_email"]
     credentials = CREDENTIALS
     action_label = "Test connection"
 
@@ -105,14 +105,9 @@ class EmailConnector:
         return [week4_tools.SCHEMAS[n] for n in self.tool_names]
 
     def functions(self, mode: Mode, creds: dict, *, world: dict) -> dict[str, Callable]:
-        # lookup_contact stays simulated (reads the fake contact book) in both modes.
-        fns: dict[str, Callable] = {"lookup_contact": week4_tools.lookup_contact}
-        fns["send_email"] = _live_send_email(creds) if mode == "live" else week4_tools.send_email
-        return fns
+        return {"send_email": _live_send_email(creds)}
 
     def readiness(self, mode: Mode, creds: dict) -> ConnectorStatus:
-        if mode != "live":
-            return ConnectorStatus(True, "Simulated outbox (nothing really sent).")
         missing = _missing(creds)
         if missing:
             return ConnectorStatus(False, "Missing: " + ", ".join(missing))
