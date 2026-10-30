@@ -16,12 +16,14 @@ installed; the tools then return a clear error instead of crashing.
 
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Callable
 
 from mini_muse import week4_tools
 from mini_muse.connectors.base import ConnectorStatus, CredentialField, Mode
 
 SCOPES = ["https://www.googleapis.com/auth/calendar.events"]
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
 CREDENTIALS = [
     CredentialField("google_credentials_path", "OAuth client file", default="google_credentials.json",
@@ -33,12 +35,18 @@ CREDENTIALS = [
 ]
 
 
+def _project_path(value: str) -> str:
+    """Resolve user paths consistently when Streamlit starts from another directory."""
+    path = Path(value).expanduser()
+    return str(path if path.is_absolute() else PROJECT_ROOT / path)
+
+
 def _token_path(creds: dict) -> str:
-    return str(creds.get("google_token_path", "") or "google_token.json").strip()
+    return _project_path(str(creds.get("google_token_path", "") or "google_token.json").strip())
 
 
 def _credentials_path(creds: dict) -> str:
-    return str(creds.get("google_credentials_path", "") or "google_credentials.json").strip()
+    return _project_path(str(creds.get("google_credentials_path", "") or "google_credentials.json").strip())
 
 
 def _calendar_id(creds: dict) -> str:

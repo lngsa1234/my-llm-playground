@@ -8,6 +8,8 @@ third-party SDKs.
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import pytest
 
 from mini_muse import week4_tools
@@ -90,6 +92,20 @@ def test_live_requested_but_not_ready_is_not_exposed(monkeypatch):
     sel = {"calendar": {"enabled": True, "mode": "live", "creds": {}}}
     reg = build_registry(CONNECTORS, sel, world=new_world())
     assert "create_event" not in reg.names
+
+
+def test_calendar_default_paths_are_relative_to_project_not_process_directory(monkeypatch, tmp_path):
+    monkeypatch.chdir(tmp_path)
+
+    assert google_calendar._credentials_path({}) == str(
+        google_calendar.PROJECT_ROOT / "google_credentials.json"
+    )
+    assert google_calendar._token_path({}) == str(google_calendar.PROJECT_ROOT / "google_token.json")
+
+
+def test_calendar_expands_user_supplied_paths():
+    path = Path("~/private-google-client.json").expanduser()
+    assert google_calendar._credentials_path({"google_credentials_path": "~/private-google-client.json"}) == str(path)
 
 
 # ------------------------------------------------------------------ weather (live, stubbed)
