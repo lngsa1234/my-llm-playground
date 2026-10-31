@@ -50,7 +50,7 @@ Mini Muse is the personal assistant the circle builds over the 8 weeks. Each wee
 |---|---|---|---|
 {ROADMAP}
 
-Mini Muse only receives real connected services: weather from Open-Meteo, Google Calendar, and SMTP email. A service is unavailable until you enable and connect it. {today_line()}
+Mini Muse only receives real connected services: weather from Open-Meteo, Google Calendar, and Gmail. A service is unavailable until you enable and connect it. {today_line()}
 """
 
 
