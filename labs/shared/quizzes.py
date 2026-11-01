@@ -36,6 +36,11 @@ QUIZZES = {
         ("Intermediate — A candidate scores higher overall but newly fails a safety-critical test that baseline passed. What is it?", ["A regression that should block release", "A harmless trade-off", "A judge-calibration success", "A reason to delete the test"], 0),
         ("Difficult — Which criterion is most appropriate for a deterministic grader?", ["Whether the expected database record exists", "Whether an explanation feels empathetic", "Whether prose is insightful", "Whether a response is stylistically elegant"], 0),
     ],
+    "Week 7 · Production AI": [
+        ("Easy — Which failure should usually NOT be retried unchanged?", ["HTTP 400 bad request or an auth error", "HTTP 429 rate limit", "HTTP 503 server overloaded", "A call that timed out"], 0),
+        ("Intermediate — The naive policy reports 100% success, but some answers are broken JSON. What is the best fix?", ["Validate output against a schema and retry when it fails", "Raise the timeout", "Add more retries for 429 errors", "Switch to a larger model only"], 0),
+        ("Difficult — An agent tool sends emails and a retry may follow a timeout. What makes the retry safe?", ["An idempotency key so a duplicate send is recognized", "Retrying immediately with no backoff", "A longer system prompt", "Turning off tracing for that tool"], 0),
+    ],
 }
 
 
