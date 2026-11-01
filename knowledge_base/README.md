@@ -16,7 +16,7 @@ Notes for the Agent Engineering Peer Learning Circle, exported from Notion on 20
 | 4 · Tool Calling | [Tool calling](week-04-tool-calling/concepts.md) · [MCP](week-04-tool-calling/concepts-mcp.md) | [Weather assistant with tool calling & MCP](week-04-tool-calling/lab.md) |
 | 5 · Agent Engineering | [State, workflow, control loop, routing](week-05-agent-engineering/concepts.md) | [Stateful agent workflow in TypeScript](week-05-agent-engineering/lab.md) (Mini Muse agent step in [`labs/week5_agent_workflow/`](../labs/week5_agent_workflow/)) |
 | 6 · Evals | [Agent evaluation fundamentals](week-06-evals/concepts.md) · [Public benchmarks](week-06-evals/concepts-benchmarks.md) | [Evaluate and regression-test an agent](week-06-evals/lab.md) (code in [`labs/week6_agent_eval/`](../labs/week6_agent_eval/)) |
-| 7 · Production AI | [Agent reliability: tracing, timeouts, retries, fallbacks, loop budgets](week-07-production/concepts.md) | [Production reliability drill](../labs/week7_production/README.md) |
+| 7 · Production AI | [Agent reliability: tracing, timeouts, retries, fallbacks, loop budgets, tools in the wild](week-07-production/concepts.md) | [Production reliability drill](../labs/week7_production/README.md) |
 
 **Naming convention.** Each week has a folder `week-NN-topic/` containing:
 

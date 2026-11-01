@@ -377,6 +377,83 @@ The principle to remember:
 
 ---
 
+## 14. Tools in the wild
+
+You don't have to build every safeguard yourself. Each concept on this page has open-source and commercial tools behind it. Products in this space change quickly, so treat this as a map of categories and check each project's docs before choosing.
+
+### Concept → tools
+
+| Concept (section) | What the tools do | Examples |
+| --- | --- | --- |
+| **Tracing standard** (3) | A vendor-neutral format for spans and metrics, so you can switch tools without re-instrumenting | [OpenTelemetry GenAI semantic conventions](https://opentelemetry.io/docs/specs/semconv/gen-ai/) (parts still in development); auto-instrumentation: [OpenLLMetry](https://github.com/traceloop/openllmetry), [OpenInference](https://github.com/Arize-ai/openinference) |
+| **Observability platforms** (3) | Trace viewer, token and cost tracking, latency dashboards, often evals and prompt versions too | [Langfuse](https://langfuse.com) (open source, self-hostable), [Arize Phoenix](https://phoenix.arize.com) (open source, OpenTelemetry-based), [LangSmith](https://docs.smith.langchain.com) (LangChain), [W&B Weave](https://wandb.ai/site/weave), [Braintrust](https://www.braintrust.dev), [Helicone](https://www.helicone.ai) (proxy, almost no code change), [Pydantic Logfire](https://logfire.pydantic.dev); general monitoring vendors such as Datadog and Grafana also offer LLM views |
+| **Timeouts and retries** (5, 6) | Backoff, jitter, attempt caps, choosing which errors to retry | Model SDKs' built-in `timeout` and `max_retries`; [tenacity](https://tenacity.readthedocs.io) for Python |
+| **Validation** (7) | Parse and check output against a schema; re-ask the model when it fails | [Pydantic](https://docs.pydantic.dev), [Instructor](https://python.useinstructor.com), provider structured-output modes |
+| **Fallbacks and rate limiting** (8, 11) | A gateway between your code and model APIs: retries, fallback to another model or provider, load balancing, rate limits, spend tracking | [LiteLLM](https://docs.litellm.ai) (open source), [Portkey](https://portkey.ai) |
+| **Guardrails** (12) | Input and output checks: prompt injection, PII, topic and policy rules | [Guardrails AI](https://www.guardrailsai.com), [NVIDIA NeMo Guardrails](https://github.com/NVIDIA/NeMo-Guardrails) |
+| **Loop budgets and human approval** (10, 12) | Max turns, pause for approval, resume afterwards | Built into agent frameworks: [LangGraph](https://langchain-ai.github.io/langgraph/) interrupts, [OpenAI Agents SDK](https://openai.github.io/openai-agents-python/) (tracing, guardrails, max turns), Claude Agent SDK, [Pydantic AI](https://ai.pydantic.dev) |
+| **Durable execution** | Save progress after each step so a crash, deploy or long human wait resumes instead of restarting | [Temporal](https://temporal.io), LangGraph checkpointing, [Restate](https://restate.dev), [Inngest](https://www.inngest.com), [DBOS](https://www.dbos.dev) |
+
+Durable execution is the one concept not covered earlier on this page. It matters once an agent runs for minutes or hours, or waits on a person: without it, a server restart in the middle of a task loses the work, or worse, repeats side effects that already happened.
+
+### How they fit together
+
+```txt
+           Your agent code  (framework: LangGraph / OpenAI Agents SDK / Pydantic AI / plain Python)
+                │    loop budgets, human approval, validation (Pydantic / Instructor)
+                │    retries on tools (tenacity)
+                ▼
+           Gateway  (LiteLLM / Portkey)  ── retries, fallback model, rate limits, cost
+                │
+                ▼
+           Model providers                 Tools / APIs
+
+   Everything emits OpenTelemetry spans ──→  Observability platform (Langfuse / Phoenix / …)
+                                                  │
+                                                  └──→ failing traces become eval cases (Week 6)
+
+   Long-running or approval-heavy agents run inside durable execution (Temporal / LangGraph checkpoints / …)
+```
+
+### A small example: retries and validation without writing them yourself
+
+```python
+from pydantic import BaseModel, ValidationError
+from tenacity import retry, stop_after_attempt, wait_random_exponential, retry_if_exception_type
+
+class TicketLabel(BaseModel):
+    category: str
+    urgency: int
+
+class Transient(Exception):
+    """Raise this for 429, 5xx, timeouts. Don't raise it for 400s or auth errors."""
+
+@retry(
+    stop=stop_after_attempt(3),                                  # cap attempts (section 6)
+    wait=wait_random_exponential(multiplier=0.5, max=8),         # backoff + full jitter
+    retry=retry_if_exception_type((Transient, ValidationError)), # retry only what can heal
+)
+def classify(ticket: str) -> TicketLabel:
+    raw = call_model(ticket)                  # your model call, with its own timeout set
+    return TicketLabel.model_validate_json(raw)  # invalid JSON → ValidationError → retry
+```
+
+This is about fifteen lines for what the Week 7 lab's hardened policy does by hand. The lab is still worth doing: once you have seen the naive policy report broken JSON as success, you know what to check that a library is actually doing for you.
+
+### A suggested starter stack for circle projects
+
+| Need | Start with | Why |
+| --- | --- | --- |
+| See traces, tokens, cost | Langfuse or Arize Phoenix | Free and open source, work with any framework, OpenTelemetry-compatible |
+| Retries and backoff | SDK settings + tenacity | No new service to run |
+| Validation | Pydantic (+ Instructor if you want automatic re-asking) | Already in most Python stacks |
+| Fallback model | LiteLLM, when you need it | One call signature across providers |
+| Human approval, long tasks | Your framework's interrupt/checkpoint feature | Add Temporal-style durable execution only if tasks run long or must survive restarts |
+
+**Rule of thumb:** adopt one tool per layer, and only when you feel the pain it solves. A project with three agents and twelve dependencies is harder to make reliable than the failures it was meant to handle.
+
+---
+
 ## This week's lab and Mini Muse step
 
 - **Lab:** [Production reliability drill](../../labs/week7_production/README.md) — send the same task many times under injected faults (429, 503, hangs, slow answers, broken JSON) and compare a naive and a hardened policy on success rate, p95 latency and cost.
@@ -391,9 +468,11 @@ The principle to remember:
 4. When `get_weather` is down, what should Mini Muse say? How would you test that it says it?
 5. Adding a fallback model raised availability but users say answers got worse. What went wrong in the process?
 6. What three things would you alert on for your project in production?
+7. Which layer of your project would you hand to an existing tool first (tracing, retries, validation, fallback, guardrails), and what would you still keep in your own code?
 
 ## Further reading
 
 - Revisit the tracing and monitoring sections of [DeepLearning.AI — Evaluating AI Agents](https://www.deeplearning.ai/courses/evaluating-ai-agents)
 - [Anthropic — Effective Harnesses for Long-Running Agents](https://www.anthropic.com/engineering/effective-harnesses-for-long-running-agents)
 - [Anthropic — Building Effective Agents](https://www.anthropic.com/engineering/building-effective-agents) (guardrails and human checkpoints)
+- [OpenTelemetry — GenAI agent and framework spans](https://opentelemetry.io/docs/specs/semconv/gen-ai/gen-ai-agent-spans)
