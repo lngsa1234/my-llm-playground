@@ -177,7 +177,7 @@ goal → decide → run tools → observe results → decide again …
 - `slow` takes longer than the timeout.
 
 - **Code:** [`week7_reliability.py`](../mini_muse/week7_reliability.py).
-- **Run it:** Week 7 page → 🧩 Build Mini Muse. **Run the drill** is free and needs no model.
+- **Run it:** Week 7 page → 🧩 Build Mini Muse. Break a tool or the model in the right panel, then run a request and read the trace.
 - **Try:**
   - Make `get_weather` flaky with 0 retries, then with 2.
   - Make it down. Does the answer admit the weather is unavailable, or invent a temperature?

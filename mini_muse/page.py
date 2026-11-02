@@ -568,27 +568,15 @@ def step7(main, panel, settings) -> None:
     with lab_parameters(panel):
         runtime = _runtime_from_panel("muse_w7", settings)
     with main:
-        _step_header(7, ["Set `get_weather` to **flaky** with 0 retries, then with 2. Use the free drill first.",
+        _step_header(7, ["Set `get_weather` to **flaky** with 0 retries, then with 2.",
                          "Set `get_weather` to **down**: does the answer admit the weather is unavailable, or guess?",
                          "Set `check_calendar` to **slow** and lower the timeout.",
                          "Set the main model to **down** and give a fallback model."])
-        st.markdown("**Tool drill (free, no model)**: call each tool once through the runtime and read the trace.")
-        if st.button("Run the drill", key="muse_w7_drill"):
-            world = new_world()
-            results = {name: runtime.call_tool(week4_tools.execute, world, name, args) for name, args in
-                       {"get_weather": {"city": "Detroit"}, "check_calendar": {"date": "2026-10-29"}}.items()}
-            st.session_state.muse_w7_drill_result = {"runtime": runtime, "results": results}
-        drill = st.session_state.get("muse_w7_drill_result")
-        if drill:
-            _spans(drill["runtime"])
-            st.json(drill["results"], expanded=False)
-        st.divider()
-        st.markdown("**With the agent**")
         text = _example("muse_w7", "Request", [
             "What's the weather in Detroit, and what's on my calendar on 2026-10-29?",
             "Schedule yoga on 2026-10-28 at 18:00",
         ], height=60)
-        if st.button("Run the agent through the runtime", type="primary", key="muse_w7_run") and (llm := _run(settings, text)):
+        if st.button("Run Mini Muse through the runtime", type="primary", key="muse_w7_run") and (llm := _run(settings, text)):
             try:
                 started = time.perf_counter()
                 trace = week5_agent.run(llm, text, runtime=runtime)
