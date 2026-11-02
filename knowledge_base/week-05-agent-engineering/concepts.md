@@ -10,7 +10,9 @@
 
 You type this into Mini Muse:
 
-> **"Book a 30-minute prep with Maya on Tuesday at 10 and email her the agenda."**
+> **"Help me get ready for Monday's meeting with Maya: block 30 minutes on Tuesday at 10 to prep, and send her the agenda."**
+
+The **goal** behind it: *be ready for Monday's meeting with Maya.* It is done when prep time is on your calendar without a clash, **and** Maya has the agenda.
 
 Everything on this page is explained with this one request. Follow it through the diagram first, then read what each label means.
 
@@ -28,7 +30,7 @@ digraph week5_example {
     k_llm -> k_tool -> k_code [style=invis];
   }
 
-  goal [label="GOAL\nPrep with Maya is on Tue 10:00 (no clash)\nAND Maya has the Monday agenda" shape=box style="rounded,filled" fillcolor="#FFF6DE" color="#C68B20" penwidth=1.6];
+  goal [label="GOAL: be ready for Monday's meeting with Maya\nDone when: prep time is booked (no clash)\nand Maya has the agenda" shape=box style="rounded,filled" fillcolor="#FFF6DE" color="#C68B20" penwidth=1.6];
   k_code -> goal [style=invis];
 
   subgraph cluster_workflow {
@@ -36,7 +38,7 @@ digraph week5_example {
     style="rounded,dashed"; color="#9AA0A6";
 
     subgraph cluster_turn1 {
-      label="TURN 1 — user: \"Book a 30-min prep with Maya on Tuesday at 10 and email her the agenda\""; labeljust=l;
+      label="TURN 1 — user: \"Help me get ready for Monday's meeting with Maya: prep Tue at 10, send her the agenda\""; labeljust=l;
       fontname="Arial"; fontsize=10; fontcolor="#1A73E8"; style="rounded"; color="#92AFE8";
 
       subgraph cluster_loop {
@@ -82,7 +84,7 @@ The diagram uses three shapes: **purple** boxes are **LLM calls** (the model dec
 
 Read it from the top:
 
-1. **Goal.** What you want to be true at the end: the prep is booked without a clash, and Maya has the agenda.
+1. **Goal.** Be ready for Monday's meeting with Maya. It is done when the prep time is booked without a clash, and Maya has the agenda.
 2. **Turn 1.** Your message starts the first turn.
 3. **Agent loop.** Each **step** is one LLM call, plus the tool calls it asks for. The code runs the tools and sends the results back to the next LLM call.
 4. **Step 1.** LLM call #1 asks for two tools at once. The code runs `lookup_contact` and `check_calendar`.
@@ -97,7 +99,7 @@ In total: **4 LLM calls, 4 tool calls, 2 turns.** The model never runs a tool it
 
 | Term | Plain meaning | In the example |
 | --- | --- | --- |
-| **Goal** | The outcome you want to be *true* at the end | Prep booked on Tue 10:00 with no clash, **and** Maya has the agenda |
+| **Goal** | The outcome you want, with a clear "done when" | Be ready for Monday's meeting with Maya. Done when prep time is booked (no clash) **and** Maya has the agenda |
 | **Task** | One piece of work toward the goal | Find Maya · check Tuesday · book prep · email Maya (4 tasks) |
 | **Agent loop** | The engine that repeats decide → act → observe until it stops | The large box in turn 1: it ran 4 times, then stopped |
 | **Step** | One pass through the loop: one LLM call, plus the tool calls it asked for | Steps 1–4 (step 1 ran two tools, so tasks ≠ steps) |
@@ -108,7 +110,7 @@ In total: **4 LLM calls, 4 tool calls, 2 turns.** The model never runs a tool it
 
 ## 3. Telling them apart, with the same example
 
-**Goal vs task.** All 4 tasks can succeed and the goal still fail. If Mini Muse emailed the wrong Maya, every task "worked", but Maya doesn't have the agenda. Always check the goal, not just that the tasks ran.
+**Goal vs task.** The goal is *why* you asked; tasks are the work. All 4 tasks can succeed and the goal still fail: if Mini Muse emailed the wrong Maya, or booked prep *after* Monday, every task "worked" but you are not ready for the meeting. Always check the goal's "done when", not just that the tasks ran.
 
 **Task vs step.** Tasks are *what* needs doing; steps are *how many passes* the loop took. Here there are 4 tasks and 4 steps, but they don't line up one to one: step 1 did two tasks, and step 4 did no task at all, it just answered.
 
@@ -122,7 +124,7 @@ In total: **4 LLM calls, 4 tool calls, 2 turns.** The model never runs a tool it
 
 | Change | What happens | Which concept it shows |
 | --- | --- | --- |
-| Tuesday at 10 is already taken | The checkpoint says no. Mini Muse doesn't book, names the clash and offers another time | **Checkpoint** protects the goal |
+| Tuesday at 10 is already taken | The checkpoint says no. Mini Muse doesn't book, names the clash and offers another time. The goal still stands; only the plan changes | **Checkpoint** protects the goal |
 | `max_steps` is 3 instead of 6 | The loop stops after step 3, before it can show you the draft. You get "I couldn't finish that within 3 steps" | A **step** budget that is too small |
 | You never click Approve | Turn 1 ended correctly, but the email is never sent. The goal is **not** met | **Turn** ended ≠ **goal** met |
 | You ask only "Email Maya the agenda" | 1 goal, 2 tasks (find Maya, email her), about 3 steps, still 2 turns | **Approval** always adds a turn |
