@@ -135,23 +135,6 @@ W1_EXAMPLES = [
 ]
 
 
-def _fill_w1_example() -> None:
-    picked = st.session_state.get("muse_w1_pick")
-    if picked:
-        st.session_state.muse_w1_ask = picked
-    st.session_state.muse_w1_pick = None
-
-
-def _ask_box() -> str:
-    """Week 1 input: a free text box for any question, plus example chips that fill it."""
-    if "muse_w1_ask" not in st.session_state:
-        st.session_state.muse_w1_ask = st.session_state.get("muse_w1_ask_saved", "")
-    text = st.text_area("Ask Mini Muse anything", key="muse_w1_ask", height=68,
-                        placeholder="Any question or request, e.g. \"Why is the sky blue?\" or \"Book lunch with Maya on Tuesday\"")
-    st.session_state.muse_w1_ask_saved = text
-    st.pills("Or try an example", W1_EXAMPLES, key="muse_w1_pick", on_change=_fill_w1_example)
-    return text
-
 
 # ------------------------------------------------------------------ week 1
 def step1(main, panel, settings) -> None:
@@ -164,7 +147,7 @@ def step1(main, panel, settings) -> None:
                          "Unrelated text is classified as **other**."])
         st.info("This is one structured-output API call only. Week 1 does not search, use tools, send email, or create events. "
                 "The `answer` field is whatever the model can say from what it already knows.")
-        text = _ask_box()
+        text = _example("muse_w1", "Ask Mini Muse anything", W1_EXAMPLES, height=68)
         if st.button("Ask Mini Muse", type="primary", key="muse_w1_run") and (llm := _run(settings, text)):
             try:
                 started = time.perf_counter()

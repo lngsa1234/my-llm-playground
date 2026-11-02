@@ -29,7 +29,8 @@ import sys
 from mini_muse.llm import parse_arguments
 from mini_muse.week4_tools import CORE_TOOLS, execute, schemas
 from mini_muse.week7_reliability import Runtime
-from mini_muse.world import new_world, side_effects, today_line
+from mini_muse import persona
+from mini_muse.world import new_world, side_effects
 
 RISKY_TOOLS = {"send_email"}
 DEFAULT_MAX_STEPS = 6
@@ -48,10 +49,7 @@ Style: short and plain. Confirm bookings as "Booked <title> on <date> at <time>.
 
 
 def system_prompt(extra: str = "") -> str:
-    parts = [f"You are Mini Muse, a personal assistant agent. {today_line()}", RULES]
-    if extra:
-        parts.append(extra)
-    return "\n\n".join(parts)
+    return persona.system_prompt("This step: you are an agent. Plan, use tools, check results and stop when done.\n\n" + RULES, extra)
 
 
 def run(llm, text: str, *, world: dict | None = None, tools=CORE_TOOLS, max_steps: int = DEFAULT_MAX_STEPS,

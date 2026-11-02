@@ -25,6 +25,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from mini_muse.world import NOTES_DIR
+from mini_muse.persona import system_prompt
 
 MODES = ["keyword", "semantic", "hybrid"]
 NOT_FOUND = "I don't see that in your notes."
@@ -147,10 +148,10 @@ def search(index: NotesIndex, query: str, k: int = 3, mode: str = "keyword", llm
 def grounded_prompt(question: str, results: list[dict]) -> list[dict]:
     sources = "\n\n".join(f"[{r['source']}]\n{r['text']}" for r in results) or "(no matching notes)"
     return [
-        {"role": "system", "content": (
-            "You are Mini Muse. Answer only from the user's notes below. Cite the source in "
-            f"brackets, like [Team offsite planning › Budget]. If the notes do not contain the "
-            f"answer, reply exactly: \"{NOT_FOUND}\"\n\nNotes:\n{sources}")},
+        {"role": "system", "content": system_prompt(
+            "This step: answer only from the user's notes below. Cite the source in brackets, like "
+            "[Team offsite planning › Budget]. If the notes do not contain the answer, reply exactly: "
+            f"\"{NOT_FOUND}\"\n\nNotes:\n{sources}")},
         {"role": "user", "content": question},
     ]
 

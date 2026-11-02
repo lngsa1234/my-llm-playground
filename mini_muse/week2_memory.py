@@ -21,12 +21,13 @@ from pathlib import Path
 
 from pydantic import BaseModel, Field
 
-from mini_muse.world import today_line
+from mini_muse.persona import system_prompt
 
 STATE_FILE = Path(__file__).resolve().parent / "state" / "memory.json"
 
-PERSONA = ("You are Mini Muse, a concise, warm personal assistant. Use what you know about the "
-           "user when it is relevant, and say so briefly when you rely on a saved preference.")
+# What Week 2 adds to the shared instructions in mini_muse/persona.py.
+PERSONA = ("Use what you know about the user when it is relevant, and say so briefly when you rely "
+           "on a saved preference.")
 
 
 @dataclass
@@ -64,8 +65,7 @@ def memory_text(memory: Memory) -> str:
 
 
 def system_message(memory: Memory, persona: str = PERSONA) -> dict:
-    parts = [persona, today_line(), memory_text(memory)]
-    return {"role": "system", "content": "\n\n".join(p for p in parts if p)}
+    return {"role": "system", "content": system_prompt(persona, memory_text(memory))}
 
 
 def build_context(memory: Memory, text: str, max_turns: int = 6, persona: str = PERSONA) -> list[dict]:

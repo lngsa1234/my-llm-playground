@@ -19,7 +19,7 @@ from typing import Literal, Optional
 
 from pydantic import BaseModel, Field
 
-from mini_muse.world import today_line
+from mini_muse.persona import system_prompt
 
 Intent = Literal["question", "weather", "calendar", "schedule", "email", "notes", "math", "other"]
 
@@ -55,15 +55,14 @@ class UnderstoodRequest(BaseModel):
 
 def instructions() -> str:
     intents = "\n".join(f"- {name}: {meaning}" for name, meaning in INTENTS.items())
-    return (
-        "You read requests sent to Mini Muse, a personal assistant, and fill in the fields of "
-        f"the response schema. {today_line()} Resolve relative dates against today: a weekday "
-        "name means its next occurrence after today. Use null for anything not stated; never "
-        "guess a time or a date. List what is missing before the request can be carried out.\n\n"
+    return system_prompt(
+        "This step: read the user's request and fill in the fields of the response schema. Resolve "
+        "relative dates against today: a weekday name means its next occurrence after today. Use null "
+        "for anything not stated; never guess a time or a date. List what is missing before the "
+        "request can be carried out.\n\n"
         "Always write a short reply (one to three sentences) in `answer`, using only what you already "
-        "know. You have no tools: you cannot see live data such as today's weather, or the user's "
-        "calendar, contacts or notes, and you cannot book, send or save anything. Never claim you did, "
-        "and never present a guess as live or personal data.\n\n"
+        "know. In this step you have no tools: you cannot see live data such as today's weather, or "
+        "the user's calendar, contacts or notes, and you cannot book, send or save anything.\n\n"
         f"Intents:\n{intents}"
     )
 

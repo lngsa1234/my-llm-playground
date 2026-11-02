@@ -26,7 +26,8 @@ import operator
 import sys
 
 from mini_muse.llm import parse_arguments
-from mini_muse.world import new_world, side_effects, today_line
+from mini_muse.world import new_world, side_effects
+from mini_muse import persona
 
 
 def _schema(name: str, description: str, /, **params: str) -> dict:
@@ -134,8 +135,7 @@ def execute(world: dict, name: str, args: dict, **extra) -> dict:
 
 # ------------------------------------------------------------------ one round of tool calling
 def system_prompt() -> str:
-    return (f"You are Mini Muse, a concise personal assistant. {today_line()} Use the tools to "
-            "get real data; never invent weather, events or email addresses.")
+    return persona.system_prompt("This step: use the tools to get real data before you answer.")
 
 
 def answer_with_tools(llm, text: str, world: dict | None = None, tool_names=CORE_TOOLS, registry=None) -> dict:
