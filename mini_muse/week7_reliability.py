@@ -16,6 +16,10 @@ and lets you break things on purpose (fault injection) to check that it copes:
     llm_fault="flaky" | "down"         the main model fails once / always
 
 The cap on agent-loop steps (Week 5's `max_steps`) is the third safety net.
+
+Try it:  python3 -m mini_muse.week7_reliability
+         python3 -m mini_muse.week7_reliability --fault get_weather=down --retries 0
+         python3 -m mini_muse.week7_reliability "Schedule yoga on 2026-10-28 at 18:00" --fault check_calendar=slow
 """
 
 from __future__ import annotations
@@ -147,3 +151,49 @@ class Runtime:
                     if attempt <= self.max_retries:
                         self._backoff(attempt)
         raise RuntimeError(f"The model is unavailable: {last}")
+
+
+if __name__ == "__main__":
+    import argparse
+
+    from mini_muse.llm import cli_llm
+    from mini_muse.week5_agent import run
+
+    parser = argparse.ArgumentParser(description="Run Mini Muse through the Week 7 runtime with faults injected.")
+    parser.add_argument("request", nargs="*", help="What to ask Mini Muse.")
+    parser.add_argument("--fault", action="append", default=[], metavar="TOOL=FAULT",
+                        help=f"Break a tool, e.g. get_weather=flaky. Faults: {', '.join(FAULTS)}. Repeatable.")
+    parser.add_argument("--llm-fault", choices=["flaky", "down"], help="Break the main model.")
+    parser.add_argument("--retries", type=int, default=2, help="Retries per call (default 2).")
+    parser.add_argument("--timeout", type=float, default=0.5, help="Tool timeout in seconds (default 0.5).")
+    parser.add_argument("--fallback", help="Fallback model if the main model keeps failing.")
+    args = parser.parse_args()
+
+    text = " ".join(args.request)
+    faults = dict(f.split("=", 1) for f in args.fault)
+    if not text:
+        text = "What's the weather in Detroit, and what's on my calendar on 2026-10-29?"
+        print(f'No request given, so using the example: "{text}"')
+    if not args.request and not args.fault and not args.llm_fault:
+        faults = {"get_weather": "flaky"}
+        print("No faults given, so get_weather is set to flaky (fails once, then works).")
+        print("Try: python3 -m mini_muse.week7_reliability --fault get_weather=down --retries 0\n")
+
+    runtime = Runtime(max_retries=args.retries, tool_timeout_s=args.timeout, fallback_model=args.fallback,
+                      faults=faults, llm_fault=args.llm_fault)
+    print(f"Faults: {faults or 'none'} · model fault: {args.llm_fault or 'none'} · retries: {args.retries} "
+          f"· timeout: {args.timeout}s · fallback: {args.fallback or 'none'}\n")
+    try:
+        trace = run(cli_llm(), text, runtime=runtime)
+        print(f"Mini Muse: {trace['answer']}\n")
+    except RuntimeError as exc:
+        print(f"Mini Muse failed: {exc}\n")
+
+    print("Trace:")
+    for span in runtime.tracer.spans:
+        status = "ok " if span.ok else "ERR"
+        extra = f"  {span.error or span.note}".rstrip()
+        print(f"  {status} {span.kind:4} {span.name:24} attempt {span.attempt}  {span.ms:7.1f} ms{extra}")
+    summary = runtime.tracer.summary()
+    print(f"\n{summary['llm_calls']} model calls · {summary['tool_calls']} tool calls · "
+          f"{summary['errors']} errors · {summary['retries']} retries · {summary['tokens']} tokens")
