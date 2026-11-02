@@ -4,166 +4,169 @@
 
 | Learn | Build | Key terms | Watch for |
 | --- | --- | --- | --- |
-| Design a multi-step system that observes, decides, acts, and tracks progress | Mini Muse's agent loop, with a step cap and approval before email | Goal, task, agent loop, step, turn · workflow, checkpoint, approval | Agents need stop conditions, budgets, and human approval paths |
+| How an agent works through a request step by step, and how you keep it safe | Mini Muse's agent loop, with a step cap and approval before email | Goal, task, agent loop, step, turn · workflow, checkpoint, approval | Agents need stop conditions, budgets, and human approval paths |
 
-## 1. What makes a system an agent?
+## 1. One example for the whole page
 
-An agent is an application that pursues a goal across multiple steps. It keeps state, chooses a next action, uses tools when needed, observes the result, and stops according to explicit rules.
+You type this into Mini Muse:
+
+> **"Book a 30-minute prep with Maya on Tuesday at 10 and email her the agenda."**
+
+Everything on this page is explained with this one request. Follow it through the diagram first, then read what each label means.
 
 ```graphviz
-digraph agent_loop {
-  rankdir=LR; bgcolor="transparent"; nodesep=.35; ranksep=.45;
-  node [shape=box style="rounded,filled" fontname="Arial" fontsize=10 fontcolor="#202124" margin=".14,.08"];
-  state [label="Goal + state" fillcolor="#E8F7F2" color="#86CDB7"];
-  decide [label="Decide next\nstep" fillcolor="#E8F0FF" color="#92AFE8"];
-  act [label="Act with a tool\nor respond" fillcolor="#F3F0FF" color="#7B61FF"];
-  observe [label="Observe result\nand update state" fillcolor="#FFECEE" color="#C74B62"];
-  stop [label="Complete, fail,\nor ask a human" fillcolor="#FFF6DE" color="#C68B20"];
-  state -> decide -> act -> observe -> decide;
-  observe -> stop [label=" goal met / limit" fontname="Arial" fontsize=9];
+digraph week5_example {
+  rankdir=TB; bgcolor="transparent"; nodesep=.3; ranksep=.32; compound=true;
+  node [shape=box style="rounded,filled" fontname="Arial" fontsize=10 fontcolor="#202124" margin=".14,.07"];
+  edge [fontname="Arial" fontsize=9 color="#6B6B6B"];
+
+  goal [label="GOAL\nPrep with Maya is on Tue 10:00 (no clash)\nAND Maya has the Monday agenda" fillcolor="#FFF6DE" color="#C68B20" penwidth=1.6];
+
+  subgraph cluster_workflow {
+    label="WORKFLOW — the path you design in code"; labeljust=l; fontname="Arial"; fontsize=11; fontcolor="#5F6368";
+    style="rounded,dashed"; color="#9AA0A6";
+
+    subgraph cluster_turn1 {
+      label="TURN 1 — user: \"Book a 30-min prep with Maya on Tuesday at 10 and email her the agenda\""; labeljust=l;
+      fontname="Arial"; fontsize=10; fontcolor="#1A73E8"; style="rounded"; color="#92AFE8";
+
+      subgraph cluster_loop {
+        label="AGENT LOOP — decide → act → observe, up to max_steps = 6"; labeljust=l;
+        fontname="Arial"; fontsize=10; fontcolor="#7B61FF"; style="rounded,filled"; fillcolor="#F8F6FF"; color="#B9A8FF";
+
+        s1 [label="STEP 1\nmodel asks for 2 tools\nTASK: find Maya → lookup_contact\nTASK: check Tuesday → check_calendar" fillcolor="#E8F0FF" color="#92AFE8"];
+        cp [label="✔ CHECKPOINT (automatic)\nIs Tue 10:00 free?" shape=diamond style="filled" fillcolor="#E8F7F2" color="#1E8E6E" margin=".05,.05"];
+        s2 [label="STEP 2\nTASK: book prep → create_event" fillcolor="#E8F0FF" color="#92AFE8"];
+        s3 [label="STEP 3\nTASK: email Maya → send_email" fillcolor="#E8F0FF" color="#92AFE8"];
+        hold [label="APPROVAL needed\nemail is HELD, not sent\n(pending_actions)" fillcolor="#FFECEE" color="#C74B62"];
+        s4 [label="STEP 4\nmodel answers, no tool call:\n\"Booked. Here's the draft. Send it?\"" fillcolor="#E8F0FF" color="#92AFE8"];
+        busy [label="Stop and offer\nanother time" fillcolor="#F1F3F4" color="#9AA0A6"];
+      }
+    }
+
+    subgraph cluster_turn2 {
+      label="TURN 2 — user clicks Approve"; labeljust=l; fontname="Arial"; fontsize=10; fontcolor="#1A73E8";
+      style="rounded"; color="#92AFE8";
+      approve [label="Human says yes\napprove() sends the email" fillcolor="#FFECEE" color="#C74B62"];
+    }
+  }
+
+  done [label="Goal met ✓" fillcolor="#FFF6DE" color="#C68B20" penwidth=1.6];
+
+  goal -> s1 [lhead=cluster_turn1 label=" broken into tasks"];
+  s1 -> cp;
+  cp -> s2 [label=" yes"];
+  cp -> busy [label=" no"];
+  s2 -> s3;
+  s3 -> hold;
+  hold -> s4 [label=" result: \"needs approval\""];
+  s4 -> approve [label=" loop stops — turn 1 ends"];
+  approve -> done;
 }
 ```
 
-Not every multi-step feature needs a model-driven agent. A fixed workflow is usually simpler when the paths and decisions are already known.
+Read it from the top:
 
-## 2. Eight words that get mixed up
+1. **Goal.** What you want to be true at the end: the prep is booked without a clash, and Maya has the agenda.
+2. **Turn 1.** Your message starts the first turn.
+3. **Agent loop.** Mini Muse repeats *decide → act → observe*. Each pass is one **step**.
+4. **Step 1.** The model asks for two tools at once: find Maya's email, and check Tuesday's calendar.
+5. **Checkpoint.** Is Tuesday 10:00 free? If not, Mini Muse stops and offers another time. If yes, it continues.
+6. **Step 2.** It books the prep.
+7. **Step 3.** It asks to send the email, but sending is risky, so the email is **held for approval** instead of sent.
+8. **Step 4.** The model answers without asking for a tool, so the loop stops and turn 1 ends: "Booked. Here's the draft. Send it?"
+9. **Turn 2.** You click **Approve**, and the email is sent. Only now is the goal met.
 
-People use these words loosely, and that causes real design bugs: a step cap that is too small, an approval that never comes back, a "checkpoint" that is only a hope in the prompt. They fall into two groups.
+## 2. The eight terms, on this example
 
-**What the agent is doing**
-
-| Term | What it is | How you know you have one | In Mini Muse |
-| --- | --- | --- | --- |
-| **Goal** | The outcome the user wants. It is done when it is *true*, not when work stops. | You can write a check for it: "Maya has the agenda", "prep is on the calendar". | The user's request, for example "Email Maya the agenda and book prep on Tuesday at 10". |
-| **Task** | One unit of work toward the goal. One goal usually breaks into several tasks. | It has its own result you can inspect. | Look up Maya · draft the email · send it · check Tuesday · book the prep. |
-| **Agent loop** | The engine that repeats *decide → act → observe* until it stops. | There is a loop in code with a stop condition and a cap. | `for step in range(1, max_steps + 1)` in `week5_agent.run()`. |
-| **Step** | One pass through the loop: one model call, plus any tool calls it asked for. | It is what `max_steps` counts. | Step 2: the model asks for `check_calendar(2026-10-27)` and gets the result. |
-| **Turn** | One user message (or action) and the reply to it. One turn can contain many steps. | The user typed or clicked something. | "Email Maya…" is turn 1. Clicking **Approve** is turn 2. |
-
-**How the system controls it**
-
-| Term | What it is | How you know you have one | In Mini Muse |
-| --- | --- | --- | --- |
-| **Workflow** | The designed path: the stages, the allowed moves between them, and the end states. Written by you, in code. | You could draw it as a flowchart before any model runs. | Understand → agent loop → hold risky actions → approve → done. |
-| **Checkpoint** | A fixed point where the system *verifies* something or *saves progress* before going on. It is automatic: no human needed. | It runs every time, whatever the model decides. | Check the calendar before booking. Record held actions in `pending_actions`. |
-| **Approval** | A checkpoint where a **human** must say yes before a risky or irreversible action runs. | The action is held, shown to the user, and only runs on their click. | `send_email` is never run inside the loop. It waits for **Approve**, then `approve()` runs it. |
-
-### The difference that matters
-
-- **Goal vs task.** The goal is the *why*; tasks are the *how*. The agent can finish every task and still miss the goal (the email went to the wrong Maya). Check the goal, not just that tasks ran.
-- **Agent loop vs workflow.** The loop lets the *model* choose the next step. The workflow is the fence *you* draw around it: which stages exist, what must happen before what, where it must stop. A pure workflow has no loop; a pure loop has no fence. Good agents have both.
-- **Step vs turn.** Steps are the agent's internal moves; turns are the conversation. `max_steps` limits steps inside one turn. Approval always ends the turn and needs a new one.
-- **Checkpoint vs approval.** Every approval is a checkpoint, but most checkpoints should not bother a human. Use approval only when an action is risky, costly, or hard to undo. Otherwise check automatically.
-
-## 3. One request, traced end to end
-
-**Request:** *"Email Maya the Monday agenda and book a 30-minute prep on Tuesday at 10."*
-**Goal:** Maya has the agenda **and** a prep event is on Tuesday at 10:00, with no double-booking.
-
-| Turn | Step | The model decides | The system does | Control in play |
-| --- | --- | --- | --- | --- |
-| 1 | 1 | Call `lookup_contact("Maya")` and `check_calendar("2026-10-27")` | Runs both tools, returns Maya's email and Tuesday's events | Tool arguments validated |
-| 1 | 2 | Call `create_event(...)` for 10:00 | Tuesday is free, so it books the prep | **Checkpoint:** calendar checked before booking |
-| 1 | 3 | Call `send_email(to=maya@…)` | Does **not** send. Holds it in `pending_actions`, replies "needs approval" | **Approval:** risky action held |
-| 1 | 4 | Answer: "Booked prep. Here's the draft to Maya. Should I send it?" | No tool call, so the loop stops: `status="done"` | Stop condition: model answered |
-| 2 | — | User clicks **Approve** | `approve()` sends the held email | Human said yes |
-
-Things to notice:
-
-- **4 steps, 2 turns.** With `max_steps=3`, this request would stop before the draft. Size the cap for your longest real request, plus a little room.
-- **The goal is only met after turn 2.** If the user never approves, the loop still ended correctly, but the goal is not complete. Your UI must show what is still waiting.
-- **Two tools in one step.** A model can ask for several tools in one step. The step count is not the tool count.
-
-## 4. Design the workflow first
-
-A workflow defines stages, valid transitions, and terminal states. Make deterministic decisions in code; use an LLM only where judgment is needed.
-
-```text
-Request → Understand → Agent loop (decide → act → observe) → Check result → Done
-                              ↘ Risky action → Hold → Ask for approval → Run on "yes"
-                              ↘ Step cap / error → Stop safely and say why
-```
-
-Write the transition rules down before you prompt anything:
-
-| Rule | Type | Where it lives in Mini Muse |
+| Term | Plain meaning | In the example |
 | --- | --- | --- |
-| Never send email without the user's OK | Approval | Code: `send_email` is in `RISKY_TOOLS`, so the loop holds it |
-| Check the calendar before booking | Checkpoint | Prompt: a rule in `RULES` |
-| Stop after `max_steps` | Budget | Code: the loop's range |
-| Stop when the model answers without a tool call | Stop condition | Code: `if not reply.tool_calls` |
-| Retry a failed tool once or twice | Recovery | Code: Week 7's `Runtime` |
+| **Goal** | The outcome you want to be *true* at the end | Prep booked on Tue 10:00 with no clash, **and** Maya has the agenda |
+| **Task** | One piece of work toward the goal | Find Maya · check Tuesday · book prep · email Maya (4 tasks) |
+| **Agent loop** | The engine that repeats decide → act → observe until it stops | The purple box: it ran 4 times, then stopped |
+| **Step** | One pass through the loop: one model call, plus the tools it asked for | Steps 1–4 (step 1 ran two tools, so tasks ≠ steps) |
+| **Turn** | One message or action from you, and the reply to it | Turn 1: your request. Turn 2: your Approve click |
+| **Workflow** | The path *you* design in code: what can happen, in what order, and where it must stop | The dashed box: loop → hold risky actions → wait for approval → done |
+| **Checkpoint** | An automatic check before continuing. No human needed | "Is Tue 10:00 free?" before booking |
+| **Approval** | A checkpoint where a **human** must say yes before a risky action runs | The email is held until you click Approve |
 
-**A practical warning:** Mini Muse's calendar check is a rule *in the prompt*, so the model can still skip it. The email approval is enforced *in code*, so it cannot. When a check really matters, move it from the prompt into code: for example, refuse `create_event` unless `check_calendar` ran for that date earlier in the same turn.
+## 3. Telling them apart, with the same example
 
-## 5. State, context, and memory
+**Goal vs task.** All 4 tasks can succeed and the goal still fail. If Mini Muse emailed the wrong Maya, every task "worked", but Maya doesn't have the agenda. Always check the goal, not just that the tasks ran.
 
-| Concept | Meaning | Mini Muse example |
+**Task vs step.** Tasks are *what* needs doing; steps are *how many passes* the loop took. Here there are 4 tasks and 4 steps, but they don't line up one to one: step 1 did two tasks, and step 4 did no task at all, it just answered.
+
+**Step vs turn.** Steps happen *inside* a turn, without you. Turn 1 had 4 steps. Turn 2 had none: clicking Approve runs the held email directly, without the model.
+
+**Agent loop vs workflow.** Inside the loop, the *model* decides the next step. The workflow is the fence *you* build around it: the model can't send email on its own, because the code holds `send_email` no matter what the model says.
+
+**Checkpoint vs approval.** Both pause to check something. The calendar check is automatic, because asking you "is Tuesday free?" would be annoying. The email needs your OK, because a sent email can't be unsent.
+
+## 4. What if…? (change one thing in the example)
+
+| Change | What happens | Which concept it shows |
 | --- | --- | --- |
-| State | Structured facts about the current run | `steps`, `tool_calls`, `pending_actions`, `status` |
-| Context | What is sent to the model on this call | System instructions, the request, earlier tool results |
-| Memory | What is kept beyond this run | Week 2's saved facts and summary |
+| Tuesday at 10 is already taken | The checkpoint says no. Mini Muse doesn't book, names the clash and offers another time | **Checkpoint** protects the goal |
+| `max_steps` is 3 instead of 6 | The loop stops after step 3, before it can show you the draft. You get "I couldn't finish that within 3 steps" | A **step** budget that is too small |
+| You never click Approve | Turn 1 ended correctly, but the email is never sent. The goal is **not** met | **Turn** ended ≠ **goal** met |
+| You ask only "Email Maya the agenda" | 1 goal, 2 tasks (find Maya, email her), about 3 steps, still 2 turns | **Approval** always adds a turn |
+| The model "forgets" to check the calendar | It books anyway and may double-book | The calendar check is only a rule in the prompt (see below) |
 
-State is the source of truth for progress. Keep it explicit and machine-readable. Do not rely on reading the conversation to decide whether an email was already sent: check `final_state["emails_sent"]`.
+## 5. Where each control lives in Mini Muse
+
+| Control | Type | Enforced by | Can the model skip it? |
+| --- | --- | --- | --- |
+| Hold `send_email` until you approve | Approval | **Code**: `send_email` is in `RISKY_TOOLS` | No |
+| Stop after `max_steps` | Step budget | **Code**: the loop's `range(1, max_steps + 1)` | No |
+| Stop when the model answers without a tool | Stop condition | **Code**: `if not reply.tool_calls` | No |
+| Check the calendar before booking | Checkpoint | **Prompt**: a line in `RULES` | **Yes** |
+
+**Practical lesson:** a rule in the prompt is a request; a rule in code is a guarantee. Mini Muse's calendar checkpoint is only in the prompt, so the model can skip it. To make it a real checkpoint, the code could refuse `create_event` unless `check_calendar` ran for that date earlier in the same turn.
+
+## 6. What the code records for the example
+
+Mini Muse keeps progress as structured **state**, not as chat text. After turn 1, the trace from `week5_agent.run()` looks roughly like this:
 
 ```python
 trace = {
-    "status": "done",                 # done | max_steps
-    "steps": [...],                   # one entry per pass through the loop
-    "tool_calls": [...],              # what actually ran
-    "pending_actions": [              # held for approval, not run yet
+    "status": "done",                     # the loop stopped because the model answered
+    "steps": [                            # one entry per step
+        {"step": 1, "decision": "tools", "calls": ["lookup_contact", "check_calendar"]},
+        {"step": 2, "decision": "tools", "calls": ["create_event"]},
+        {"step": 3, "decision": "tools", "calls": ["send_email"]},   # held, not run
+        {"step": 4, "decision": "answer"},
+    ],
+    "final_state": {"events_created": [...1 event...], "emails_sent": []},
+    "pending_actions": [                  # waiting for approval (turn 2)
         {"tool": "send_email", "args": {"to": "maya@example.com", "subject": "Monday agenda"}}
     ],
 }
 ```
 
-## 6. Routing
+To answer "was the email sent?", read `final_state["emails_sent"]`, not the chat. The model's reply might say "sent" even when it wasn't.
 
-Routing answers: **what should happen next?** It can pick a workflow stage, a tool, a retrieval step, or a specialist.
+## 7. Other ideas, briefly
 
-| Route type | Best use | Example |
-| --- | --- | --- |
-| Deterministic rule | Known conditions | Tool is risky → hold for approval |
-| LLM router | Ambiguous intent | "Can you sort out Tuesday?" → calendar or email? |
-| Hybrid | Rules for clear cases, model for the rest | Code holds risky tools for approval; the model picks every other tool |
+**Do you even need an agent?** If the path is always the same (look up Maya → check calendar → book → draft email), a fixed workflow in code is simpler and more predictable. Use an agent loop when the next step depends on what the previous step found.
 
-Prefer rules for safety boundaries. A model router should only choose from an allowed, well-described set of options.
+**Routing** decides what happens next. Use code rules for safety ("risky tool → hold for approval") and let the model choose only among allowed, well-described tools.
 
-## 7. Tools, validation, and approval
+**Tools are proposed, not trusted.** The model *proposes* a tool call; the code checks the tool exists and the arguments are valid, applies the approval rules, runs it, and records what actually happened. Tool results are evidence, not instructions.
 
-Every action has an owner outside the model:
+**One agent before many.** Split into several agents only when the parts need different tools, permissions or context. Booking and emailing in the example are just two tasks for one agent.
 
-1. The model **proposes** an action.
-2. The runtime **validates** the tool name and arguments.
-3. Policy **checks** budgets and whether approval is needed.
-4. The tool **runs** and returns an observable result.
-5. State **records** what actually happened.
-
-Tool results are evidence, not instructions. Treat retrieved text and external responses as untrusted input.
-
-## 8. Single agent before multi-agent
-
-Use one agent with a clear workflow unless separate roles truly need different context, tools, permissions, or evaluation criteria.
-
-| Add a specialist when | Keep one agent when |
-| --- | --- |
-| It needs isolated credentials, narrow context, or its own quality gate | It is only a different step in the same workflow |
-| A handoff can be written as a clear contract | Passing context would add more complexity than value |
-
-Each handoff should list inputs, allowed tools, expected outputs, and exit criteria.
-
-## 9. Evaluate the workflow
-
-Measure whether the **goal** was met, not just whether the loop ended. Also check behavior: the right tools in the right order, checkpoints honored, risky actions held for approval, and a sensible stop. Record a trace for every run so a failure can be diagnosed without guessing what the model saw or did. Week 6 turns these checks into a golden dataset.
+**Evaluate the goal, not the loop.** A run that stops cleanly can still miss the goal. Week 6 grades runs like this example against expected tools, held approvals and the final state.
 
 ## Check yourself
 
-1. A request takes 5 steps and `max_steps` is 4. What does the user see, and is the goal met?
-2. Why does approval always create a new turn, but not a new goal?
-3. Name one checkpoint in your own project that should be automatic, and one that needs approval.
-4. Mini Muse's calendar check lives in the prompt. How would you enforce it in code?
+Use the example to answer:
 
-**Core mental model:** the model proposes the next step; the workflow, checkpoints, and approvals decide what may actually happen.
+1. How many goals, tasks, steps and turns are there? Why don't tasks and steps line up one to one?
+2. If `max_steps` were 2, which tasks would be done, and what would you see?
+3. Why is the calendar check a checkpoint, but the email an approval?
+4. For your own project, name one checkpoint that should be automatic and one action that needs approval.
+
+**Core mental model:** the model proposes the next step; the workflow, checkpoints and approvals decide what may actually happen.
 
 ## References
 
