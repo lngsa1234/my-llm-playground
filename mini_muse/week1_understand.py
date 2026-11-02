@@ -50,8 +50,7 @@ class UnderstoodRequest(BaseModel):
     city: Optional[str] = Field(description="City for a weather request.")
     people: list[str] = Field(description="Names of people mentioned.")
     missing_info: list[str] = Field(description="Details still needed before acting, e.g. 'time'. Empty if none.")
-    answer: Optional[str] = Field(description="For intent 'question' only: a short answer from general knowledge. "
-                                              "Null for every other intent.")
+    answer: str = Field(description="A short reply to the user from the model's own knowledge, for every intent.")
 
 
 def instructions() -> str:
@@ -61,10 +60,10 @@ def instructions() -> str:
         f"the response schema. {today_line()} Resolve relative dates against today: a weekday "
         "name means its next occurrence after today. Use null for anything not stated; never "
         "guess a time or a date. List what is missing before the request can be carried out.\n\n"
-        "If the request is a general-knowledge question you can answer yourself, without live data, "
-        "tools or the user's own calendar, contacts or notes, use intent 'question' and put a short "
-        "answer (one to three sentences) in `answer`. For every other intent leave `answer` null: "
-        "you do not carry out requests or look anything up, you only describe them.\n\n"
+        "Always write a short reply (one to three sentences) in `answer`, using only what you already "
+        "know. You have no tools: you cannot see live data such as today's weather, or the user's "
+        "calendar, contacts or notes, and you cannot book, send or save anything. Never claim you did, "
+        "and never present a guess as live or personal data.\n\n"
         f"Intents:\n{intents}"
     )
 

@@ -53,7 +53,7 @@ From Week 5, teams build their own projects. Mini Muse is the **reference implem
 - **Run it:** Week 1 page → 🧩 Build Mini Muse, or `python -m mini_muse.week1_understand "Book lunch with Maya Tuesday at noon"`.
 - **Try:**
   - A relative date ("Tuesday"). It resolves only because today's date is put into the instructions.
-  - A general-knowledge question ("What's the difference between weather and climate?"). Intent `question`, answered in `answer`.
+  - A general-knowledge question ("What's the difference between weather and climate?"). Intent `question`. Every request gets an `answer` from the model's own knowledge; compare it with a weather or calendar request.
   - A vague request ("schedule a call next week"). Watch `missing_info`.
   - Something Mini Muse can't do. The intent should be `other`.
 - **Check yourself:**

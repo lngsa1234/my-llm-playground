@@ -130,12 +130,12 @@ def step1(main, panel, settings) -> None:
     with lab_parameters(panel):
         st.caption("No extra parameters this week. The model and token limit come from Model settings.")
     with main:
-        _step_header(1, ["A general-knowledge question is classified as **question** and answered in the `answer` field.",
+        _step_header(1, ["Every request gets an `answer` from the model's own knowledge. Compare a general question with one that needs live data or your calendar.",
                          "A relative date (\"Tuesday\") becomes a real date because today's date is in the instructions.",
                          "Incomplete text leaves fields empty and identifies missing details instead of guessing.",
                          "Unrelated text is classified as **other**."])
         st.info("This is one structured-output API call only. Week 1 does not search, use tools, send email, or create events. "
-                "It can answer general-knowledge questions from what the model already knows.")
+                "The `answer` field is whatever the model can say from what it already knows.")
         text = _example("muse_w1", "Question or request", [
             "What's the difference between weather and climate?",
             "Explain what a token is in an LLM in one sentence.",
@@ -193,8 +193,9 @@ def step1(main, panel, settings) -> None:
                 st.markdown(f"The model classified the text as **{req['intent']}** and returned fields with fixed names and types.")
                 if req.get("answer"):
                     st.success(f"**Answer from the model's own knowledge:** {req['answer']}")
-                elif req["intent"] != "question":
-                    st.caption("No answer: this request needs tools, live data or your own data, which come in later weeks.")
+                if req["intent"] != "question":
+                    st.caption("This request needs tools, live data or your own data, so the answer above is only what "
+                               "the model can say without them. Later weeks add notes search (Week 3) and tools (Week 4).")
                 if req["missing_info"]:
                     st.warning(f"Missing: {', '.join(req['missing_info'])}. The model did not invent those details.")
                 else:
