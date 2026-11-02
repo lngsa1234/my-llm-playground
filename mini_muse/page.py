@@ -125,26 +125,47 @@ def _registry(panel):
     return build_registry(CONNECTORS, selections, world=new_world())
 
 
+W1_EXAMPLES = [
+    "What's the difference between weather and climate?",
+    "Explain what a token is in an LLM in one sentence.",
+    "Who wrote Pride and Prejudice?",
+    "Book lunch with Maya on Tuesday at noon",
+    "Schedule a call with the team next week",
+    "What's the weather in Detroit?",
+]
+
+
+def _fill_w1_example() -> None:
+    picked = st.session_state.get("muse_w1_pick")
+    if picked:
+        st.session_state.muse_w1_ask = picked
+    st.session_state.muse_w1_pick = None
+
+
+def _ask_box() -> str:
+    """Week 1 input: a free text box for any question, plus example chips that fill it."""
+    if "muse_w1_ask" not in st.session_state:
+        st.session_state.muse_w1_ask = st.session_state.get("muse_w1_ask_saved", "")
+    text = st.text_area("Ask Mini Muse anything", key="muse_w1_ask", height=68,
+                        placeholder="Any question or request, e.g. \"Why is the sky blue?\" or \"Book lunch with Maya on Tuesday\"")
+    st.session_state.muse_w1_ask_saved = text
+    st.pills("Or try an example", W1_EXAMPLES, key="muse_w1_pick", on_change=_fill_w1_example)
+    return text
+
+
 # ------------------------------------------------------------------ week 1
 def step1(main, panel, settings) -> None:
     with lab_parameters(panel):
         st.caption("No extra parameters this week. The model and token limit come from Model settings.")
     with main:
-        _step_header(1, ["Every request gets an `answer` from the model's own knowledge. Compare a general question with one that needs live data or your calendar.",
+        _step_header(1, ["Ask anything. Every request gets an `answer` from the model's own knowledge. Compare a general question with one that needs live data or your calendar.",
                          "A relative date (\"Tuesday\") becomes a real date because today's date is in the instructions.",
                          "Incomplete text leaves fields empty and identifies missing details instead of guessing.",
                          "Unrelated text is classified as **other**."])
         st.info("This is one structured-output API call only. Week 1 does not search, use tools, send email, or create events. "
                 "The `answer` field is whatever the model can say from what it already knows.")
-        text = _example("muse_w1", "Question or request", [
-            "What's the difference between weather and climate?",
-            "Explain what a token is in an LLM in one sentence.",
-            "Who wrote Pride and Prejudice?",
-            "Book lunch with Maya on Tuesday at noon",
-            "Schedule a call with the team next week",
-            "What's the weather in Detroit?",
-        ], height=68)
-        if st.button("Create structured output", type="primary", key="muse_w1_run") and (llm := _run(settings, text)):
+        text = _ask_box()
+        if st.button("Ask Mini Muse", type="primary", key="muse_w1_run") and (llm := _run(settings, text)):
             try:
                 started = time.perf_counter()
                 request = week1_understand.understand(llm, text)
@@ -157,6 +178,10 @@ def step1(main, panel, settings) -> None:
         result = st.session_state.get("muse_w1_result")
         if result and result["text"] != text:
             result = None
+        if result:
+            with st.container(border=True):
+                st.markdown("**💬 Mini Muse's answer**")
+                st.markdown(result["request"].get("answer") or "_No answer returned._")
         sent_col, back_col = st.columns(2, gap="large")
         with sent_col, st.container(border=True):
             st.markdown("**Sent to the model**")
@@ -191,8 +216,6 @@ def step1(main, panel, settings) -> None:
             with st.container(border=True):
                 st.markdown("**What this one call demonstrates**")
                 st.markdown(f"The model classified the text as **{req['intent']}** and returned fields with fixed names and types.")
-                if req.get("answer"):
-                    st.success(f"**Answer from the model's own knowledge:** {req['answer']}")
                 if req["intent"] != "question":
                     st.caption("This request needs tools, live data or your own data, so the answer above is only what "
                                "the model can say without them. Later weeks add notes search (Week 3) and tools (Week 4).")
