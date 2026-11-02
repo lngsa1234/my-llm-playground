@@ -61,11 +61,12 @@ This week Mini Muse learns to read what you ask. One API call with **structured 
 
 ```text
 "Book lunch with Maya on Tuesday at noon"
-  → intent: schedule · title: Lunch · date: 2026-10-27 · time: 12:00 · people: [Maya] · missing_info: []
+  → intent: schedule · title: Lunch · date: 2026-10-27 · time: 12:00 · people: [Maya] · missing_info: [] · answer: null
 ```
 
 **Do it:** open **Week 1 · Single API Call**, switch to **Build Mini Muse**, pick an example and click **Understand**. Then try your own requests:
 
+- [ ] A general-knowledge question, like "What's the difference between weather and climate?". The intent is `question` and the model answers in the `answer` field from what it already knows. Compare "What's the weather in Detroit?": that needs live data, so there is no answer until Week 4's tools.
 - [ ] A relative date, like "Tuesday". It only resolves because today's date is sent with the request.
 - [ ] A vague request, like "schedule a call with the team next week". Watch what lands in `missing_info`.
 - [ ] Something Mini Muse can't do, like "book me a flight to Beijing". The intent should be `other`.

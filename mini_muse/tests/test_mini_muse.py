@@ -96,10 +96,12 @@ def test_every_schema_is_strict_and_named():
 # ------------------------------------------------------------------ week 1
 def test_understand_sends_today_and_returns_structure():
     req = week1_understand.UnderstoodRequest(intent="schedule", summary="Lunch with Maya", title="Lunch",
-                                       date="2026-10-27", time="12:00", city=None, people=["Maya"], missing_info=[])
+                                       date="2026-10-27", time="12:00", city=None, people=["Maya"], missing_info=[],
+                                       answer=None)
     llm = FakeLLM(parsed={"UnderstoodRequest": req})
     assert week1_understand.understand(llm, "Lunch with Maya Tuesday noon").date == "2026-10-27"
     assert "2026-10-26" in week1_understand.instructions()
+    assert "question" in week1_understand.INTENTS and "`answer`" in week1_understand.instructions()
 
 
 # ------------------------------------------------------------------ week 2
@@ -315,7 +317,7 @@ def test_golden_grade_counts_held_back_actions():
 # ------------------------------------------------------------------ week 8
 def test_assistant_uses_every_component_and_remembers():
     req = week1_understand.UnderstoodRequest(intent="notes", summary="Offsite budget", title=None, date=None,
-                                       time=None, city=None, people=["Jordan"], missing_info=[])
+                                       time=None, city=None, people=["Jordan"], missing_info=[], answer=None)
     llm = FakeLLM(
         replies=[tools_reply(call("search_notes", query="offsite budget")), "Jordan capped it at $4,000.",
                  lambda messages: "You asked about the budget." if any(
@@ -400,7 +402,7 @@ def test_llm_keeps_a_copy_of_the_exact_request_body(monkeypatch):
 
     monkeypatch.setenv("OPENAI_API_KEY", "test-key")
     llm = LLM(ModelSettings())
-    body = '{"intent":"other","summary":"x","title":null,"date":null,"time":null,"city":null,"people":[],"missing_info":[]}'
+    body = '{"intent":"other","summary":"x","title":null,"date":null,"time":null,"city":null,"people":[],"missing_info":[],"answer":null}'
 
     def handler(request):
         return httpx2.Response(200, json={

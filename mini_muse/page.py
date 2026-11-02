@@ -130,12 +130,20 @@ def step1(main, panel, settings) -> None:
     with lab_parameters(panel):
         st.caption("No extra parameters this week. The model and token limit come from Model settings.")
     with main:
-        _step_header(1, ["A relative date (\"Tuesday\") becomes a real date because today's date is in the instructions.",
+        _step_header(1, ["A general-knowledge question is classified as **question** and answered in the `answer` field.",
+                         "A relative date (\"Tuesday\") becomes a real date because today's date is in the instructions.",
                          "Incomplete text leaves fields empty and identifies missing details instead of guessing.",
                          "Unrelated text is classified as **other**."])
-        st.info("This is one structured-output API call only. Week 1 does not search, use tools, send email, or create events.")
-        text = st.text_area("Enter any question or request", key="muse_w1_freeform_text", height=68,
-                            placeholder="Type anything you would like Muse to do.")
+        st.info("This is one structured-output API call only. Week 1 does not search, use tools, send email, or create events. "
+                "It can answer general-knowledge questions from what the model already knows.")
+        text = _example("muse_w1", "Question or request", [
+            "What's the difference between weather and climate?",
+            "Explain what a token is in an LLM in one sentence.",
+            "Who wrote Pride and Prejudice?",
+            "Book lunch with Maya on Tuesday at noon",
+            "Schedule a call with the team next week",
+            "What's the weather in Detroit?",
+        ], height=68)
         if st.button("Create structured output", type="primary", key="muse_w1_run") and (llm := _run(settings, text)):
             try:
                 started = time.perf_counter()
@@ -183,6 +191,10 @@ def step1(main, panel, settings) -> None:
             with st.container(border=True):
                 st.markdown("**What this one call demonstrates**")
                 st.markdown(f"The model classified the text as **{req['intent']}** and returned fields with fixed names and types.")
+                if req.get("answer"):
+                    st.success(f"**Answer from the model's own knowledge:** {req['answer']}")
+                elif req["intent"] != "question":
+                    st.caption("No answer: this request needs tools, live data or your own data, which come in later weeks.")
                 if req["missing_info"]:
                     st.warning(f"Missing: {', '.join(req['missing_info'])}. The model did not invent those details.")
                 else:
