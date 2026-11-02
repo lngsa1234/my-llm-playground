@@ -40,6 +40,15 @@ JUDGES = ["Heuristic (offline, free)", "LLM judge (uses Model settings)"]
 
 def render() -> None:
     main, panel = page_layout("Week 6 · Agent Evaluation")
+    # Week 6 shows only the Build Mini Muse demo. The concept lab below is kept as
+    # code in render_concept(), not shown in the app.
+    from mini_muse.page import render_step
+
+    render_step(6, main, panel, get_model_settings())
+
+
+def render_concept() -> None:
+    main, panel = page_layout("Week 6 · Agent Evaluation")
     if mini_muse_part(main, panel, 6,
                       caption="Goal: decide whether Muse v2 is safe to ship, using evidence instead of a demo, and catch what the update broke before users do.",
                       how_it_works=HOW_IT_WORKS):
