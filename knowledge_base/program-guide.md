@@ -24,13 +24,32 @@ This course is for anyone looking to systematically learn AI agent concepts, arc
 
 ## How this program is organized
 
-Each weekly session has three parts:
+The program is built around three steps: **learn, practice, build**.
 
-1. **20 minutes — Learn the essential concept.**
-2. **30 minutes — Use the lab to experiment with parameters and apply the concept, then walk through the Mini Muse Task Assistant as a reference project demo.**
-3. **25 minutes — Open discussion.**
+- **Learn** — each week covers one topic from the Knowledge Base.
+- **Practice** — a small lab for the week's concept, plus that week's step of the Mini Muse reference project.
+- **Build** — by the end of the program, everyone builds their own agent project.
 
-Each session needs **1–2 volunteers** to help facilitate a more interactive discussion.
+### Weekly session (75 minutes)
+
+Lynn shares what she learned that week, then the group practices and discusses together.
+
+| Time | Part | What happens |
+| --- | --- | --- |
+| 20 min | **Learn** | Lynn walks through the week's Knowledge Base topic: the key concepts and why they matter. |
+| 25 min | **Practice** | Hands-on with the week's small lab, then the matching Mini Muse step to see the concept inside a real agent. |
+| 30 min | **Open discussion** | Members share their own learning and practice: what they tried, what worked, what surprised them, and questions for the group. |
+
+Each session needs **1–2 volunteers** to help facilitate the open discussion.
+
+### Final project
+
+By the end of the program, **each member builds one agent project**. Choose either:
+
+- **A simple, task-based personal assistant** — one focused job done well, or
+- **A Mini Muse project** — your own version of Mini Muse, or a feature of the Mini Muse MVP.
+
+The [Course project](#course-project-mini-muse) section below describes the options in detail.
 
 ## Learning modules roadmap
 
