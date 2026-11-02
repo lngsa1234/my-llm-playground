@@ -90,8 +90,13 @@ def understand(llm, text: str) -> UnderstoodRequest:
 if __name__ == "__main__":
     from mini_muse.llm import cli_llm
 
+    text = " ".join(sys.argv[1:])
+    if not text:
+        text = "Book lunch with Maya on Tuesday at noon"
+        print(f'No request given, so using the example: "{text}"\n'
+              'Pass your own: python -m mini_muse.week1_understand "Who wrote Pride and Prejudice?"\n')
     model = cli_llm()
-    request = understand(model, " ".join(sys.argv[1:]) or "Book lunch with Maya on Tuesday at noon")
+    request = understand(model, text)
     print(request.model_dump_json(indent=2))
     print(f"\n{model.usage.calls} call · {model.usage.input_tokens} in / {model.usage.output_tokens} out tokens "
           f"· ${model.cost():.5f}")
