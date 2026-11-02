@@ -16,11 +16,20 @@ Everything on this page is explained with this one request. Follow it through th
 
 ```graphviz
 digraph week5_example {
-  rankdir=TB; bgcolor="transparent"; nodesep=.3; ranksep=.32; compound=true;
-  node [shape=box style="rounded,filled" fontname="Arial" fontsize=10 fontcolor="#202124" margin=".14,.07"];
+  rankdir=TB; bgcolor="transparent"; nodesep=.25; ranksep=.28; compound=true;
+  node [fontname="Arial" fontsize=10 fontcolor="#202124" margin=".12,.06"];
   edge [fontname="Arial" fontsize=9 color="#6B6B6B"];
 
-  goal [label="GOAL\nPrep with Maya is on Tue 10:00 (no clash)\nAND Maya has the Monday agenda" fillcolor="#FFF6DE" color="#C68B20" penwidth=1.6];
+  subgraph cluster_legend {
+    label="KEY"; labeljust=l; fontname="Arial"; fontsize=9; fontcolor="#5F6368"; style="rounded"; color="#DADCE0";
+    k_llm [label="LLM call\n(the model decides)" shape=box style="rounded,filled" fillcolor="#EDE7FF" color="#7B61FF"];
+    k_tool [label="Tool call\n(code runs a function)" shape=component style="filled" fillcolor="#E8F7F2" color="#1E8E6E"];
+    k_code [label="Code rule\n(no model)" shape=box style="filled" fillcolor="#FFECEE" color="#C74B62"];
+    k_llm -> k_tool -> k_code [style=invis];
+  }
+
+  goal [label="GOAL\nPrep with Maya is on Tue 10:00 (no clash)\nAND Maya has the Monday agenda" shape=box style="rounded,filled" fillcolor="#FFF6DE" color="#C68B20" penwidth=1.6];
+  k_code -> goal [style=invis];
 
   subgraph cluster_workflow {
     label="WORKFLOW — the path you design in code"; labeljust=l; fontname="Arial"; fontsize=11; fontcolor="#5F6368";
@@ -31,51 +40,58 @@ digraph week5_example {
       fontname="Arial"; fontsize=10; fontcolor="#1A73E8"; style="rounded"; color="#92AFE8";
 
       subgraph cluster_loop {
-        label="AGENT LOOP — decide → act → observe, up to max_steps = 6"; labeljust=l;
-        fontname="Arial"; fontsize=10; fontcolor="#7B61FF"; style="rounded,filled"; fillcolor="#F8F6FF"; color="#B9A8FF";
+        label="AGENT LOOP — up to max_steps = 6"; labeljust=l;
+        fontname="Arial"; fontsize=10; fontcolor="#7B61FF"; style="rounded,filled"; fillcolor="#FAF9FF"; color="#B9A8FF";
 
-        s1 [label="STEP 1\nmodel asks for 2 tools\nTASK: find Maya → lookup_contact\nTASK: check Tuesday → check_calendar" fillcolor="#E8F0FF" color="#92AFE8"];
-        cp [label="✔ CHECKPOINT (automatic)\nIs Tue 10:00 free?" shape=diamond style="filled" fillcolor="#E8F7F2" color="#1E8E6E" margin=".05,.05"];
-        s2 [label="STEP 2\nTASK: book prep → create_event" fillcolor="#E8F0FF" color="#92AFE8"];
-        s3 [label="STEP 3\nTASK: email Maya → send_email" fillcolor="#E8F0FF" color="#92AFE8"];
-        hold [label="APPROVAL needed\nemail is HELD, not sent\n(pending_actions)" fillcolor="#FFECEE" color="#C74B62"];
-        s4 [label="STEP 4\nmodel answers, no tool call:\n\"Booked. Here's the draft. Send it?\"" fillcolor="#E8F0FF" color="#92AFE8"];
-        busy [label="Stop and offer\nanother time" fillcolor="#F1F3F4" color="#9AA0A6"];
+        l1 [label="STEP 1 · LLM call #1\n\"I need Maya's email and Tuesday's calendar\"" shape=box style="rounded,filled" fillcolor="#EDE7FF" color="#7B61FF"];
+        t1a [label="lookup_contact(\"Maya\")\nTASK: find Maya" shape=component style="filled" fillcolor="#E8F7F2" color="#1E8E6E"];
+        t1b [label="check_calendar(\"2026-10-27\")\nTASK: check Tuesday" shape=component style="filled" fillcolor="#E8F7F2" color="#1E8E6E"];
+
+        l2 [label="STEP 2 · LLM call #2\nreads results — CHECKPOINT: is 10:00 free? yes\n→ \"book the prep\"" shape=box style="rounded,filled" fillcolor="#EDE7FF" color="#7B61FF"];
+        t2 [label="create_event(Tue 10:00)\nTASK: book prep" shape=component style="filled" fillcolor="#E8F7F2" color="#1E8E6E"];
+
+        l3 [label="STEP 3 · LLM call #3\n\"send the agenda to Maya\"" shape=box style="rounded,filled" fillcolor="#EDE7FF" color="#7B61FF"];
+        hold [label="APPROVAL rule: send_email is risky\nHELD in pending_actions — not run" shape=box style="filled" fillcolor="#FFECEE" color="#C74B62"];
+
+        l4 [label="STEP 4 · LLM call #4\nno tool requested → answers:\n\"Booked. Here's the draft. Send it?\"" shape=box style="rounded,filled" fillcolor="#EDE7FF" color="#7B61FF"];
       }
     }
 
     subgraph cluster_turn2 {
-      label="TURN 2 — user clicks Approve"; labeljust=l; fontname="Arial"; fontsize=10; fontcolor="#1A73E8";
+      label="TURN 2 — user clicks Approve (no LLM call)"; labeljust=l; fontname="Arial"; fontsize=10; fontcolor="#1A73E8";
       style="rounded"; color="#92AFE8";
-      approve [label="Human says yes\napprove() sends the email" fillcolor="#FFECEE" color="#C74B62"];
+      t5 [label="send_email(to Maya)\nTASK: email Maya" shape=component style="filled" fillcolor="#E8F7F2" color="#1E8E6E"];
     }
   }
 
-  done [label="Goal met ✓" fillcolor="#FFF6DE" color="#C68B20" penwidth=1.6];
+  done [label="Goal met ✓\n4 LLM calls · 4 tool calls · 2 turns" shape=box style="rounded,filled" fillcolor="#FFF6DE" color="#C68B20" penwidth=1.6];
 
-  goal -> s1 [lhead=cluster_turn1 label=" broken into tasks"];
-  s1 -> cp;
-  cp -> s2 [label=" yes"];
-  cp -> busy [label=" no"];
-  s2 -> s3;
-  s3 -> hold;
-  hold -> s4 [label=" result: \"needs approval\""];
-  s4 -> approve [label=" loop stops — turn 1 ends"];
-  approve -> done;
+  goal -> l1 [lhead=cluster_turn1 label=" the LLM breaks it into tasks, one step at a time"];
+  l1 -> t1a; l1 -> t1b;
+  t1a -> l2 [label=" results"]; t1b -> l2;
+  l2 -> t2;
+  t2 -> l3 [label=" result"];
+  l3 -> hold [label=" asks for send_email"];
+  hold -> l4 [label=" result: \"needs approval\""];
+  l4 -> t5 [label=" loop stops — turn 1 ends"];
+  t5 -> done;
 }
 ```
+
+The diagram uses three shapes: **purple** boxes are **LLM calls** (the model decides), **green** boxes are **tool calls** (code runs a function), and the **red** box is a **code rule** (no model involved).
 
 Read it from the top:
 
 1. **Goal.** What you want to be true at the end: the prep is booked without a clash, and Maya has the agenda.
 2. **Turn 1.** Your message starts the first turn.
-3. **Agent loop.** Mini Muse repeats *decide → act → observe*. Each pass is one **step**.
-4. **Step 1.** The model asks for two tools at once: find Maya's email, and check Tuesday's calendar.
-5. **Checkpoint.** Is Tuesday 10:00 free? If not, Mini Muse stops and offers another time. If yes, it continues.
-6. **Step 2.** It books the prep.
-7. **Step 3.** It asks to send the email, but sending is risky, so the email is **held for approval** instead of sent.
-8. **Step 4.** The model answers without asking for a tool, so the loop stops and turn 1 ends: "Booked. Here's the draft. Send it?"
-9. **Turn 2.** You click **Approve**, and the email is sent. Only now is the goal met.
+3. **Agent loop.** Each **step** is one LLM call, plus the tool calls it asks for. The code runs the tools and sends the results back to the next LLM call.
+4. **Step 1.** LLM call #1 asks for two tools at once. The code runs `lookup_contact` and `check_calendar`.
+5. **Step 2.** LLM call #2 reads the results. This is the **checkpoint**: is Tuesday 10:00 free? It is, so the model asks for `create_event`, and the code books the prep.
+6. **Step 3.** LLM call #3 asks for `send_email`. A code rule says email is risky, so the email is **held for approval** instead of sent.
+7. **Step 4.** LLM call #4 asks for no tool, so the loop stops and turn 1 ends: "Booked. Here's the draft. Send it?"
+8. **Turn 2.** You click **Approve**. The code sends the held email directly, with no LLM call. Only now is the goal met.
+
+In total: **4 LLM calls, 4 tool calls, 2 turns.** The model never runs a tool itself; it only asks, and the code decides whether to run it.
 
 ## 2. The eight terms, on this example
 
@@ -83,12 +99,12 @@ Read it from the top:
 | --- | --- | --- |
 | **Goal** | The outcome you want to be *true* at the end | Prep booked on Tue 10:00 with no clash, **and** Maya has the agenda |
 | **Task** | One piece of work toward the goal | Find Maya · check Tuesday · book prep · email Maya (4 tasks) |
-| **Agent loop** | The engine that repeats decide → act → observe until it stops | The purple box: it ran 4 times, then stopped |
-| **Step** | One pass through the loop: one model call, plus the tools it asked for | Steps 1–4 (step 1 ran two tools, so tasks ≠ steps) |
+| **Agent loop** | The engine that repeats decide → act → observe until it stops | The large box in turn 1: it ran 4 times, then stopped |
+| **Step** | One pass through the loop: one LLM call, plus the tool calls it asked for | Steps 1–4 (step 1 ran two tools, so tasks ≠ steps) |
 | **Turn** | One message or action from you, and the reply to it | Turn 1: your request. Turn 2: your Approve click |
 | **Workflow** | The path *you* design in code: what can happen, in what order, and where it must stop | The dashed box: loop → hold risky actions → wait for approval → done |
-| **Checkpoint** | An automatic check before continuing. No human needed | "Is Tue 10:00 free?" before booking |
-| **Approval** | A checkpoint where a **human** must say yes before a risky action runs | The email is held until you click Approve |
+| **Checkpoint** | An automatic check before continuing. No human needed | "Is Tue 10:00 free?" before booking (done by LLM call #2) |
+| **Approval** | A checkpoint where a **human** must say yes before a risky action runs | A code rule holds the email until you click Approve |
 
 ## 3. Telling them apart, with the same example
 
