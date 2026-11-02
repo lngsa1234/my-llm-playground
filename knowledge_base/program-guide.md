@@ -44,10 +44,11 @@ Each session needs **1–2 volunteers** to help facilitate the open discussion.
 
 ### Final project
 
-By the end of the program, **each member builds one agent project**. Choose either:
+By the end of the program, **each member builds one agent project**. Choose one of three:
 
-- **A simple, task-based personal assistant** — one focused job done well, or
-- **A Mini Muse project** — your own version of Mini Muse, or a feature of the Mini Muse MVP.
+1. **A simple, task-based personal assistant** — one focused job done well.
+2. **A Mini Muse project** — your own version of Mini Muse, or a feature of the Mini Muse MVP.
+3. **Your own project** — any AI or agent project you want, applying the course concepts.
 
 The [Course project](#course-project-mini-muse) section below describes the options in detail.
 
