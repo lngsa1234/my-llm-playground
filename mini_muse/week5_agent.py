@@ -18,7 +18,7 @@ Two rules make it safe to let the loop run:
 The trace has the same shape as the simulated Muse in Week 6 (tool_calls, answer,
 final_state), so the same golden dataset grades it.
 
-Try it:  python -m mini_muse.week5_agent "Book a haircut on 2026-10-27 at 14:00"
+Try it:  python3 -m mini_muse.week5_agent "Book a haircut on 2026-10-27 at 14:00"
 """
 
 from __future__ import annotations

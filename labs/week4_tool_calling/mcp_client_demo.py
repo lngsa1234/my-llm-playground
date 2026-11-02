@@ -1,6 +1,6 @@
 """Discover weather tools over MCP, then let an LLM use them.
 
-Run: python labs/week4_tool_calling/mcp_client_demo.py "Which is warmer right now, Detroit or Miami?"
+Run: python3 labs/week4_tool_calling/mcp_client_demo.py "Which is warmer right now, Detroit or Miami?"
 """
 
 from __future__ import annotations

@@ -9,7 +9,7 @@ This is the first thing Mini Muse needs: before it can do anything, it has to kn
 what is being asked, with the details in a shape code can rely on. Later weeks use
 this as the router and as a hint to the agent.
 
-Try it:  python -m mini_muse.week1_understand "Book lunch with Maya Tuesday at noon"
+Try it:  python3 -m mini_muse.week1_understand "Book lunch with Maya Tuesday at noon"
 """
 
 from __future__ import annotations
@@ -93,7 +93,7 @@ if __name__ == "__main__":
     if not text:
         text = "Book lunch with Maya on Tuesday at noon"
         print(f'No request given, so using the example: "{text}"\n'
-              'Pass your own: python -m mini_muse.week1_understand "Who wrote Pride and Prejudice?"\n')
+              'Pass your own: python3 -m mini_muse.week1_understand "Who wrote Pride and Prejudice?"\n')
     model = cli_llm()
     request = understand(model, text)
     print(request.model_dump_json(indent=2))

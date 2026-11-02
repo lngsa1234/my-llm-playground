@@ -1,6 +1,6 @@
 """MCP stdio server exposing the lab's weather tools from weather.py.
 
-Run directly only for debugging: python labs/week4_tool_calling/weather_mcp_server.py
+Run directly only for debugging: python3 labs/week4_tool_calling/weather_mcp_server.py
 Normally mcp_client_demo.py starts this process for you.
 """
 

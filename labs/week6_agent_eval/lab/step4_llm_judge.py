@@ -9,7 +9,7 @@ Two judges are included:
   real  (--real)   calls Claude via the API. Needs ANTHROPIC_API_KEY.
                    Optional: JUDGE_MODEL env var (default claude-sonnet-5-5)
 
-Run:  python lab/step4_llm_judge.py [v1|v2] [--real]
+Run:  python3 lab/step4_llm_judge.py [v1|v2] [--real]
 """
 import json
 import os

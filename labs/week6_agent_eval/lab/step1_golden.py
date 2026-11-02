@@ -5,7 +5,7 @@ behavior written down. Every later step grades against it, so its quality
 caps the quality of all your evals.
 
 This script lints the dataset: schema, duplicates, coverage, and blind spots.
-Run:  python lab/step1_golden.py
+Run:  python3 lab/step1_golden.py
 """
 from collections import Counter
 

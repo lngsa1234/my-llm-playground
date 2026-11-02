@@ -50,7 +50,7 @@ From Week 5, teams build their own projects. Mini Muse is the **reference implem
 ```
 
 - **Code:** [`week1_understand.py`](../mini_muse/week1_understand.py). The `UnderstoodRequest` Pydantic model is the output form (the schema), and `understand()` makes the call.
-- **Run it:** Week 1 page → 🧩 Build Mini Muse, or `python -m mini_muse.week1_understand "Book lunch with Maya Tuesday at noon"`.
+- **Run it:** Week 1 page → 🧩 Build Mini Muse, or `python3 -m mini_muse.week1_understand "Book lunch with Maya Tuesday at noon"`.
 - **Try:**
   - A relative date ("Tuesday"). It resolves only because today's date is put into the instructions.
   - A general-knowledge question ("What's the difference between weather and climate?"). Intent `question`. Every request gets an `answer` from the model's own knowledge; compare it with a weather or calendar request.
@@ -74,7 +74,7 @@ context = system prompt + today + saved facts + summary of older turns + last N 
   - `build_context()` assembles the messages.
   - `learn_facts()` uses structured output to spot durable preferences.
   - `compact()` folds old turns into a summary.
-- **Run it:** Week 2 page → 🧩 Build Mini Muse, or `python -m mini_muse.week2_memory`. This is a chat loop, and memory is saved to `mini_muse/state/`.
+- **Run it:** Week 2 page → 🧩 Build Mini Muse, or `python3 -m mini_muse.week2_memory`. This is a chat loop, and memory is saved to `mini_muse/state/`.
 - **Try:**
   - "I prefer morning meetings, and I'm vegetarian." Then: "Suggest a lunch spot and a time for coffee with Maya."
   - "Make it an hour later." This only works because the previous turn is in the context. Set **Recent turns kept** to 0 and ask again.
@@ -93,7 +93,7 @@ context = system prompt + today + saved facts + summary of older turns + last N 
   - `load_chunks()` makes one chunk per `##` section.
   - `search()` runs keyword (BM25), semantic (embeddings) or hybrid (reciprocal-rank fusion) search.
   - `answer()` writes the grounded answer.
-- **Run it:** Week 3 page → 🧩 Build Mini Muse, or `python -m mini_muse.week3_knowledge "What did Jordan say about the offsite budget?"`.
+- **Run it:** Week 3 page → 🧩 Build Mini Muse, or `python3 -m mini_muse.week3_knowledge "What did Jordan say about the offsite budget?"`.
 - **Try:**
   - **Search only** is free, so compare search modes before spending tokens.
   - "lodging in Chicago" shares no words with the "Hotel" section. Compare keyword search with semantic search.
@@ -112,7 +112,7 @@ context = system prompt + today + saved facts + summary of older turns + last N 
   - `SCHEMAS` holds the tool definitions.
   - `execute()` turns errors into results the model can read.
   - `answer_with_tools()` runs one round.
-- **Run it:** Week 4 page → 🧩 Build Mini Muse, or `python -m mini_muse.week4_tools "What's the weather in Detroit?"`.
+- **Run it:** Week 4 page → 🧩 Build Mini Muse, or `python3 -m mini_muse.week4_tools "What's the weather in Detroit?"`.
 - **Try:**
   - "Email Maya about the Monday agenda." With one round and no approval step, the model may simply send it.
   - "Book a haircut on 2026-10-27 at 14:00." Does it check the calendar *before* booking? With one round it can't wait for the answer.
@@ -141,7 +141,7 @@ goal → decide → run tools → observe results → decide again …
   - `RULES` is the agent's policy.
   - `run()` is the loop.
   - `approve()` runs an action you approved.
-- **Run it:** Week 5 page → 🧩 Build Mini Muse, or `python -m mini_muse.week5_agent "Book a haircut on 2026-10-27 at 14:00"`.
+- **Run it:** Week 5 page → 🧩 Build Mini Muse, or `python3 -m mini_muse.week5_agent "Book a haircut on 2026-10-27 at 14:00"`.
 - **Try:**
   - The haircut again. This time the calendar is checked first, and the 14:00 dentist appointment stops the booking.
   - A chain: "Am I free on 2026-10-28 at 18:00? If so, book yoga and tell me the weather in Detroit." Then set **Max steps** to 1.
@@ -198,7 +198,7 @@ goal → decide → run tools → observe results → decide again …
 - send every call through the runtime (W7),
 - save the turn to memory.
 
-- **Run it:** 🧩 Mini Muse · all weeks → Week 8 (a chat that shows what happened behind each answer), or `python -m mini_muse` in the terminal.
+- **Run it:** 🧩 Mini Muse · all weeks → Week 8 (a chat that shows what happened behind each answer), or `python3 -m mini_muse` in the terminal.
 - **Try:**
   - "I prefer mornings. Am I free on 2026-10-28?" Then: "Book coffee with Maya then at 9:00."
   - "What did Jordan say about the offsite budget? Email him a short summary." This uses notes, contacts and approval together.

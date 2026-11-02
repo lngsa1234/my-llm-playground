@@ -5,8 +5,8 @@ We run ALL the evals (task + tools + judge) on a baseline and on a candidate,
 diff them case by case, and apply release GATES. Exit code 1 = block the
 release, so this drops straight into CI.
 
-Run:  python lab/step5_regression.py --baseline v1   # save a baseline
-      python lab/step5_regression.py v2              # compare candidate
+Run:  python3 lab/step5_regression.py --baseline v1   # save a baseline
+      python3 lab/step5_regression.py v2              # compare candidate
 """
 import json
 import os

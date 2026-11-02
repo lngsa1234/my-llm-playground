@@ -69,7 +69,7 @@ def _step_header(week: int, try_this: list[str]) -> None:
     with st.expander("How this step works"):
         doc = (importlib.import_module(f"mini_muse.{module}").__doc__ or "").strip()
         st.code(doc, language=None)
-        st.markdown(f"**Code:** `mini_muse/{module}.py` · **Run alone:** `python -m mini_muse.{module}`")
+        st.markdown(f"**Code:** `mini_muse/{module}.py` · **Run alone:** `python3 -m mini_muse.{module}`")
         if try_this:
             st.markdown("**Try:**\n" + "\n".join(f"- {t}" for t in try_this))
 

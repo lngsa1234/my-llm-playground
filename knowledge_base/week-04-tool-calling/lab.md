@@ -118,7 +118,7 @@ Create a project:
 mkdir weather-agent-lab
 cd weather-agent-lab
 
-python -m venv .venv
+python3 -m venv .venv
 source .venv/bin/activate
 ```
 

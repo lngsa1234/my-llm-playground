@@ -15,7 +15,7 @@
     Answer (+ actions waiting for approval) → saved to memory
     Week 6  golden dataset      proves the whole thing still works after each change
 
-Try it:  python -m mini_muse   (a chat loop with every component)
+Try it:  python3 -m mini_muse   (a chat loop with every component)
 """
 
 from __future__ import annotations

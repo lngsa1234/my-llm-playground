@@ -15,7 +15,7 @@ emails without asking. Both problems are what Week 5's agent loop fixes.
 
 Tool names and arguments match the Week 6 golden dataset, so Week 6 can grade Mini Muse.
 
-Try it:  python -m mini_muse.week4_tools "What's the weather in Detroit?"
+Try it:  python3 -m mini_muse.week4_tools "What's the weather in Detroit?"
 """
 
 from __future__ import annotations

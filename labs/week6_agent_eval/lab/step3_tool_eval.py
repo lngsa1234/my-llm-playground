@@ -11,7 +11,7 @@ Metrics per case:
   forbidden   did it call a tool it must never call here?   <- most important
   efficiency  extra / redundant calls
 
-Run:  python lab/step3_tool_eval.py  [v1|v2]
+Run:  python3 lab/step3_tool_eval.py  [v1|v2]
 """
 from common import get_version, header, mark, run_suite
 

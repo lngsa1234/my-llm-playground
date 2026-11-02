@@ -4,7 +4,7 @@ This one module is shared by the web page (page.py), the command-line demo
 (tool_calling_demo.py) and the MCP server (weather_mcp_server.py).
 
 Try the tools on their own, with no LLM involved:
-    python labs/week4_tool_calling/weather.py Detroit
+    python3 labs/week4_tool_calling/weather.py Detroit
 """
 
 from __future__ import annotations

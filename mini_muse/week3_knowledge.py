@@ -12,7 +12,7 @@ Three ways to search, so you can compare them:
 
 Week 8 turns `search` into the agent's `search_notes` tool.
 
-Try it:  python -m mini_muse.week3_knowledge "What did Jordan say about the offsite budget?"
+Try it:  python3 -m mini_muse.week3_knowledge "What did Jordan say about the offsite budget?"
 """
 
 from __future__ import annotations

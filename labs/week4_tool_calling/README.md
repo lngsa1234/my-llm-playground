@@ -38,7 +38,7 @@ Edit the repo-root `.env` to set `OPENAI_API_KEY`. The web page uses the model i
 `weather.py` is plain Python. It geocodes a location, calls Open-Meteo, and returns consistent JSON. Try the tools with no LLM involved:
 
 ```bash
-python labs/week4_tool_calling/weather.py Detroit
+python3 labs/week4_tool_calling/weather.py Detroit
 ```
 
 Successful responses contain `location`, `state`, `country`, `temperature_f`, and `feels_like_f`. A missing place returns `{"error": "Location not found."}`. Provider/network failures are also returned as error data, so the agent can report them rather than hallucinate values.
@@ -50,10 +50,10 @@ At this point the architecture is simply **Python → Weather API**. The applica
 ## Part B/C: Direct tool calling
 
 ```bash
-python labs/week4_tool_calling/tool_calling_demo.py "What is weather?"
-python labs/week4_tool_calling/tool_calling_demo.py "What's the current weather in Detroit?"
-python labs/week4_tool_calling/tool_calling_demo.py "Which is warmer right now, Detroit or Miami?"
-python labs/week4_tool_calling/tool_calling_demo.py "What's the weather in asdfghxyz?"
+python3 labs/week4_tool_calling/tool_calling_demo.py "What is weather?"
+python3 labs/week4_tool_calling/tool_calling_demo.py "What's the current weather in Detroit?"
+python3 labs/week4_tool_calling/tool_calling_demo.py "Which is warmer right now, Detroit or Miami?"
+python3 labs/week4_tool_calling/tool_calling_demo.py "What's the weather in asdfghxyz?"
 ```
 
 `tool_calling_demo.py` sends the model both tool schemas from `weather.py`. The model decides whether to call it and provides `location`; the runtime validates/parses the request, executes Python, logs the result, and sends that result back to the model. The loop supports multiple calls, which is necessary for a Detroit-versus-Miami comparison.
@@ -63,11 +63,11 @@ python labs/week4_tool_calling/tool_calling_demo.py "What's the weather in asdfg
 `weather_mcp_server.py` exposes the same two functions as MCP tools over stdio. The client starts it automatically, initializes an MCP session, discovers its tools, translates their input schemas for the LLM, and routes model tool calls back through MCP.
 
 ```bash
-python labs/week4_tool_calling/mcp_client_demo.py "What's the weather in Detroit?"
-python labs/week4_tool_calling/mcp_client_demo.py "Which is warmer right now, Detroit or Miami?"
+python3 labs/week4_tool_calling/mcp_client_demo.py "What's the weather in Detroit?"
+python3 labs/week4_tool_calling/mcp_client_demo.py "Which is warmer right now, Detroit or Miami?"
 ```
 
-The client prints the discovered MCP tools plus each MCP call/result, making the boundary visible. You can also start the server alone with `python labs/week4_tool_calling/weather_mcp_server.py`; it is a stdio protocol process, so it will wait for an MCP client rather than provide an interactive prompt.
+The client prints the discovered MCP tools plus each MCP call/result, making the boundary visible. You can also start the server alone with `python3 labs/week4_tool_calling/weather_mcp_server.py`; it is a stdio protocol process, so it will wait for an MCP client rather than provide an interactive prompt.
 
 ## Architecture comparison
 

@@ -113,7 +113,7 @@ print("\nFull API response:")
 print(response.model_dump_json(indent=2))
 ```
 
-Run using `python app.py`.
+Run using `python3 app.py`.
 
 JavaScript
 

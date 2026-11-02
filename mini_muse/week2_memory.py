@@ -10,7 +10,7 @@ of memory and decides what goes into each call's context:
 
     context = system prompt + today's date + facts + summary + last N turns + new message
 
-Try it:  python -m mini_muse.week2_memory   (a chat loop; memory is saved between runs)
+Try it:  python3 -m mini_muse.week2_memory   (a chat loop; memory is saved between runs)
 """
 
 from __future__ import annotations

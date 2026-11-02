@@ -4,8 +4,8 @@ Question: did the agent actually get the job done?
 We only look at the OUTCOME -- the final answer and the end state of the
 world (events booked, emails sent). How it got there is Step 3's job.
 
-Run:  python lab/step2_task_success.py        (baseline agent)
-      python lab/step2_task_success.py v2     (the "new" agent)
+Run:  python3 lab/step2_task_success.py        (baseline agent)
+      python3 lab/step2_task_success.py v2     (the "new" agent)
 """
 from collections import defaultdict
 

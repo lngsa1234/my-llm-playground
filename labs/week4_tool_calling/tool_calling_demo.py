@@ -1,6 +1,6 @@
 """Direct OpenAI tool-calling weather assistant.
 
-Run: python labs/week4_tool_calling/tool_calling_demo.py "What's the weather in Detroit?"
+Run: python3 labs/week4_tool_calling/tool_calling_demo.py "What's the weather in Detroit?"
 
 The tools and system prompt come from weather.py, the same code the web page uses.
 """

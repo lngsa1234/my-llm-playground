@@ -1,4 +1,4 @@
-"""Run the whole lab end to end:  python run_all.py  (from any folder)"""
+"""Run the whole lab end to end:  python3 run_all.py  (from any folder)"""
 import os
 import subprocess
 import sys
