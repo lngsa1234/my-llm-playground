@@ -62,14 +62,18 @@ TOC_CSS = """
         position: sticky;
         top: 4.5rem;
         align-self: flex-start;
+    }
+    /* The outline scrolls on its own only when it is taller than the window. */
+    .kb-toc {
         max-height: calc(100vh - 6rem);
         overflow-y: auto;
+        padding-right: 0.25rem;
     }
     .kb-toc ul { list-style: none; margin: 0; padding: 0 0 0 0.75rem;
                  border-left: 1px solid var(--st-border-color, #D6DEE6); }
     .kb-toc li { margin: 0 0 0.35rem 0; padding: 0; line-height: 1.3; }
     .kb-toc li.kb-toc-h3 { padding-left: 0.85rem; font-size: 0.8rem; }
-    .kb-toc a { font-size: 0.85rem; text-decoration: none; color: inherit; opacity: 0.8; }
+    .kb-toc a { font-size: 0.875rem; text-decoration: none; color: inherit; opacity: 0.8; }
     .kb-toc li.kb-toc-h3 a { font-size: 0.8rem; opacity: 0.7; }
     .kb-toc a:hover { opacity: 1; color: var(--st-primary-color, #1F5E8C); }
     /* Columns stack on narrow screens; the outline would end up below the page, so hide it. */
@@ -138,7 +142,7 @@ def render_document(path: Path, caption: str) -> None:
     """Show a knowledge-base page with its table of contents in a right-hand column."""
     content = path.read_text(encoding="utf-8")
     st.markdown(TOC_CSS, unsafe_allow_html=True)
-    main, toc = st.columns([4, 1], gap="large")
+    main, toc = st.columns([3, 1], gap="large")
     with main:
         _render_body(content)
         st.caption(caption)
