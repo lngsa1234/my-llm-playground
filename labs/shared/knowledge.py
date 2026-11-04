@@ -35,6 +35,10 @@ def available_concepts() -> dict[str, Path]:
     The main concept is listed first. Adding a week or a note needs no code change.
     """
     concepts: dict[str, Path] = {}
+    # The glossary holds short definitions for every week, so it is listed first.
+    glossary = KNOWLEDGE_BASE / "glossary.md"
+    if glossary.exists():
+        concepts["Glossary"] = glossary
     for folder in sorted(KNOWLEDGE_BASE.glob("week-*")):
         parts = folder.name.split("-", 2)  # ["week", "06", "evals"]
         number = int(parts[1]) if len(parts) > 1 and parts[1].isdigit() else 0

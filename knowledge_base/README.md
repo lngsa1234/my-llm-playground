@@ -4,6 +4,8 @@ Notes for the Agent Engineering Peer Learning Circle, exported from Notion on 20
 
 **Start here:** [Program Guide](program-guide.md) — audience, learning roadmap, and Mini Muse project actions.
 
+**Look up a term:** [Glossary](glossary.md) — short definitions grouped by topic, from tokens to agents.
+
 **Course project:** [Mini Muse](mini-muse.md) — the personal-assistant agent the circle builds one component per week, with what to build, try and check each week.
 
 ## Notes in this folder
