@@ -30,7 +30,7 @@ digraph tool_calling {
 
 Think of the model as a capable assistant who works only by message. It cannot open the weather app, but it can write you a note asking you to check, and then use what you tell it.
 
-## 2. Why do we need tool calling?
+## 2. When should an agent use a tool?
 
 Ask a plain LLM "What's the weather in Detroit right now?" and it can only guess, because its training data is months old and it has no way to look outside. With a weather tool, it asks for the real reading and answers from it.
 
