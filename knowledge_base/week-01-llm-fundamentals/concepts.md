@@ -99,7 +99,25 @@ This is called **RAG** (retrieval-augmented generation): retrieve the right info
 
 ## 5. AI agents and agent engineering
 
-An agent combines the LLM with tools, state management, and an execution process (a control loop) so it can take actions toward a goal, with guardrails and human approval around the risky steps.
+An LLM on its own only writes text. An **agent** puts the LLM inside a system that can also take actions, such as searching the web, reading a calendar, or sending an email, step by step toward a goal.
+
+It helps to think of three layers, each built on the one below:
+
+```graphviz
+// width: 360
+// center
+digraph learning_layers {
+  rankdir=BT; bgcolor="transparent"; nodesep=.25; ranksep=.3;
+  node [shape=box style="rounded,filled" fontname="Arial" fontsize=12 fontcolor="#202124" margin=".12,.06"];
+  fundamentals [label="Layer 1 — LLM Fundamentals\nTokens · Embeddings · Transformers\nAttention · Inference" fillcolor="#F5E9FF" color="#C5A5E9"];
+  application [label="Layer 2 — LLM Application Engineering\nAPIs · Prompts · Context Engineering\nRAG · Structured Outputs" fillcolor="#E8F7F2" color="#86CDB7"];
+  agents [label="Layer 3 — Agent Engineering\nTools · State · Control Loops\nMemory · Workflows" fillcolor="#E8F0FF" color="#92AFE8"];
+  fundamentals -> application [dir=both color="#606770" penwidth=2];
+  application -> agents [dir=both color="#606770" penwidth=2];
+}
+```
+
+The LLM predicts text (section 1), the application calls it and decides what it sees (sections 2–4), and the agent uses both to get something done. This course climbs these layers week by week.
 
 ### Agent categories and examples
 
@@ -116,27 +134,6 @@ An agent combines the LLM with tools, state management, and an execution process
 | Multi-agent platform | Coordinates specialist agents or provides the framework to build them. | Microsoft — AutoGen; Google — Agent Development Kit; CrewAI — CrewAI; LangChain — LangGraph. |
 
 The safest starting point is usually a narrow workflow or tool-using agent with explicit permissions, clear stop conditions, and human approval for consequential actions. Add planning, additional tools, or multiple agents only when the task genuinely needs them.
-
-### The agent control loop
-
-```graphviz
-digraph agent_loop {
-  rankdir=LR; bgcolor="transparent"; nodesep=.45; ranksep=.65;
-  node [shape=box style="rounded,filled" fontname="Arial" fontsize=12 fontcolor="#202124" margin=".18,.10"];
-  goal [label="Goal + current state" fillcolor="#E8F7F2" color="#25866A"];
-  decide [label="Model decides\nnext action" fillcolor="#E8F0FF" color="#4F76C8"];
-  check [label="Allowed and within budget?" fillcolor="#FFF6DE" color="#C68B20"];
-  act [label="Call tool / respond" fillcolor="#F3F0FF" color="#7B61FF"];
-  observe [label="Observe result\nand update state" fillcolor="#FFECEE" color="#C74B62"];
-  done [label="Finish or ask for\nhuman approval" fillcolor="#EDEFF2" color="#606770"];
-  goal -> decide -> check -> act -> observe;
-  observe -> decide [label="  continue" fontname="Arial" fontsize=10 color="#606770"];
-  check -> done [label="  no / stop" fontname="Arial" fontsize=10 color="#606770"];
-  observe -> done [label="  goal met" fontname="Arial" fontsize=10 color="#606770"];
-}
-```
-
-In practice, an agent also needs termination conditions for errors, budget limits, repeated failures, and situations requiring human approval. Not every workflow needs a model-driven loop; a fixed sequence of API calls may be sufficient for simpler tasks.
 
 ## References
 
