@@ -76,6 +76,8 @@ TOC_CSS = """
     .kb-toc a { font-size: 0.875rem; text-decoration: none; color: inherit; opacity: 0.8; }
     .kb-toc li.kb-toc-h3 a { font-size: 0.8rem; opacity: 0.7; }
     .kb-toc a:hover { opacity: 1; color: var(--st-primary-color, #1F5E8C); }
+    /* A table cell that lists one item per line (<br>) keeps each item on one line. */
+    [data-testid="stMarkdownContainer"] td:has(br) { white-space: nowrap; }
     /* Columns stack on narrow screens; the outline would end up below the page, so hide it. */
     @media (max-width: 768px) {
         [data-testid="stColumn"]:has(.st-key-kb_toc) { display: none; }

@@ -132,13 +132,13 @@ The LLM predicts text (section 1). The application calls it and decides what it 
 
 | Category | What it does | Notable companies and products |
 | --- | --- | --- |
-| General-purpose or personal agent | Handles open-ended, multi-step work in a conversation and may use personal context or connected apps. | OpenAI — ChatGPT agent<br>Anthropic — Claude<br>Google — Gemini<br>Meta — Muse<br>xAI — Grok<br>Microsoft — Copilot |
-| Research agent | Searches, gathers sources, synthesizes findings, and prepares a report. | OpenAI — Deep Research<br>Perplexity — Deep Research<br>Google — Gemini Deep Research |
-| Coding agent | Reads and changes a codebase, runs commands or tests, and helps deliver software. | OpenAI — Codex<br>Anthropic — Claude Code<br>Cognition — Devin<br>Cursor — Cursor |
-| Browser or computer-use agent | Uses a browser or computer interface to navigate sites and complete tasks. | OpenAI — ChatGPT agent<br>Anthropic — Claude in Chrome<br>Manus — Manus |
-| Enterprise knowledge and workflow agent | Uses company data and business tools within defined permissions and workflows. | Microsoft — Copilot Studio<br>Salesforce — Agentforce<br>Glean — Glean Agents<br>ServiceNow — AI Agents |
-| Customer-service agent | Resolves support questions and, where permitted, completes service actions. | Intercom — Fin<br>Zendesk — AI agents<br>Ada — Ada |
-| Multi-agent platform | Coordinates specialist agents or provides the framework to build them. | Microsoft — AutoGen<br>Google — Agent Development Kit<br>CrewAI — CrewAI<br>LangChain — LangGraph |
+| General-purpose or personal agent | Open-ended, multi-step help, often using your connected apps | OpenAI — ChatGPT agent<br>Anthropic — Claude<br>Google — Gemini<br>Meta — Muse<br>xAI — Grok<br>Microsoft — Copilot |
+| Research agent | Gathers sources and writes a report | OpenAI — Deep Research<br>Perplexity — Deep Research<br>Google — Gemini Deep Research |
+| Coding agent | Reads and edits code, runs tests | OpenAI — Codex<br>Anthropic — Claude Code<br>Cognition — Devin<br>Cursor — Cursor |
+| Browser or computer-use agent | Uses websites and apps to finish tasks | OpenAI — ChatGPT agent<br>Anthropic — Claude in Chrome<br>Manus — Manus |
+| Enterprise knowledge and workflow agent | Works with company data and business tools | Microsoft — Copilot Studio<br>Salesforce — Agentforce<br>Glean — Glean Agents<br>ServiceNow — AI Agents |
+| Customer-service agent | Answers and resolves support requests | Intercom — Fin<br>Zendesk — AI agents<br>Ada — Ada |
+| Multi-agent platform | Coordinates several specialist agents | Microsoft — AutoGen<br>Google — Agent Development Kit<br>CrewAI — CrewAI<br>LangChain — LangGraph |
 
 A good first agent is narrow: a few well-defined tools, clear permissions, a clear point at which it stops, and human approval before anything consequential, such as sending a message or spending money. Add more tools, planning, or multiple agents only when the task genuinely needs them.
 
