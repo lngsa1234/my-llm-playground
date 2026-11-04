@@ -53,21 +53,13 @@ def available_concepts() -> dict[str, Path]:
 
 TOC_CSS = """
 <style>
-    /* The right-hand "On this page" column stays in view while the page scrolls. */
+    /* The right-hand outline column stays in view while the page scrolls. */
     [data-testid="stColumn"]:has(.st-key-kb_toc) {
         position: sticky;
         top: 4.5rem;
         align-self: flex-start;
         max-height: calc(100vh - 6rem);
         overflow-y: auto;
-    }
-    .kb-toc-title {
-        font-size: 0.75rem;
-        font-weight: 600;
-        letter-spacing: 0.06em;
-        text-transform: uppercase;
-        opacity: 0.65;
-        margin: 0 0 0.5rem 0;
     }
     .kb-toc ul { list-style: none; margin: 0; padding: 0 0 0 0.75rem;
                  border-left: 1px solid var(--st-border-color, #D6DEE6); }
@@ -123,7 +115,7 @@ def headings(content: str) -> list[tuple[int, str, str]]:
 
 
 def _render_toc(content: str) -> None:
-    """The "On this page" outline shown in the right-hand column."""
+    """The section outline shown in the right-hand column."""
     items = headings(content)
     if not items:
         return
@@ -133,7 +125,7 @@ def _render_toc(content: str) -> None:
     )
     with st.container(key="kb_toc"):
         st.markdown(
-            f'<nav class="kb-toc"><p class="kb-toc-title">On this page</p><ul>{links}</ul></nav>',
+            f'<nav class="kb-toc"><ul>{links}</ul></nav>',
             unsafe_allow_html=True,
         )
 
