@@ -28,7 +28,7 @@ digraph rag_overview {
 
 An everyday comparison is an open-book exam. The model is the student; RAG hands it the right page of the textbook before it answers. It does not teach the model anything permanently. The passages are used for that one call only.
 
-## 2. Why do we need RAG?
+## 2. When does an agent need RAG?
 
 Throughout this page we use the lab's example: **NovaTech**, a fictional company with ten policy documents (pricing, refunds, remote work, vacation, and so on). An employee asks:
 
