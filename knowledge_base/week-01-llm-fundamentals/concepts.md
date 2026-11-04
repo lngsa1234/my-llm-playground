@@ -10,6 +10,24 @@ This page explains how the core ideas fit together. Short definitions of every t
 
 ## 1. How an LLM generates text
 
+Think of the autocomplete on your phone keyboard. You type "See you", and it suggests "soon", "tomorrow", or "later". An LLM does the same thing, just far better: it has read a huge amount of text, so it is very good at guessing **what word comes next**.
+
+It writes a whole answer by guessing one piece at a time:
+
+| Step | Text so far | Most likely next piece | Added |
+| --- | --- | --- | --- |
+| 1 | The cat sat on the | mat (62%), floor (13%), chair (8%) | mat |
+| 2 | The cat sat on the mat | . (period) | . |
+| 3 | The cat sat on the mat. | *(end of answer)* | stop |
+
+That is the whole trick, repeated: look at all the text so far, guess the next piece, add it, and go again. A long answer is just hundreds of these small guesses in a row. Three things follow from this:
+
+- **It predicts; it doesn't look things up.** A fluent, confident answer can still be wrong (a "hallucination").
+- **Answers can vary.** The model picks among likely options, so the same question can get different wording each time. Settings like *temperature* control how adventurous the picks are.
+- **The pieces are tokens, not words.** A token is often a whole word, but can be part of a word or a punctuation mark.
+
+Under the hood, the same steps look like this:
+
 ```graphviz
 digraph next_token {
   rankdir=LR; bgcolor="transparent"; nodesep=.45; ranksep=.65;
@@ -23,9 +41,27 @@ digraph next_token {
 }
 ```
 
-The model predicts the next token, appends it to the text, and repeats until a stopping condition is reached.
 
-## 2. Does an LLM remember previous API calls?
+## 2. How do we use an LLM?
+
+An LLM API provides a programming interface to a model service.
+
+### What happens when you call an LLM API?
+
+```graphviz
+digraph api_flow {
+  rankdir=LR; bgcolor="transparent"; nodesep=.35; ranksep=.45;
+  node [shape=box style="rounded,filled" fontname="Arial" fontsize=11 fontcolor="#202124" margin=".14,.08"];
+  app [label="Your application\ncode + API key" fillcolor="#E8F7F2" color="#25866A"];
+  api [label="Model API + LLM\nauthenticates, processes tokens, generates output" fillcolor="#F3F0FF" color="#7B61FF"];
+  app -> api [label="request: instructions, input, settings" fontname="Arial" fontsize=9 color="#4F76C8"];
+  api -> app [label="response: output + usage" fontname="Arial" fontsize=9 color="#C74B62"];
+}
+```
+
+You can use JavaScript, Python, or another supported language to build an LLM application. The language you use to call the API is separate from the language used to train or run the model.
+
+## 3. Does an LLM remember previous API calls?
 
 A standard stateless LLM inference does not automatically remember earlier API calls.
 
@@ -49,28 +85,17 @@ digraph state {
 
 Context engineering is how the application decides what the model should know for the current call.
 
-## 3. How do we use an LLM?
+## 4. Does an LLM know your private information?
 
-An LLM API provides a programming interface to a model service.
+No. A model only knows what was in its training data. That data stops at a cutoff date, and it never included your emails, your notes, or your company's documents.
 
-### What happens when you call an LLM API?
+Ask a plain LLM "When is my dentist appointment?" and it can only guess or say it doesn't know. To answer, your application has to **find the relevant information and put it in the prompt**:
 
-```graphviz
-digraph api_flow {
-  rankdir=LR; bgcolor="transparent"; nodesep=.35; ranksep=.45;
-  node [shape=box style="rounded,filled" fontname="Arial" fontsize=11 fontcolor="#202124" margin=".14,.08"];
-  app [label="Your application\ncode + API key" fillcolor="#E8F7F2" color="#25866A"];
-  api [label="Model API + LLM\nauthenticates, processes tokens, generates output" fillcolor="#F3F0FF" color="#7B61FF"];
-  app -> api [label="request: instructions, input, settings" fontname="Arial" fontsize=9 color="#4F76C8"];
-  api -> app [label="response: output + usage" fontname="Arial" fontsize=9 color="#C74B62"];
-}
-```
+1. The app searches your calendar or notes and finds "Dentist, Tuesday 3 pm".
+2. It adds that line to the prompt with your question.
+3. The model reads it and answers: "Tuesday at 3 pm."
 
-You can use JavaScript, Python, or another supported language to build an LLM application. The language you use to call the API is separate from the language used to train or run the model.
-
-## 4. RAG, knowledge, and memory
-
-These are techniques for supplying information beyond the model's learned parameters.
+This is called **RAG** (retrieval-augmented generation): retrieve the right information, then let the model generate an answer from it. Week 3 builds one.
 
 ### RAG versus fine-tuning
 
