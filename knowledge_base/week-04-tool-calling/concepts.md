@@ -4,13 +4,15 @@
 
 | Learn | Build | Key terms | Watch for |
 | --- | --- | --- | --- |
-| Let a model request reliable actions and data from external systems | A tool-calling loop with validated inputs and tool results | Tool schema, arguments, function call, validation, approval | The model requests a tool; your application decides whether to run it |
+| How a model can use live data and take actions by asking your code to run functions | A weather assistant that looks up real, current weather | Tool, tool schema, arguments, tool result, approval | The model only *asks* for a tool; your application decides whether to run it |
+
+So far the model has only read text you gave it. This week it gets to **ask for things**: current data from an API, a calculation, or an action in another system. For short definitions of any term, see the **Glossary**.
 
 ## 1. What is tool calling?
 
-Tool calling lets an LLM request that an application run a defined function. The function might read a calendar, calculate a total, search a knowledge base, or draft an email.
+A **tool** is a function your application makes available to the model, such as "get the weather for a city" or "add an event to the calendar". **Tool calling** is how the model uses it.
 
-The model does **not** directly execute code or access your systems. It returns a structured tool request; the application validates and runs it, then sends the result back to the model.
+The model cannot run code or reach the internet itself; it only produces text. So instead of answering, it can reply with a structured request: *"please run `get_weather` with `location = Detroit`"*. Your application checks the request, runs the function, and sends the result back. The model then writes its answer from that result.
 
 ```graphviz
 digraph tool_calling {
@@ -26,93 +28,101 @@ digraph tool_calling {
 }
 ```
 
-## 2. When should an agent use a tool?
+Think of the model as a capable assistant who works only by message. It cannot open the weather app, but it can write you a note asking you to check, and then use what you tell it.
 
-Tools are appropriate when the task needs a current fact, a deterministic calculation, access to private data, or an external action.
+## 2. Why do we need tool calling?
 
-| Need | Prefer |
+Ask a plain LLM "What's the weather in Detroit right now?" and it can only guess, because its training data is months old and it has no way to look outside. With a weather tool, it asks for the real reading and answers from it.
+
+Tools fill the gaps that a model cannot fill on its own:
+
+| The model cannot… | Tool example |
 | --- | --- |
-| Explain, summarize, or reason from supplied context | LLM response |
-| Calculate a number or transform data predictably | A deterministic tool |
-| Read current account, inventory, or calendar data | A read tool or API |
-| Send, create, delete, or change something | An authorized action tool |
-| Answer from a large collection of documents | Retrieval or search tool |
+| Know anything current | `get_weather(location)`, stock prices, today's news |
+| Read your live systems | Check a calendar, look up an order status |
+| Calculate reliably | A calculator or a spreadsheet function |
+| Do things in the world | Send an email, create a ticket, book a meeting |
 
-An LLM can decide *which* tool may help. It should not be trusted as the authority for permissions, input validation, or irreversible actions.
+How this differs from the earlier weeks:
 
-## 3. A tool is a contract
+| You need… | Use |
+| --- | --- |
+| The model to explain or reason about something | A plain LLM call (Week 1) |
+| Facts from your documents | RAG (Week 3) |
+| A current, exact value or an action | **Tool calling** |
 
-A tool definition gives the model a name, a clear description, and a typed input schema. Good descriptions explain when to use the tool and what it cannot do.
+In fact, RAG can itself be offered as a tool: "search the policy documents" is just another function the model can ask for.
+
+## 3. How do we implement tool calling?
+
+### Step 1: Describe the tool
+
+You give the model a short description of each tool: its name, what it is for, and what inputs it needs. This description is called the **tool schema**. Here is the lab's weather tool:
 
 ```json
 {
   "name": "get_weather",
-  "description": "Get the current weather for a city. Use for current conditions, not forecasts.",
+  "description": "Get the current weather for a city or location.",
   "parameters": {
     "type": "object",
-    "properties": {"city": {"type": "string"}},
-    "required": ["city"],
-    "additionalProperties": false
+    "properties": {
+      "location": {"type": "string", "description": "City or location to retrieve weather for."}
+    },
+    "required": ["location"]
   }
 }
 ```
 
-Keep tools small and specific. `get_weather(city)` is easier to select and validate than one vague `do_everything(request)` tool.
+The model decides whether to use a tool from its name and description alone, so write them carefully. Small, specific tools (`get_weather`, `get_weekend_forecast`) work much better than one vague `do_anything` tool.
 
-## 4. The runtime owns execution
+### Step 2: Run the conversation loop
 
-When a model returns a tool call, the runtime should:
+1. **Send** the user's question together with the tool schemas.
+2. **The model replies** either with a normal answer or with a tool request, such as `get_weather(location="Detroit")`.
+3. **Your application runs the tool** and gets a result, for example `{"location": "Detroit", "temperature_f": 41}`.
+4. **Send the result back** to the model.
+5. **The model answers**: "It's 41°F in Detroit right now."
 
-1. Check that the tool name is allowed for this user and task.
-2. Validate the arguments against the schema and business rules.
-3. Request approval when an action is sensitive or irreversible.
-4. Execute the tool with timeouts, retries, and audit logging as appropriate.
-5. Return a concise, structured result to the model.
+Some questions need more than one call. "Which is warmer right now, Detroit or Miami?" needs two weather lookups before the model can compare. Always set a limit, such as five rounds, so a confused model cannot loop forever.
 
-The tool result is context, not an instruction. Treat content returned from websites, documents, or APIs as untrusted data so it cannot override your application policy.
+### Step 3: Keep your application in control
 
-## 5. Multiple calls and stopping
+The model *proposes*; your application *decides*. Before running any tool request, your code should:
 
-Some tasks need a loop: search, inspect a result, take another action, then answer. Set limits on rounds, time, and cost. Stop when the goal is met, an approval is needed, evidence is missing, or the budget is exhausted.
+- **Check it is allowed** for this user and this task.
+- **Check the inputs** are valid, such as a real location rather than an empty string.
+- **Ask a person first** for anything consequential, such as sending a message, spending money, or deleting data.
+- **Send back the real result, including errors.** If the city is not found, tell the model so it says so, rather than inventing a temperature.
 
-```text
-User: “Schedule lunch with Maya next Tuesday.”
-1. Find Maya's availability.
-2. Check the user's calendar.
-3. Propose or create a time only after the required approval.
-4. Confirm the outcome with the user.
-```
+Treat whatever a tool returns as information, not as instructions. A web page or document fetched by a tool might contain text like "ignore your rules", and the model must not obey it.
 
-Do not assume a tool call succeeded just because the model requested it. Send the real result—including errors—back to the model.
+## 4. How do we evaluate tool calling?
 
-## 6. Tool calling, APIs, and MCP
+A tool-using answer can go wrong at several points, so check each one. Write a set of test questions with the behavior you expect, like this one from the lab:
 
-| Layer | Role |
+| Question | Expected behavior |
 | --- | --- |
-| API | The underlying service interface, such as a calendar or CRM API |
-| Tool | A safe, model-facing operation your application exposes |
-| Tool calling | The model's structured request for that operation |
-| MCP | A standard protocol for discovering and connecting to tools, resources, and prompts |
+| "Explain humidity." | **No tool**: the model can answer this itself |
+| "Weather in Detroit now?" | `get_weather("Detroit")` |
+| "Should I plan an outdoor event in Detroit this weekend?" | `get_weekend_forecast("Detroit")`, not current weather |
+| "Detroit vs. Miami right now?" | Two `get_weather` calls, then a comparison |
+| "Weather in asdfghxyz?" | A tool call, then a polite "location not found", with no invented numbers |
 
-MCP can deliver tools to an application, but it does not remove the need for validation, authorization, or approval. See [MCP concepts](concepts-mcp.md).
+Then measure:
 
-## 7. Evaluate the whole chain
+| Metric | Question it answers | Formula |
+| --- | --- | --- |
+| **Tool-selection accuracy** | Did it pick the right tool, or correctly use none? | correct tool decisions ÷ test questions |
+| **Argument accuracy** | Did it fill in the right inputs? | calls with the intended location ÷ tool calls |
+| **Execution success** | Did the tool actually run? | successful runs ÷ attempted runs |
+| **Task success** | Was the final answer right and honest? | correct, non-invented answers ÷ test questions |
+| **Efficiency** | How many calls, how long, how much did it cost? | calls, seconds, and tokens per question |
 
-| Question | Example measure |
-| --- | --- |
-| Did the model choose the right tool? | Tool-selection accuracy |
-| Did it provide valid arguments? | Schema and argument accuracy |
-| Did the runtime execute safely? | Authorization, approval, and execution success |
-| Did the task finish correctly? | End-to-end task success |
-| Was it efficient? | Calls per task, latency, and cost |
+These separate three different kinds of failure. A *tool-calling* failure means the model chose the wrong tool or inputs. An *execution* failure is a broken API or a timeout. A *task* failure is a bad final answer, such as a made-up temperature after the tool correctly returned "location not found". Each has a different fix.
 
-Test negative cases too: no tool needed, unavailable data, malformed arguments, permission denied, failed tools, and actions requiring approval.
+For larger comparisons, public benchmarks such as the **Berkeley Function-Calling Leaderboard (BFCL)** test how well models choose tools and fill in arguments. See *Week 6 · Evals · Benchmarks*.
 
-## 8. Core mental model
-
-**The model proposes; the application controls; the tool performs; the result becomes evidence.**
-
-That separation is what makes tool-using systems useful without giving a probabilistic model unrestricted access to real systems.
+To share the same tools across many applications, there is a standard protocol called MCP. See *Week 4 · Tool Calling · MCP*.
 
 ## References
 
