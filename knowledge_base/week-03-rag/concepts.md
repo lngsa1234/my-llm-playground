@@ -161,6 +161,25 @@ The lab reports Recall@K, Precision@K, exact match, and F1 for every test questi
 
 To compare settings fairly, use a fixed set of test questions, each with the expected answer and the document that contains it, as the lab does for NovaTech. Then change **one** thing at a time (chunking, search method, or Top-K) and compare the results.
 
+### Popular benchmark datasets
+
+Your own test questions tell you how well RAG works **for your documents**. Public benchmarks are shared test sets with known answers, useful for comparing search methods, embedding models, or whole RAG systems against published results. These are the ones you will see most often:
+
+| Benchmark | What it tests | Typical use |
+| --- | --- | --- |
+| [Natural Questions](https://ai.google.com/research/NaturalQuestions) | Real Google search questions, answered from Wikipedia | Single-fact questions: does retrieval find the one right passage? |
+| [TriviaQA](https://nlp.cs.washington.edu/triviaqa/) | Trivia questions with supporting web and Wikipedia evidence | General question answering with noisy evidence |
+| [HotpotQA](https://hotpotqa.github.io/) | Questions that need facts from **two** Wikipedia articles | Multi-step ("multi-hop") retrieval; the lab uses a small subset |
+| [MS MARCO](https://microsoft.github.io/msmarco/) | Real Bing search queries and millions of web passages | Ranking: is the best passage near the top? |
+| [BEIR](https://github.com/beir-cellar/beir) | A collection of retrieval tasks across many domains (science, finance, fact-checking, and more) | Checking that a search method works beyond one topic |
+| [MTEB](https://huggingface.co/spaces/mteb/leaderboard) | A public leaderboard of embedding models, including retrieval tasks | Choosing an embedding model |
+| [CRAG](https://github.com/facebookresearch/CRAG) | Question–answer pairs across domains such as finance, sports, music, and movies, including fast-changing facts | Testing a full RAG system end to end, from Meta |
+| [FRAMES](https://huggingface.co/datasets/google/frames-benchmark) | Hard questions that need several Wikipedia articles and some reasoning | Testing multi-step retrieval plus reasoning, from Google |
+
+Two cautions. A good benchmark score does not guarantee good results on your own documents, so always keep a small test set of your own. And well-known benchmarks may have appeared in a model's training data, so a model can sometimes answer them without retrieval at all. Include questions the documents cannot answer to check that the system says "I don't know".
+
+This week's lab includes two datasets: the NovaTech questions, which test a realistic company use case, and 50 HotpotQA questions with unanswerable checks, which test multi-hop retrieval.
+
 ## References
 
 - [OpenAI API — File search](https://developers.openai.com/api/docs/guides/tools-file-search)
