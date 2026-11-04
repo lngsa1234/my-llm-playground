@@ -111,6 +111,7 @@ Build any AI or agent project you want. Choose a problem, audience, and scope th
 
 - **Weekly virtual meeting:** we recommend joining on the web at [www.circlew.app](https://www.circlew.app).
 - [Download the CircleW iOS app](https://apps.apple.com/us/app/circlew/id6780248349) to receive real-time notifications.
+- **Questions:** send them in the group chat on the circle's page in CircleW.
 
 ## Appendix: Run your own weekly Mini Muse demo
 
