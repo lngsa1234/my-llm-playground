@@ -4,15 +4,15 @@
 
 | Learn | Build | Key terms | Watch for |
 | --- | --- | --- | --- |
-| How an LLM generates tokens and where it fits in an app | A first API call with structured output | Tokens, context, prompts, API | An LLM does not retain prior API calls unless the app supplies history |
+| How an LLM writes text, how applications use it, and what it cannot do on its own | Your first program that calls an LLM and gets a structured answer back | Token, prompt, API, context, agent | An LLM does not remember earlier calls; your application must send the history each time |
 
-This page explains how the core ideas fit together. Short definitions of every term are in the **Glossary** (sidebar → 📚 Knowledge Base → Glossary).
+This page explains how the core ideas fit together. For a short definition of any term, see the **Glossary** (sidebar → 📚 Knowledge Base → Glossary).
 
 ## 1. How an LLM generates text
 
-Think of the autocomplete on your phone keyboard. You type "See you", and it suggests "soon", "tomorrow", or "later". An LLM does the same thing, just far better: it has read a huge amount of text, so it is very good at guessing **what word comes next**.
+A large language model (LLM) works much like the autocomplete on a phone keyboard. Type "See you" and the keyboard suggests "soon", "tomorrow", or "later". An LLM does the same thing at far greater scale: it has learned from a vast amount of text, so it is very good at predicting **what comes next**.
 
-It writes a whole answer by guessing one piece at a time:
+It writes a full answer one small piece at a time:
 
 | Step | Text so far | Most likely next piece | Added |
 | --- | --- | --- | --- |
@@ -20,13 +20,13 @@ It writes a whole answer by guessing one piece at a time:
 | 2 | The cat sat on the mat | . (period) | . |
 | 3 | The cat sat on the mat. | *(end of answer)* | stop |
 
-That is the whole trick, repeated: look at all the text so far, guess the next piece, add it, and go again. A long answer is just hundreds of these small guesses in a row. Three things follow from this:
+The model repeats the same step: read all the text so far, predict the next piece, add it, and continue. A long answer is simply hundreds of these predictions in a row. Three practical consequences follow:
 
-- **It predicts; it doesn't look things up.** A fluent, confident answer can still be wrong (a "hallucination").
-- **Answers can vary.** The model picks among likely options, so the same question can get different wording each time. Settings like *temperature* control how adventurous the picks are.
-- **The pieces are tokens, not words.** A token is often a whole word, but can be part of a word or a punctuation mark.
+- **It predicts; it does not look things up.** A fluent, confident answer can still be wrong. This is called a *hallucination*.
+- **Answers can vary.** The model chooses among likely options, so the same question can produce different wording. A setting called *temperature* controls how much variety you get.
+- **The pieces are tokens, not words.** A token is often a whole word, but it can also be part of a word or a punctuation mark. Usage and pricing are measured in tokens.
 
-Under the hood, the same steps look like this:
+The same process, step by step:
 
 ```graphviz
 digraph next_token {
@@ -41,12 +41,9 @@ digraph next_token {
 }
 ```
 
-
 ## 2. How do we use an LLM?
 
-An LLM API provides a programming interface to a model service.
-
-### What happens when you call an LLM API?
+Most people first meet an LLM in a chat app such as ChatGPT, Claude, or Gemini. When you build your own application, you use the same models through an **API** (application programming interface): your code sends a request to the model provider over the internet and receives the answer back.
 
 ```graphviz
 digraph api_flow {
@@ -59,13 +56,21 @@ digraph api_flow {
 }
 ```
 
-You can use JavaScript, Python, or another supported language to build an LLM application. The language you use to call the API is separate from the language used to train or run the model.
+A request usually contains three things:
+
+- **Instructions** that set the model's role and rules, often called the *system prompt* (for example, "You are a helpful assistant. Answer in two sentences.").
+- **The input**, such as the user's question.
+- **Settings**, such as which model to use and the maximum length of the answer.
+
+The response contains the generated text plus **usage**: how many tokens went in and came out, which is what you are billed for.
+
+Every request is signed with an **API key**, a secret password that identifies your account. Keep it out of your code and never share it publicly. You can call an API from Python, JavaScript, or almost any other language; this week's lab uses Python.
 
 ## 3. Does an LLM remember previous API calls?
 
-A standard stateless LLM inference does not automatically remember earlier API calls.
+No. Each API call starts from a blank slate. The model has no memory of anything you sent before.
 
-Your application must provide the relevant previous information again, or use a service that manages conversation state for you.
+Chat apps only *feel* like they remember because the app quietly sends the earlier conversation along with every new message. When you build your own application, that job is yours: store the history and include whatever the model needs on each call.
 
 ```graphviz
 digraph state {
@@ -75,7 +80,7 @@ digraph state {
   app [label="Your application\nstores history" fillcolor="#E8F7F2" color="#25866A"];
   call1 [label="API call 1" fillcolor="#E8F0FF" color="#4F76C8"];
   model [label="LLM\nno memory between calls" fillcolor="#F3F0FF" color="#7B61FF"];
-  user2 [label="User: Explain RAG" fillcolor="#FFF6DE" color="#C68B20"];
+  user2 [label="User: Explain tokens" fillcolor="#FFF6DE" color="#C68B20"];
   call2 [label="API call 2\n+ selected history" fillcolor="#E8F0FF" color="#4F76C8"];
   user1 -> app -> call1 -> model;
   user2 -> app;
@@ -83,25 +88,27 @@ digraph state {
 }
 ```
 
-Context engineering is how the application decides what the model should know for the current call.
+In the example above, if the second call does not include "I prefer concise answers", the model has no way of knowing that preference.
+
+Sending history has a cost. More text means more tokens, which means slower and more expensive calls, and every model has a limit on how much it can read at once (its *context window*). Deciding what to include on each call is called **context engineering**, the topic of Week 2.
 
 ## 4. Does an LLM know your private information?
 
-No. A model only knows what was in its training data. That data stops at a cutoff date, and it never included your emails, your notes, or your company's documents.
+No. A model only knows what was in its training data. That data stops at a cutoff date, so the model does not know recent events, and it never included your emails, your notes, or your company's documents.
 
-Ask a plain LLM "When is my dentist appointment?" and it can only guess or say it doesn't know. To answer, your application has to **find the relevant information and put it in the prompt**:
+Ask a plain LLM "When is my dentist appointment?" and it can only guess or say it does not know. To answer, your application has to **find the relevant information and put it in the request**:
 
 1. The app searches your calendar or notes and finds "Dentist, Tuesday 3 pm".
-2. It adds that line to the prompt with your question.
+2. It adds that line to the request, together with your question.
 3. The model reads it and answers: "Tuesday at 3 pm."
 
-This is called **RAG** (retrieval-augmented generation): retrieve the right information, then let the model generate an answer from it. Week 3 builds one.
+This approach is called **RAG** (retrieval-augmented generation): retrieve the right information first, then let the model generate an answer from it. You will build one in Week 3.
 
 ## 5. AI agents and agent engineering
 
-An LLM on its own only writes text. An **agent** puts the LLM inside a system that can also take actions, such as searching the web, reading a calendar, or sending an email, step by step toward a goal.
+On its own, an LLM only produces text. An **agent** places the LLM inside a system that can also take actions, such as searching the web, reading a calendar, or sending an email, and works step by step toward a goal.
 
-It helps to think of three layers, each built on the one below:
+It helps to think in three layers, each built on the one below:
 
 ```graphviz
 // width: 360
@@ -117,23 +124,23 @@ digraph learning_layers {
 }
 ```
 
-The LLM predicts text (section 1), the application calls it and decides what it sees (sections 2–4), and the agent uses both to get something done. This course climbs these layers week by week.
+The LLM predicts text (section 1). The application calls it and decides what it sees (sections 2–4). The agent combines both to get something done. The course climbs these layers week by week.
 
 ### Agent categories and examples
 
-"Agent" is a broad term. The categories below describe common system designs, and a real product can combine more than one of them. The final column names well-known companies and products rather than hypothetical use cases.
+"Agent" is a broad term. The categories below describe common designs; a real product often combines more than one.
 
 | Category | What it does | Notable companies and products |
 | --- | --- | --- |
-| General-purpose or personal agent | Handles open-ended, multi-step work in a conversation and may use personal context or connected apps. | OpenAI — ChatGPT agent; Anthropic — Claude; Google — Gemini; Meta — Muse; xAI — Grok; Microsoft — Copilot. |
-| Research agent | Searches, gathers sources, synthesizes findings, and prepares a report. | OpenAI — Deep Research; Perplexity — Deep Research; Google — Gemini Deep Research. |
-| Coding agent | Reads and changes a codebase, runs commands or tests, and helps deliver software. | OpenAI — Codex; Anthropic — Claude Code; Cognition — Devin; Cursor — Cursor. |
-| Browser or computer-use agent | Uses a browser or computer interface to navigate sites and complete tasks. | OpenAI — ChatGPT agent; Anthropic — Claude in Chrome; Manus — Manus. |
-| Enterprise knowledge and workflow agent | Uses company data and business tools within defined permissions and workflows. | Microsoft — Copilot Studio; Salesforce — Agentforce; Glean — Glean Agents; ServiceNow — AI Agents. |
-| Customer-service agent | Resolves support questions and, where permitted, completes service actions. | Intercom — Fin; Zendesk — AI agents; Ada — Ada. |
-| Multi-agent platform | Coordinates specialist agents or provides the framework to build them. | Microsoft — AutoGen; Google — Agent Development Kit; CrewAI — CrewAI; LangChain — LangGraph. |
+| General-purpose or personal agent | Handles open-ended, multi-step work in a conversation and may use personal context or connected apps. | OpenAI — ChatGPT agent<br>Anthropic — Claude<br>Google — Gemini<br>Meta — Muse<br>xAI — Grok<br>Microsoft — Copilot |
+| Research agent | Searches, gathers sources, synthesizes findings, and prepares a report. | OpenAI — Deep Research<br>Perplexity — Deep Research<br>Google — Gemini Deep Research |
+| Coding agent | Reads and changes a codebase, runs commands or tests, and helps deliver software. | OpenAI — Codex<br>Anthropic — Claude Code<br>Cognition — Devin<br>Cursor — Cursor |
+| Browser or computer-use agent | Uses a browser or computer interface to navigate sites and complete tasks. | OpenAI — ChatGPT agent<br>Anthropic — Claude in Chrome<br>Manus — Manus |
+| Enterprise knowledge and workflow agent | Uses company data and business tools within defined permissions and workflows. | Microsoft — Copilot Studio<br>Salesforce — Agentforce<br>Glean — Glean Agents<br>ServiceNow — AI Agents |
+| Customer-service agent | Resolves support questions and, where permitted, completes service actions. | Intercom — Fin<br>Zendesk — AI agents<br>Ada — Ada |
+| Multi-agent platform | Coordinates specialist agents or provides the framework to build them. | Microsoft — AutoGen<br>Google — Agent Development Kit<br>CrewAI — CrewAI<br>LangChain — LangGraph |
 
-The safest starting point is usually a narrow workflow or tool-using agent with explicit permissions, clear stop conditions, and human approval for consequential actions. Add planning, additional tools, or multiple agents only when the task genuinely needs them.
+A good first agent is narrow: a few well-defined tools, clear permissions, a clear point at which it stops, and human approval before anything consequential, such as sending a message or spending money. Add more tools, planning, or multiple agents only when the task genuinely needs them.
 
 ## References
 

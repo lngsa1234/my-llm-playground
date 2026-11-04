@@ -182,4 +182,6 @@ def _render_body(content: str) -> None:
             else:
                 st.graphviz_chart(dot, width=width)
         elif piece.strip():
-            st.markdown(piece)
+            # The knowledge base is our own trusted markdown; allowing HTML lets a
+            # table cell use <br> to put each item on its own line.
+            st.markdown(piece, unsafe_allow_html=True)
