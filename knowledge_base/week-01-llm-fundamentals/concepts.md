@@ -97,17 +97,6 @@ Ask a plain LLM "When is my dentist appointment?" and it can only guess or say i
 
 This is called **RAG** (retrieval-augmented generation): retrieve the right information, then let the model generate an answer from it. Week 3 builds one.
 
-### RAG versus fine-tuning
-
-| RAG | Fine-tuning |
-| --- | --- |
-| Retrieves external information at inference time | Updates model parameters through training |
-| Can incorporate frequently changing documents | Useful for adapting behavior, style, or specialized tasks |
-| Does not inherently modify the model | Modifies model behavior |
-| Requires a retrieval pipeline | Requires training data and compute |
-
-For an agent that needs to answer questions about CircleW's current features, RAG could retrieve the latest product documentation. Fine-tuning would not be necessary just to give it access to those documents.
-
 ## 5. AI agents and agent engineering
 
 An agent combines the LLM with tools, state management, and an execution process (a control loop) so it can take actions toward a goal, with guardrails and human approval around the risky steps.
