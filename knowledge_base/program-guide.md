@@ -69,7 +69,49 @@ The [Course project](#course-project-mini-muse) section below describes the opti
 
 For each week, use the matching **Knowledge Base** guide, lab, and quiz in the sidebar. The table is the single program overview; the weekly materials contain the details.
 
-## Run your own weekly Mini Muse demo
+## Course project: Mini Muse
+
+Choose one of three project scopes. All apply the course concepts; Option 1 is intentionally the simpler starting point.
+
+### Option 1: Mini Muse Task Assistant
+
+Build a **task assistant** that does one useful job well. Choose a focused task—such as answering questions from a small set of notes, drafting an email, planning a trip, or helping with a specific workflow—and clearly define what it can and cannot do.
+
+**Project location:** embedded in the [lngsa1234/my-llm-playground](https://github.com/lngsa1234/my-llm-playground) course repository.
+
+Complete Option 1 **by yourself** from start to finish.
+
+Your demo should include:
+
+- A chat-style input and a useful assistant response.
+- A focused task, clear instructions, and an example user workflow.
+- At least one course concept applied to the task, such as structured output, memory, retrieval, tool calling, or an evaluation.
+- A short demo showing the task working and at least one limitation or safety boundary.
+
+### Option 2: Mini Muse MVP
+
+Build a **minimum viable product**: a small personal-assistant experience with connected features rather than a single task. The MVP includes:
+
+**Project repository:** [lngsa1234/mini-muse-mvp](https://github.com/lngsa1234/mini-muse-mvp)
+
+- **Chat** — a conversational home for interacting with Mini Muse.
+- **Ideas** — capture, organize, and develop ideas with the assistant.
+- **Goals** — create, review, and make progress on goals.
+- **Library** — save and retrieve notes, resources, and other useful reference material.
+
+The features should work together where practical—for example, chat can help turn an idea into a goal or answer a question using material from the library. Define a small, testable scope for each feature and demonstrate the user journey end to end.
+
+You may build Option 2 on your own or with others. In a team, each person can focus on one feature or one part of the product.
+
+### Option 3: Your Own Project
+
+Build any AI or agent project you want. Choose a problem, audience, and scope that interest you, then apply relevant course concepts such as prompts, context, retrieval, tools, workflows, evaluation, or reliability. You may work independently or with others.
+
+## Communication
+
+- [Download the CircleW iOS app](https://apps.apple.com/us/app/circlew/id6780248349) to receive real-time notifications.
+
+## Appendix: Run your own weekly Mini Muse demo
 
 The [hosted app](https://my-llm-playground-bvapyfhmkp7xn5ji9raank.streamlit.app/) runs on the organizer's API key. To experiment freely, change the code, and run the demo at your own pace, run **your own copy** with **your own OpenAI API key**. Set it up once, then follow the weekly routine.
 
@@ -200,45 +242,3 @@ git push
 - **`ModuleNotFoundError`** — run `pip install -r requirements.txt` again, inside your virtual environment.
 - **Answers vary between runs** — that's expected; models are probabilistic. Week 6 shows how to measure it.
 - **You accidentally committed your key** — revoke it immediately at [platform.openai.com/api-keys](https://platform.openai.com/api-keys) and create a new one. Deleting the commit is not enough.
-
-## Course project: Mini Muse
-
-Choose one of three project scopes. All apply the course concepts; Option 1 is intentionally the simpler starting point.
-
-### Option 1: Mini Muse Task Assistant
-
-Build a **task assistant** that does one useful job well. Choose a focused task—such as answering questions from a small set of notes, drafting an email, planning a trip, or helping with a specific workflow—and clearly define what it can and cannot do.
-
-**Project location:** embedded in the [lngsa1234/my-llm-playground](https://github.com/lngsa1234/my-llm-playground) course repository.
-
-Complete Option 1 **by yourself** from start to finish.
-
-Your demo should include:
-
-- A chat-style input and a useful assistant response.
-- A focused task, clear instructions, and an example user workflow.
-- At least one course concept applied to the task, such as structured output, memory, retrieval, tool calling, or an evaluation.
-- A short demo showing the task working and at least one limitation or safety boundary.
-
-### Option 2: Mini Muse MVP
-
-Build a **minimum viable product**: a small personal-assistant experience with connected features rather than a single task. The MVP includes:
-
-**Project repository:** [lngsa1234/mini-muse-mvp](https://github.com/lngsa1234/mini-muse-mvp)
-
-- **Chat** — a conversational home for interacting with Mini Muse.
-- **Ideas** — capture, organize, and develop ideas with the assistant.
-- **Goals** — create, review, and make progress on goals.
-- **Library** — save and retrieve notes, resources, and other useful reference material.
-
-The features should work together where practical—for example, chat can help turn an idea into a goal or answer a question using material from the library. Define a small, testable scope for each feature and demonstrate the user journey end to end.
-
-You may build Option 2 on your own or with others. In a team, each person can focus on one feature or one part of the product.
-
-### Option 3: Your Own Project
-
-Build any AI or agent project you want. Choose a problem, audience, and scope that interest you, then apply relevant course concepts such as prompts, context, retrieval, tools, workflows, evaluation, or reliability. You may work independently or with others.
-
-## Communication
-
-- [Download the CircleW iOS app](https://apps.apple.com/us/app/circlew/id6780248349) to receive real-time notifications.
