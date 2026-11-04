@@ -42,6 +42,8 @@ Lynn shares what she learned that week, then the group practices and discusses t
 
 Each session needs **1–2 volunteers** to help facilitate the open discussion.
 
+To run the week's Mini Muse demo on your own, with your own fork and API key, see [Appendix: Run your own weekly Mini Muse demo](#appendix-run-your-own-weekly-mini-muse-demo).
+
 ### Final project
 
 By the end of the program, **each member builds one agent project**. Choose one of three:
