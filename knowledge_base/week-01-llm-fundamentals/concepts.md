@@ -4,7 +4,7 @@
 
 | Learn | Build | Key terms | Watch for |
 | --- | --- | --- | --- |
-| How an LLM generates tokens and where it fits in an app | A first API call with structured output | Tokens, context, prompts, temperature, API | An LLM does not retain prior API calls unless the app supplies history |
+| How an LLM generates tokens and where it fits in an app | A first API call with structured output | Tokens, context, prompts, API | An LLM does not retain prior API calls unless the app supplies history |
 
 This page explains how the core ideas fit together. Short definitions of every term are in the **Glossary** (sidebar → 📚 Knowledge Base → Glossary).
 
