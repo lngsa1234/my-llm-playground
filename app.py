@@ -24,7 +24,7 @@ for _name, _module in list(sys.modules.items()):
             del sys.modules[_name]
 
 from labs.shared.ui import api_key_notice, apply_page_style  # noqa: E402
-from labs.shared.knowledge import available_concepts, render_concept  # noqa: E402
+from labs.shared.knowledge import available_concepts, render_concept, render_document  # noqa: E402
 from labs.shared.quizzes import QUIZZES, render_quiz  # noqa: E402
 from labs.week1_llm_api import page as week1  # noqa: E402
 from labs.week2_context_engineering import page as week2  # noqa: E402
@@ -138,8 +138,7 @@ with st.sidebar:
     api_key_notice()
 
 if st.session_state.get("show_program_guide", False):
-    st.markdown(PROGRAM_GUIDE.read_text(encoding="utf-8"))
-    st.caption("Source: `knowledge_base/program-guide.md` · pick **— Hide —** in the sidebar to return to the labs.")
+    render_document(PROGRAM_GUIDE, "Source: `knowledge_base/program-guide.md` · pick **— Hide —** in the sidebar to return to the labs.")
 elif quiz != QUIZ_OFF:
     render_quiz(quiz)
 elif concept != KB_OFF:

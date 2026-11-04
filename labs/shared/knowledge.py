@@ -8,6 +8,7 @@ can have a main `concepts.md` plus extra `concepts-*.md` notes (e.g.
 
 from __future__ import annotations
 
+import html
 import re
 from pathlib import Path
 
@@ -50,14 +51,121 @@ def available_concepts() -> dict[str, Path]:
     return concepts
 
 
+TOC_CSS = """
+<style>
+    /* The right-hand "On this page" column stays in view while the page scrolls. */
+    [data-testid="stColumn"]:has(.st-key-kb_toc) {
+        position: sticky;
+        top: 4.5rem;
+        align-self: flex-start;
+        max-height: calc(100vh - 6rem);
+        overflow-y: auto;
+    }
+    .kb-toc-title {
+        font-size: 0.75rem;
+        font-weight: 600;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        opacity: 0.65;
+        margin: 0 0 0.5rem 0;
+    }
+    .kb-toc ul { list-style: none; margin: 0; padding: 0 0 0 0.75rem;
+                 border-left: 1px solid var(--st-border-color, #D6DEE6); }
+    .kb-toc li { margin: 0 0 0.35rem 0; padding: 0; line-height: 1.3; }
+    .kb-toc li.kb-toc-h3 { padding-left: 0.85rem; font-size: 0.8rem; }
+    .kb-toc a { font-size: 0.85rem; text-decoration: none; color: inherit; opacity: 0.8; }
+    .kb-toc li.kb-toc-h3 a { font-size: 0.8rem; opacity: 0.7; }
+    .kb-toc a:hover { opacity: 1; color: var(--st-primary-color, #1F5E8C); }
+    /* Columns stack on narrow screens; the outline would end up below the page, so hide it. */
+    @media (max-width: 768px) {
+        [data-testid="stColumn"]:has(.st-key-kb_toc) { display: none; }
+    }
+</style>
+"""
+
+_FENCE = re.compile(r"^\s*(```|~~~)")
+_HEADING = re.compile(r"^(#{2,3})\s+(.+?)\s*#*\s*$")
+
+
+def _plain(text: str) -> str:
+    """Strip inline markdown (links, code, emphasis) so a heading reads as plain text."""
+    text = re.sub(r"!?\[([^\]]*)\]\([^)]*\)", r"\1", text)
+    text = re.sub(r"[`*_]", "", text)
+    return text.strip()
+
+
+def heading_anchor(text: str) -> str:
+    """The id Streamlit gives a markdown heading, so outline links land on it.
+
+    Streamlit lowercases the heading text, drops apostrophes ("can't" -> "cant")
+    and joins the remaining runs of letters and digits with single hyphens;
+    everything else (punctuation, ·, —, ?) is dropped.
+    """
+    words = re.findall(r"[^\W_]+", re.sub(r"['’]", "", _plain(text).lower()))
+    return "-".join(words)
+
+
+def headings(content: str) -> list[tuple[int, str, str]]:
+    """Return (level, title, anchor) for each ## and ### heading outside code blocks."""
+    found: list[tuple[int, str, str]] = []
+    in_fence = False
+    for line in content.splitlines():
+        if _FENCE.match(line):
+            in_fence = not in_fence
+            continue
+        if in_fence:
+            continue
+        match = _HEADING.match(line)
+        if match:
+            title = _plain(match.group(2))
+            found.append((len(match.group(1)), title, heading_anchor(match.group(2))))
+    return found
+
+
+def _render_toc(content: str) -> None:
+    """The "On this page" outline shown in the right-hand column."""
+    items = headings(content)
+    if not items:
+        return
+    links = "".join(
+        f'<li class="kb-toc-h{level}"><a href="#{anchor}">{html.escape(title)}</a></li>'
+        for level, title, anchor in items
+    )
+    with st.container(key="kb_toc"):
+        st.markdown(
+            f'<nav class="kb-toc"><p class="kb-toc-title">On this page</p><ul>{links}</ul></nav>',
+            unsafe_allow_html=True,
+        )
+
+
+def render_document(path: Path, caption: str) -> None:
+    """Show a knowledge-base page with its table of contents in a right-hand column."""
+    content = path.read_text(encoding="utf-8")
+    st.markdown(TOC_CSS, unsafe_allow_html=True)
+    main, toc = st.columns([4, 1], gap="large")
+    with main:
+        _render_body(content)
+        st.caption(caption)
+    with toc:
+        _render_toc(content)
+
+
 def render_concept(path: Path) -> None:
-    """Show one week's concept markdown full width, including native diagrams.
+    """Show one week's concept markdown with its outline on the right."""
+    render_document(
+        path,
+        "Source: `knowledge_base/" + path.relative_to(KNOWLEDGE_BASE).as_posix()
+        + "` · pick **— Hide —** in the sidebar to return to the labs.",
+    )
+
+
+def _render_body(content: str) -> None:
+    """Render markdown, drawing ``graphviz`` fenced blocks as native diagrams.
 
     A ``graphviz`` fenced block is deliberately rendered as a chart rather than
     as source code.  That keeps the knowledge-base export readable in the app
     without making the markdown depend on a private Notion attachment.
     """
-    content = path.read_text(encoding="utf-8")
     pieces = re.split(r"```graphviz\s*\n(.*?)```", content, flags=re.DOTALL)
     for index, piece in enumerate(pieces):
         if index % 2:
@@ -75,5 +183,3 @@ def render_concept(path: Path) -> None:
                 st.graphviz_chart(dot, width=width)
         elif piece.strip():
             st.markdown(piece)
-    st.caption("Source: `knowledge_base/" + path.relative_to(KNOWLEDGE_BASE).as_posix()
-               + "` · pick **— Hide —** in the sidebar to return to the labs.")
