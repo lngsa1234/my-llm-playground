@@ -25,17 +25,7 @@ digraph next_token {
 
 The model predicts the next token, appends it to the text, and repeats until a stopping condition is reached.
 
-## 2. Tokens, embeddings, and attention
-
-Before a model can process text, a tokenizer splits it into tokens, each token is turned into an embedding (a vector of numbers), and attention lets every position draw on information from the others. The model's final scores for the next token (logits) are turned into probabilities with softmax.
-
-Example: In the sentence "The dog chased the ball because it was excited," attention can help the model use the surrounding context to interpret what "it" refers to.
-
-## 3. Context and context engineering
-
-Context is everything the model sees on one call: instructions, the user's message, conversation history, and any data the application adds. The context window caps how much fits. This matters most for agents, whose context changes at every step.
-
-### A critical concept: Does an LLM remember previous API calls?
+## 2. Does an LLM remember previous API calls?
 
 A standard stateless LLM inference does not automatically remember earlier API calls.
 
@@ -59,19 +49,7 @@ digraph state {
 
 Context engineering is how the application decides what the model should know for the current call.
 
-## 4. Model training and adaptation
-
-An LLM acquires its general capabilities in pretraining, usually by learning to predict the next token across a very large dataset. Developers can then adapt it with fine-tuning, preference training such as RLHF or DPO, or cheaper techniques such as LoRA, and make it smaller or faster with distillation and quantization.
-
-An important distinction: Fine-tuning changes model parameters; context engineering changes the information supplied to a model at inference time.
-
-## 5. Inference and generation parameters
-
-When you call an LLM API, you pay for input and output tokens, and you shape generation with settings such as temperature, max output tokens, and stop sequences. Streaming, time to first token, and caching affect how fast the answer feels.
-
-For example, a low temperature generally produces more concentrated token choices, while a higher temperature allows more varied output. It does not guarantee factual correctness.
-
-## 6. LLM APIs and application engineering
+## 3. LLM APIs and application engineering
 
 An LLM API provides a programming interface to a model service.
 
@@ -90,7 +68,7 @@ digraph api_flow {
 
 You can use JavaScript, Python, or another supported language to build an LLM application. The language you use to call the API is separate from the language used to train or run the model.
 
-## 7. RAG, knowledge, and memory
+## 4. RAG, knowledge, and memory
 
 These are techniques for supplying information beyond the model's learned parameters.
 
@@ -105,7 +83,7 @@ These are techniques for supplying information beyond the model's learned parame
 
 For an agent that needs to answer questions about CircleW's current features, RAG could retrieve the latest product documentation. Fine-tuning would not be necessary just to give it access to those documents.
 
-## 8. AI agents and agent engineering
+## 5. AI agents and agent engineering
 
 An agent combines the LLM with tools, state management, and an execution process (a control loop) so it can take actions toward a goal, with guardrails and human approval around the risky steps.
 
