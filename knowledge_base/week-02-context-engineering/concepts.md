@@ -4,17 +4,15 @@
 
 | Learn | Build | Key terms | Watch for |
 | --- | --- | --- | --- |
-| Select the right information for each model call | A context builder that combines instructions, state, history, and retrieval | Context window, state, memory, compaction, RAG | More context can increase cost and reduce relevance |
+| How to choose what the model sees on each call | A context builder that picks the right messages and facts for a question | Context, context window, history, summary, retrieval | More context is not always better: it costs more and can bury the important details |
 
-Context engineering is one of the foundational disciplines of building reliable LLM applications and AI agents. It determines what information an AI model receives, how that information is organized, and how it changes as the application runs.
-
-This knowledge base is designed for your AI PM / AI Engineer learning circle. It starts with the fundamentals, then connects them to practical system design, memory, retrieval, and evaluation.
+Week 1 showed that an LLM has no memory between calls and only knows what you send it. This week is about deciding **what to send**. For short definitions of any term, see the **Glossary**.
 
 ## 1. What is context engineering?
 
-Context engineering is the systematic process of selecting, constructing, managing, and optimizing the information provided to an LLM so it can perform a task effectively.
+**Context** is everything the model sees on one call: the instructions, the user's question, and any extra information your application adds. **Context engineering** is the work of choosing that information: what to include, what to leave out, and how to arrange it.
 
-An LLM application typically does more than send a user message to a model. It may assemble instructions, conversation history, retrieved documents, application state, and tool results into a model request.
+A simple chatbot just sends the user's message. A real application usually gathers several kinds of information and assembles them into one request:
 
 ```graphviz
 digraph context_builder {
@@ -32,266 +30,99 @@ digraph context_builder {
 }
 ```
 
-> 🎯 **The core engineering question is:**
->
-> What does the model need to know right now to perform the next step accurately, efficiently, and safely?
+The piece of code that does this assembly is often called a **context builder**. Before every call it asks one question:
 
-## 2. The essential concepts
+> 🎯 **What does the model need to know right now to do this step well?**
 
-These terms form the vocabulary of context engineering.
+Prompt engineering, which is about *how you word* the instructions, is one part of this. Context engineering covers *everything* the model receives.
 
-| Concept | Definition |
+## 2. Why do we need context engineering?
+
+Imagine a personal assistant you have been chatting with all week. On Monday you told it "I'm vegetarian." On Friday you ask: "Suggest a dinner recipe."
+
+Whether it suggests a vegetarian dish depends entirely on what the application sends with Friday's question. Several things can go wrong:
+
+| Problem | What happens in the example |
 | --- | --- |
-| **Token** | A unit of information processed by the model, such as a word fragment or punctuation. |
-| **Context** | The information available to the model for a particular inference. |
-| **Context window** | The model's maximum supported context capacity, measured in tokens. |
-| **Prompt** | The instructions and input provided to the model. |
-| **Context builder** | Application logic that assembles the information for a model call. |
-| **State** | Structured information about the application's current situation. |
-| **Memory** | Information retained outside the current model call for future use. |
-| **Retrieval** | Finding relevant information from external sources. |
-| **RAG** | Retrieval-Augmented Generation: using retrieved information to support model generation. |
-| **Compaction** | Compressing accumulated context while preserving important information. |
-| **Context rot** | Degradation in the model's ability to use information effectively as context grows. |
+| **Too little context** | Only Friday's question is sent. The model does not know you are vegetarian and suggests chicken. |
+| **Too much context** | The whole week of chat is sent. It works, but every call is slow and expensive, and it gets worse every day. |
+| **Buried context** | The key fact is somewhere in the middle of hundreds of messages. Models tend to overlook details there, so it may still suggest chicken. |
+| **Wrong or stale context** | An old message says "I'm trying vegetarian this month", but you have since changed your mind. The model follows the outdated fact. |
+| **No room left** | Every model has a maximum it can read at once, called the **context window**. A long history eventually no longer fits. |
 
-> 💡 A particularly important distinction is that the context window is a capacity limit, not a memory system. A larger window allows more information to be processed, but does not guarantee that every detail will be used accurately.
+A larger context window helps, but it is a size limit, not a memory. Fitting more text in does not guarantee the model will use every detail well. Good context engineering sends **the right information, not the most information**.
 
-## 3. Context vs. tokens vs. context window
+## 3. How do we implement context engineering?
 
-Think of an LLM as a processor that receives an input sequence.
+### Step 1: Know what you can include
 
-```graphviz
-digraph context_window {
-  rankdir=LR; bgcolor="transparent"; nodesep=.1; ranksep=.35;
-  node [shape=box style="filled" fontname="Arial" fontsize=10 fontcolor="#202124" margin=".18,.12"];
-  label [label="128K-token context window" shape=plaintext fontsize=12];
-  input [label="Input context\ninstructions · history · retrieval" fillcolor="#E8F7F2" color="#86CDB7" width=2.5];
-  output [label="Output budget" fillcolor="#E8F0FF" color="#92AFE8" width=1.4];
-  unused [label="48K\nunallocated" fillcolor="#EDEFF2" color="#A0A6AD" width=1.3];
-  label -> input [style=invis]; input -> output -> unused [arrowhead=none color="#FFFFFF"];
-}
-```
+A request can draw on six kinds of information. Most calls need only some of them.
 
-In this example, the model has a 128K-token capacity. The application allocates 80K tokens for input and anticipated output, leaving 48K unallocated. Actual accounting depends on the model and API, including any internal token usage.
-
-### Does the model remember previous API calls?
-
-**Not automatically.**
-
-Consider three calls to a typical stateless model interface:
-
-```text
-Call 1:
-User: My project is called Engineering Studio.
-Model: Understood.
-
-Call 2:
-User: We have four agent roles.
-Model: Understood.
-
-Call 3:
-User: What is my project called?
-```
-
-If Call 3 includes only the last question, the model does not have the project name available from the earlier calls.
-
-The application needs to supply the relevant information again, whether through conversation history, a stored summary, or another memory mechanism. Some APIs offer server-managed conversation state, but that is still context management provided by the application or service, rather than permanent learning by the model.
-
-## 4. Prompt engineering vs. context engineering
-
-Prompt engineering is part of context engineering, but the two operate at different scopes.
-
-| Dimension | Prompt engineering | Context engineering |
-| --- | --- | --- |
-| **Primary question** | How should I instruct the model? | What should the model know? |
-| **Focus** | Wording, structure, examples | Selection, retrieval, memory, history |
-| **Typical scope** | A prompt or template | The entire model input |
-| **Runtime behavior** | Often relatively static | Often dynamically updated |
-| **Example** | "Return valid JSON." | Retrieve the relevant API contract and recent test results. |
-
-Anthropic describes context engineering as extending prompt engineering to the full information available during inference, particularly in multi-step agents.
-
-For your engineering platform, a prompt might say:
-
-> Review the proposed API change for backward compatibility.
-
-The context builder must then provide the current API specification, proposed change, dependent interfaces, versioning policy, and relevant test results. Without those inputs, a well-written prompt cannot produce a grounded compatibility assessment.
-
-## 5. The six main components of context
-
-```graphviz
-digraph context_components {
-  rankdir=LR; bgcolor="transparent"; nodesep=.25; ranksep=.45;
-  node [shape=box style="rounded,filled" fontname="Arial" fontsize=10 fontcolor="#202124" margin=".14,.08"];
-  system [label="1. System\ninstructions" fillcolor="#F5E9FF" color="#C5A5E9"];
-  user [label="2. User\ninput" fillcolor="#FFF6DE" color="#C68B20"];
-  history [label="3. Conversation\nhistory" fillcolor="#E8F0FF" color="#92AFE8"];
-  retrieval [label="4. Retrieved\nknowledge" fillcolor="#E8F7F2" color="#86CDB7"];
-  state [label="5. Application\nstate" fillcolor="#FFECEE" color="#C74B62"];
-  tools [label="6. Tool\nresults" fillcolor="#F3F0FF" color="#7B61FF"];
-  context [label="Selected context\nfor this call" fillcolor="#EDEFF2" color="#606770"];
-  system -> context; user -> context; history -> context; retrieval -> context; state -> context; tools -> context;
-}
-```
-
-Not every request needs all six components. The context builder should include only what is relevant and authorized for the current task.
-
-## 6. State vs. context vs. memory
-
-These three concepts are related but should not be treated as interchangeable.
-
-```graphviz
-digraph state_context_memory {
-  rankdir=LR; bgcolor="transparent"; nodesep=.35; ranksep=.5;
-  node [shape=box style="rounded,filled" fontname="Arial" fontsize=10 fontcolor="#202124" margin=".16,.09"];
-  state [label="State\ncurrent workflow facts\nsource of truth" fillcolor="#FFECEE" color="#C74B62"];
-  memory [label="Memory\npersistent facts and summaries\nacross sessions" fillcolor="#E8F7F2" color="#86CDB7"];
-  builder [label="Context builder\nselects what is relevant now" fillcolor="#F3F0FF" color="#7B61FF"];
-  context [label="Context\ntemporary model input\nfor one call" fillcolor="#E8F0FF" color="#92AFE8"];
-  model [label="LLM" fillcolor="#FFF6DE" color="#C68B20"];
-  state -> builder; memory -> builder; builder -> context -> model;
-}
-```
-
-For example, your engineering agent may store this state:
-
-```json
-{
-  "task_id": "ENG-102",
-  "stage": "QA",
-  "implementation_complete": true,
-  "tests_passed": false,
-  "blocking_issue": "API response mismatch"
-}
-```
-
-The application does not need to pass its entire database to the model. It can extract the relevant fields and combine them with the failed test and API specification.
-
-> 🔎 **State is the source of truth for workflow progress; context is the information selected for a particular model call.**
-
-## 7. Core context engineering techniques
-
-These are the principal techniques to learn and experiment with. Some solve relevance problems, others solve context-size, cost, or continuity problems.
-
-1. **Context filtering** — Remove irrelevant information
-2. **Truncation** — Enforce a context limit
-3. **Summarization** — Reduce context size
-4. **Compaction** — Maintain long-running continuity
-5. **RAG** — Bring external knowledge into context
-6. **Memory management** — Preserve information across sessions
-7. **Context routing** — Give different tasks appropriate context
-8. **Just-in-time retrieval** — Load information only when needed
-9. **Prompt caching** — Reduce repeated processing cost
-10. **Context isolation** — Avoid unrelated information crossing task boundaries
-
-Anthropic's guidance highlights compaction, structured note-taking, just-in-time retrieval, and sub-agent isolation for long-running agents. OpenAI also documents prompt caching as a way to reduce repeated input processing.
-
-## 8. Retrieval-Augmented Generation (RAG)
-
-RAG is an important context engineering technique, but context engineering is broader than RAG.
-
-RAG allows an application to retrieve relevant information from an external knowledge source and include it in the model's input.
-
-```graphviz
-digraph rag_pipeline {
-  rankdir=LR; bgcolor="transparent"; nodesep=.3; ranksep=.45;
-  node [shape=box style="rounded,filled" fontname="Arial" fontsize=10 fontcolor="#202124" margin=".14,.08"];
-  docs [label="Source\ndocuments" fillcolor="#E8F7F2" color="#86CDB7"];
-  chunk [label="Chunk + embed" fillcolor="#F3F0FF" color="#7B61FF"];
-  index [label="Vector index" fillcolor="#E8F0FF" color="#92AFE8"];
-  query [label="User question" fillcolor="#FFF6DE" color="#C68B20"];
-  search [label="Embed +\nsimilarity search" fillcolor="#F3F0FF" color="#7B61FF"];
-  chunks [label="Top relevant\nchunks" fillcolor="#FFECEE" color="#C74B62"];
-  model [label="Question + chunks\n→ LLM answer" fillcolor="#E8F0FF" color="#4F76C8"];
-  docs -> chunk -> index;
-  query -> search; index -> search; search -> chunks -> model; query -> model;
-}
-```
-
-This illustrates embedding-based RAG. Other implementations can use keyword search, hybrid search, direct database queries, or tool-based retrieval.
-
-### When should you use RAG?
-
-| Scenario | RAG needed? |
+| Ingredient | Example from the assistant |
 | --- | --- |
-| **General explanation of Python syntax** | Usually not |
-| **Answer a question about an internal product specification** | Often yes |
-| **Find a bug in a large codebase** | Retrieval or code-search tools are useful |
-| **Check the current task's workflow status** | Query application state instead |
-| **Calculate a known mathematical formula** | Usually not |
-| **Compare an API change against existing interface contracts** | Often yes |
+| **Instructions** | "You are a helpful personal assistant. Keep answers short." |
+| **The user's question** | "Suggest a dinner recipe." |
+| **Conversation history** | The last few messages of today's chat |
+| **Saved facts (memory)** | "Vegetarian", "Lives in Detroit" |
+| **Retrieved information** | A recipe pulled from a recipe collection |
+| **Current state and tool results** | Today's date, or what is in the user's grocery list |
 
-> 🧭 **The important principle is to choose the appropriate source of truth.** RAG should not replace direct queries to structured systems when exact, current values are needed.
+### Step 2: Choose a strategy for history
 
-## 9. Context management across multiple turns
+History is usually the part that grows fastest. These are the common strategies, from simplest to smartest. This week's lab lets you try each one on the same question.
 
-Context engineering becomes more important when a conversation or agent workflow continues for many steps.
+| Strategy | What it sends | Good for | Weakness |
+| --- | --- | --- | --- |
+| **No history** (baseline) | Only the current question | One-off questions | Forgets everything |
+| **Full history** | Every earlier message | Short conversations | Slow and costly as it grows; key facts get buried |
+| **Recent window** | Only the last few messages | Chats where only recent turns matter | Forgets older facts, like "I'm vegetarian" from Monday |
+| **Summary + recent** | A short summary of the older chat, plus the last few messages | Long conversations | Only as good as the summary |
+| **Retrieval** (keyword search) | Only the earlier messages that relate to the question | Long histories with scattered facts | Can miss a fact if the search is poor |
 
-### Context lifecycle
+### Step 3: Keep important facts outside the chat
 
-1. **Initialize** — Load task instructions and essential project information.
-2. **Retrieve** — Obtain additional information required for the current step.
-3. **Execute** — Call the model and, where appropriate, execute tools.
-4. **Update** — Persist new decisions, findings, and task progress.
-5. **Compact** — Compress or prune accumulated context when appropriate.
-6. **Continue** — Build fresh context for the next step or agent.
+Do not rely on the chat log to remember things that matter. Save them separately:
 
-A useful pattern for your engineering platform is to maintain a structured handoff record rather than passing the entire conversation from the PM agent to the software engineer and QA agent.
+- **Memory:** lasting facts about the user, such as "vegetarian", saved once and added to the request when relevant.
+- **State:** the current progress of a task, such as which step a workflow is on, stored as structured data your code can read.
 
-For example, the next agent can receive this record and retrieve detailed artifacts as needed.
+Your code then picks only the fields the model needs for this step, instead of sending everything.
 
-```json
-{
-  "task": "Implement user authentication",
-  "requirements": ["REQ-101", "REQ-102"],
-  "decisions": ["Use existing authentication service"],
-  "completed": ["API implementation", "Unit tests"],
-  "pending": ["Integration tests"],
-  "artifacts": ["auth-spec.md", "test-results.json"]
-}
-```
+### Step 4: Stay within a budget
 
-## 10. How to evaluate context engineering
+Set a rough limit on how many tokens each request may use, and fill it in priority order: instructions and the question first, then key facts, then history and retrieved information. If you run out of room, summarize or drop the least useful parts.
 
-A technique should not be selected solely because it reduces token usage. You need to measure whether it preserves or improves task performance.
+When you need information from documents, such as a recipe collection or company files, the main technique is **RAG** (retrieval-augmented generation), the topic of Week 3.
 
-| Metric | What it measures | Example signal |
-| --- | --- | --- |
-| Task success | Whether the outcome meets the task requirement | Correct answers ÷ evaluated answers |
-| Groundedness | Whether claims are supported by supplied sources | Citation or evidence check |
-| Context size | Tokens sent in the model input | Input-token count |
-| Cost | Resource use per completed task | Input + output token cost |
-| Latency | Time to a usable result | End-to-end seconds |
-| Retrieval quality | Whether useful evidence was selected | Recall@K or judged relevance |
+## 4. How do we evaluate context engineering?
 
-Correct answers divided by evaluated answers. Requires a reference answer or reliable grading rubric.
+A strategy that uses fewer tokens is only better if the answers stay good. To compare strategies fairly, measure the same few things each time:
 
-### Example: Comparing context strategies
+| What to measure | Question it answers |
+| --- | --- |
+| **Answer quality** | Did the answer use the facts it needed? (Did it remember "vegetarian"?) |
+| **Tokens sent** | How much did we send? This drives cost. |
+| **Latency** | How long did the answer take? |
+| **Grounding** | Is the answer based on the information we sent, rather than invented? |
 
-The following results are hypothetical, illustrating how to design an experiment rather than reporting a real benchmark.
+To run a fair comparison:
 
-| Illustrative strategy | Task quality | Input tokens | Latency | Trade-off |
-| --- | --- | --- | --- | --- |
-| Full conversation history | High at first; can degrade as it grows | High | Higher | Simple, but costly and noisy |
-| Summary + recent turns | Often stable | Medium | Medium | Depends on summary quality |
-| Retrieval of top relevant chunks | High when retrieval is accurate | Low–medium | Medium | Requires an index and evaluation |
+1. Write a small set of test questions, each with the facts a good answer must include.
+2. Keep everything else fixed: same model, same instructions, same questions.
+3. Change **only** the context strategy.
+4. Run each test more than once, because model answers vary.
+5. Compare quality, tokens, and latency side by side.
 
-For a fair experiment, keep the dataset, model, instructions, and evaluation rubric fixed while changing the context strategy. Repeat tests where model outputs vary, and measure cost and latency alongside quality.
+The results usually look something like this (illustrative, not a real benchmark):
 
-## 11. Common failure modes
+| Strategy | Answer quality | Tokens sent | Speed |
+| --- | --- | --- | --- |
+| Full history | Good at first, worse as the chat grows | High | Slower |
+| Recent window | Poor when the key fact is old | Low | Fast |
+| Summary + recent | Usually steady | Medium | Medium |
+| Retrieval | Good when the search finds the right messages | Low to medium | Medium |
 
-| Failure | What happens | Possible mitigation |
-| --- | --- | --- |
-| **Context overflow** | Input exceeds supported capacity | Token budgeting, compaction |
-| **Context rot** | Important details become difficult to use | Filtering, retrieval, testing |
-| **Lost-in-the-middle** | Relevant information is overlooked in long inputs | Reorder and shorten context |
-| **Stale context** | Old facts conflict with current information | Freshness checks, source timestamps |
-| **Context contamination** | Irrelevant or incorrect information affects output | Source filtering and validation |
-| **Memory drift** | Summaries accumulate incorrect assumptions | Preserve source references, verify updates |
-| **Prompt injection** | Retrieved content attempts to override instructions | Enforce trust boundaries and tool permissions |
-| **Handoff information loss** | The next agent lacks important decisions | Structured handoff contracts |
-
-> 🛡️ Context quality includes not just relevance but also provenance, freshness, trust, and completeness.
+There is rarely one best strategy. The right choice depends on how long your conversations are, where the important facts live, and how much you can spend per call. This week's lab gives you real numbers for your own questions.
 
 ## References
 
