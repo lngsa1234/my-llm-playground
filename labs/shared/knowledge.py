@@ -8,14 +8,20 @@ can have a main `concepts.md` plus extra `concepts-*.md` notes (e.g.
 
 from __future__ import annotations
 
+import datetime as dt
 import html
+import json
 import re
+import subprocess
 from pathlib import Path
 
 import streamlit as st
 
 ROOT = Path(__file__).resolve().parents[2]
 KNOWLEDGE_BASE = ROOT / "knowledge_base"
+# Written by scripts/update_kb_dates.py (run by a GitHub Action on every push), so
+# a deployment without git history still knows when each page last changed.
+DATES_FILE = KNOWLEDGE_BASE / "last-updated.json"
 ACRONYMS = {"Llm": "LLM", "Rag": "RAG", "Mcp": "MCP", "Api": "API", "Bfcl": "BFCL"}
 
 
@@ -140,13 +146,45 @@ def _render_toc(content: str) -> None:
         )
 
 
+def _git_date(path: Path) -> dt.date | None:
+    """Date of the last commit that changed path, or None without full git history."""
+    try:
+        shallow = subprocess.run(["git", "rev-parse", "--is-shallow-repository"], cwd=ROOT,
+                                 capture_output=True, text=True, timeout=5)
+        if shallow.returncode != 0 or shallow.stdout.strip() != "false":
+            return None  # a shallow clone would date every page by the latest commit
+        out = subprocess.run(["git", "log", "-1", "--format=%cs", "--", str(path)], cwd=ROOT,
+                             capture_output=True, text=True, timeout=5)
+        return dt.date.fromisoformat(out.stdout.strip()) if out.stdout.strip() else None
+    except (OSError, ValueError, subprocess.SubprocessError):
+        return None
+
+
+def last_updated(path: Path) -> dt.date | None:
+    """When a knowledge-base page last changed: from git history, else from DATES_FILE."""
+    found = _git_date(path)
+    if found:
+        return found
+    try:
+        dates = json.loads(DATES_FILE.read_text(encoding="utf-8"))
+        return dt.date.fromisoformat(dates[path.relative_to(KNOWLEDGE_BASE).as_posix()])
+    except (OSError, ValueError, KeyError):
+        return None
+
+
 def render_document(path: Path, caption: str) -> None:
     """Show a knowledge-base page with its table of contents in a right-hand column."""
     content = path.read_text(encoding="utf-8")
+    updated = last_updated(path)
     st.markdown(TOC_CSS, unsafe_allow_html=True)
     main, toc = st.columns([3, 1], gap="large")
     with main:
-        _render_body(content)
+        title, _, body = content.partition("\n") if content.startswith("# ") else ("", "", content)
+        if title:
+            st.markdown(title)
+        if updated:
+            st.caption(f"Last updated {updated:%B} {updated.day}, {updated.year}")
+        _render_body(body)
         st.caption(caption)
     with toc:
         _render_toc(content)

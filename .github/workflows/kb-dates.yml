@@ -1,0 +1,32 @@
+# Keep knowledge_base/last-updated.json in step with the pages, so the app can show
+# "Last updated" even where it runs without git history.
+name: Knowledge Base dates
+
+on:
+  push:
+    branches: [main]
+    paths: ["knowledge_base/**/*.md"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python scripts/update_kb_dates.py
+      - name: Commit if changed
+        run: |
+          git diff --quiet -- knowledge_base/last-updated.json && exit 0
+          git config user.name "github-actions[bot]"
+          git config user.email "41898283+github-actions[bot]@users.noreply.github.com"
+          git add knowledge_base/last-updated.json
+          git commit -m "Knowledge Base: refresh last-updated dates"
+          git push
