@@ -49,7 +49,7 @@ digraph state {
 
 Context engineering is how the application decides what the model should know for the current call.
 
-## 3. LLM APIs and application engineering
+## 3. How do we use an LLM?
 
 An LLM API provides a programming interface to a model service.
 
