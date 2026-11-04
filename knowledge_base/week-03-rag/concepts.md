@@ -4,7 +4,7 @@
 
 | Learn | Build | Key terms | Watch for |
 | --- | --- | --- | --- |
-| How to let a model answer from your own documents | A small search over company documents that answers with sources | Chunk, embedding, search, Top-K, grounding | If the search misses the right passage, the answer will be wrong however good the model is |
+| How to let a model answer from your own documents | A small search over company documents that answers with sources | Chunk, embedding, Top-K, recall, precision, F1 | If the search misses the right passage, the answer will be wrong however good the model is |
 
 Week 1 showed that a model does not know your private information. Week 2 showed how to choose what goes into each call. This week puts the two together: **find the right passage in your documents, then let the model answer from it.** For short definitions of any term, see the **Glossary**.
 
@@ -119,15 +119,45 @@ When an answer is wrong, always ask the first question first. If the right passa
 | --- | --- |
 | Try a different chunking strategy, search method, or a larger Top-K, and check the document is in the index at all. | Tighten the instructions, reduce the number of chunks, or check whether two sources disagree. |
 
-What to measure:
+### Metrics for the search (retrieval)
 
-| Measure | Question it answers |
+Retrieval metrics compare the chunks that were found with the document that actually holds the answer. For our question, that is the remote-work policy. Suppose Top-K is 5 and the search returns five chunks: two from the remote-work policy and three from other documents.
+
+| Metric | Question it answers | Formula | Example |
+| --- | --- | --- | --- |
+| **Recall@K** | Did we find what we needed? | needed documents found ÷ needed documents | 1 ÷ 1 = **100%** |
+| **Precision@K** | How much of what we found was useful? | useful chunks ÷ chunks returned (K) | 2 ÷ 5 = **40%** |
+
+Recall@K matters most. If it is low, the answer cannot be right, because the model never saw the evidence. Precision@K tells you how much noise came along. Low precision wastes tokens and can distract the model, so it is a reason to try a smaller Top-K or a better search method.
+
+The two pull against each other. Raising K usually raises recall (more chances to find the passage) and lowers precision (more unrelated chunks).
+
+### Metrics for the answer (generation)
+
+Answer metrics compare the model's answer with the expected answer, here "three days per week". Both ignore capital letters and punctuation.
+
+| Metric | How it works | "Three days per week." | "Employees can work remotely three days per week." |
+| --- | --- | --- | --- |
+| **Exact match** | 100% only if the answer is exactly the expected words | **100%** | **0%** |
+| **F1** | Gives partial credit for overlapping words | **100%** | **67%** |
+
+**F1** combines two numbers, here counted in words:
+
+- **Precision**: how many of the answer's words appear in the expected answer. The longer answer has 8 words, 4 of them matching: 4 ÷ 8 = 50%.
+- **Recall**: how many of the expected words appear in the answer. All 4 do: 4 ÷ 4 = 100%.
+- **F1** = 2 × precision × recall ÷ (precision + recall) = 2 × 0.5 × 1 ÷ 1.5 = **67%**.
+
+F1 is high only when both precision and recall are high. That is why it is a popular single score: an answer cannot score well just by being long (which keeps recall high) or just by being short (which keeps precision high).
+
+These scores are useful for comparing many runs quickly, but they only count matching words. The wrong answer "Two days per week." still scores 75% F1, because three of its four words match. So also check:
+
+| Check | Question it answers |
 | --- | --- |
-| **Recall@K** | Was the needed passage somewhere in the top K results? This is the first number to check. |
-| **Answer correctness** | Does the answer match the expected answer? ("three days per week") |
 | **Faithfulness** | Does every claim come from the retrieved passages, rather than being invented? |
 | **Says "I don't know" when it should** | For a question the documents cannot answer, does it decline instead of guessing? |
-| **Cost and latency** | How many tokens and how much time each answer takes |
+| **Cost and latency** | How many tokens and how much time does each answer take? |
+
+The lab reports Recall@K, Precision@K, exact match, and F1 for every test question, so you can see these numbers move as you change settings.
 
 To compare settings fairly, use a fixed set of test questions, each with the expected answer and the document that contains it, as the lab does for NovaTech. Then change **one** thing at a time (chunking, search method, or Top-K) and compare the results.
 
