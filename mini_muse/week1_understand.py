@@ -56,13 +56,11 @@ class UnderstoodRequest(BaseModel):
 def instructions() -> str:
     intents = "\n".join(f"- {name}: {meaning}" for name, meaning in INTENTS.items())
     return system_prompt(
-        "This step: read the user's request and fill in the fields of the response schema. Resolve "
-        "relative dates against today: a weekday name means its next occurrence after today. Use null "
-        "for anything not stated; never guess a time or a date. List what is missing before the "
-        "request can be carried out.\n\n"
-        "Always write a short reply (one to three sentences) in `answer`, using only what you already "
-        "know. In this step you have no tools: you cannot see live data such as today's weather, or "
-        "the user's calendar, contacts or notes, and you cannot book, send or save anything.\n\n"
+        "Read the request and fill in the response schema. Resolve relative dates against today "
+        "(a weekday means its next occurrence). Use null for anything not stated, never guess, and "
+        "list any details still missing.\n\n"
+        "Always write a short reply in `answer` from what you already know. You have no tools this "
+        "step: no live weather, calendar, contacts or notes, and you cannot book, send or save.\n\n"
         f"Intents:\n{intents}"
     )
 
