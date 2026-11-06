@@ -124,6 +124,7 @@ def _show_guide() -> None:
 
 with st.sidebar:
     st.subheader("🧭 Agent Engineering Peer Learning")
+    st.markdown("**Build your agent**")
     selected = st.radio("Choose a week", list(PAGES), label_visibility="collapsed",
                         key="nav_week", on_change=_show_labs)
     st.divider()
