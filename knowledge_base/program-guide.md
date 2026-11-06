@@ -14,11 +14,7 @@ This course is for anyone looking to systematically learn AI agent concepts, arc
 
 ## What you will learn
 
-1. **Understand AI agents** — prompts, context, retrieval, tools, memory, and state.
-2. **Build an AI assistant** — connect knowledge, tools, and workflows into one working system.
-3. **Evaluate and improve quality** — use test cases, observable outcomes, and regression checks.
-
-Across the eight weeks your agent grows one capability at a time:
+**How to build an agent:** Each week introduces one important AI engineering concept, adds one working capability to the same agent, and ends with a small demo.
 
 **Weeks 1–2: Your agent can answer and remember**
 
