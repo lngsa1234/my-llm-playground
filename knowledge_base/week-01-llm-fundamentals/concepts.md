@@ -8,7 +8,7 @@
 
 This page explains how the core ideas fit together. For a short definition of any term, see the **Glossary** (sidebar → 📚 Knowledge Base → Glossary).
 
-## 1. How an LLM generates text
+## 1. What an LLM does: generate text
 
 A large language model (LLM) works much like the autocomplete on a phone keyboard. Type "See you" and the keyboard suggests "soon", "tomorrow", or "later". An LLM does the same thing at far greater scale: it has learned from a vast amount of text, so it is very good at predicting **what comes next**.
 
