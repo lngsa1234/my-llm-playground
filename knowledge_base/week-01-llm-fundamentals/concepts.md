@@ -95,7 +95,19 @@ Ask a plain LLM to "book a haircut for Tuesday" and the best it can do is *descr
 
 This is **tool calling**, the foundation of agents. You will add tools in Week 4 and wire them into an agent in Week 5.
 
-## 3. How can we build an agent with an LLM?
+## 3. What you can build with an LLM
+
+The same model powers very different products, from a single question-and-answer call to a system that works on its own for minutes:
+
+| Use | What it does | Example |
+| --- | --- | --- |
+| Chatbot / Q&A | Answers questions and writes text from a prompt | A support assistant or a writing helper |
+| Knowledge assistant (RAG) | Answers from your own documents | "What's our refund policy?" over company docs |
+| Agent | Takes multi-step actions toward a goal | Checks your calendar and books an appointment |
+
+The first two mainly need the model to produce text; an agent also takes actions. First, how you call a model at all; then, what makes something an agent.
+
+### 3.1 Call an LLM with an API
 
 Most people first meet an LLM in a chat app such as ChatGPT, Claude, or Gemini. When you build your own application, you use the same models through an **API** (application programming interface): your code sends a request to the model provider over the internet and receives the answer back.
 
@@ -119,18 +131,6 @@ A request usually contains three things:
 The response contains the generated text plus **usage**: how many tokens went in and came out, which is what you are billed for.
 
 Every request is signed with an **API key**, a secret password that identifies your account. Keep it out of your code and never share it publicly. You can call an API from Python, JavaScript, or almost any other language; this week's lab uses Python.
-
-### 3.1 What you can build with an LLM
-
-The same model powers very different products, from a single question-and-answer call to a system that works on its own for minutes:
-
-| Use | What it does | Example |
-| --- | --- | --- |
-| Chatbot / Q&A | Answers questions and writes text from a prompt | A support assistant or a writing helper |
-| Knowledge assistant (RAG) | Answers from your own documents | "What's our refund policy?" over company docs |
-| Agent | Takes multi-step actions toward a goal | Checks your calendar and books an appointment |
-
-The first two mainly need the model to produce text; an agent also takes actions. The next section covers the common kinds of agent.
 
 ### 3.2 What is an agent?
 
