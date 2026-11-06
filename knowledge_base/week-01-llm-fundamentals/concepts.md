@@ -41,36 +41,11 @@ digraph next_token {
 }
 ```
 
-## 2. How do we use an LLM?
+## 2. What an LLM cannot do on its own
 
-Most people first meet an LLM in a chat app such as ChatGPT, Claude, or Gemini. When you build your own application, you use the same models through an **API** (application programming interface): your code sends a request to the model provider over the internet and receives the answer back.
+An LLM only predicts text from what you send it in a single request. Three limits follow directly, and each has a standard fix you will build later in the course.
 
-```graphviz
-digraph api_flow {
-  rankdir=LR; bgcolor="transparent"; nodesep=.35; ranksep=.45;
-  node [shape=box style="rounded,filled" fontname="Arial" fontsize=11 fontcolor="#202124" margin=".14,.08"];
-  app [label="Your application\ncode + API key" fillcolor="#E8F7F2" color="#25866A"];
-  api [label="Model API + LLM\nauthenticates, processes tokens, generates output" fillcolor="#F3F0FF" color="#7B61FF"];
-  app -> api [label="request: instructions, input, settings" fontname="Arial" fontsize=9 color="#4F76C8"];
-  api -> app [label="response: output + usage" fontname="Arial" fontsize=9 color="#C74B62"];
-}
-```
-
-A request usually contains three things:
-
-- **Instructions** that set the model's role and rules, often called the *system prompt* (for example, "You are a helpful assistant. Answer in two sentences.").
-- **The input**, such as the user's question.
-- **Settings**, such as which model to use and the maximum length of the answer.
-
-The response contains the generated text plus **usage**: how many tokens went in and came out, which is what you are billed for.
-
-Every request is signed with an **API key**, a secret password that identifies your account. Keep it out of your code and never share it publicly. You can call an API from Python, JavaScript, or almost any other language; this week's lab uses Python.
-
-## 3. What an LLM cannot do on its own
-
-An LLM only predicts text from what you send it in a single request. Two limits follow directly, and each has a standard fix you will build later in the course.
-
-### 3.1 It does not remember previous API calls
+### 2.1 It does not remember previous API calls
 
 Each API call starts from a blank slate. The model has no memory of anything you sent before.
 
@@ -96,7 +71,7 @@ In the example above, if the second call does not include "I prefer concise answ
 
 Sending history has a cost. More text means more tokens, which means slower and more expensive calls, and every model has a limit on how much it can read at once (its *context window*). Deciding what to include on each call is called **context engineering**, the topic of Week 2.
 
-### 3.2 It does not know your private or recent information
+### 2.2 It does not know your private or recent information
 
 A model only knows what was in its training data. That data stops at a cutoff date, so the model does not know recent events, and it never included your emails, your notes, or your company's documents.
 
@@ -108,7 +83,7 @@ Ask a plain LLM "When is my dentist appointment?" and it can only guess or say i
 
 This approach is called **RAG** (retrieval-augmented generation): retrieve the right information first, then let the model generate an answer from it. You will build one in Week 3.
 
-### 3.3 It cannot take actions on its own
+### 2.3 It cannot take actions on its own
 
 An LLM only produces text. It cannot send an email, book a calendar event, query a database, or run code by itself, no matter how confidently it says it did.
 
@@ -120,7 +95,45 @@ Ask a plain LLM to "book a haircut for Tuesday" and the best it can do is *descr
 
 This is **tool calling**, the foundation of agents. You will add tools in Week 4 and wire them into an agent in Week 5.
 
-## 4. AI agents and agent engineering
+## 3. How do we use an LLM?
+
+Most people first meet an LLM in a chat app such as ChatGPT, Claude, or Gemini. When you build your own application, you use the same models through an **API** (application programming interface): your code sends a request to the model provider over the internet and receives the answer back.
+
+```graphviz
+digraph api_flow {
+  rankdir=LR; bgcolor="transparent"; nodesep=.35; ranksep=.45;
+  node [shape=box style="rounded,filled" fontname="Arial" fontsize=11 fontcolor="#202124" margin=".14,.08"];
+  app [label="Your application\ncode + API key" fillcolor="#E8F7F2" color="#25866A"];
+  api [label="Model API + LLM\nauthenticates, processes tokens, generates output" fillcolor="#F3F0FF" color="#7B61FF"];
+  app -> api [label="request: instructions, input, settings" fontname="Arial" fontsize=9 color="#4F76C8"];
+  api -> app [label="response: output + usage" fontname="Arial" fontsize=9 color="#C74B62"];
+}
+```
+
+A request usually contains three things:
+
+- **Instructions** that set the model's role and rules, often called the *system prompt* (for example, "You are a helpful assistant. Answer in two sentences.").
+- **The input**, such as the user's question.
+- **Settings**, such as which model to use and the maximum length of the answer.
+
+The response contains the generated text plus **usage**: how many tokens went in and came out, which is what you are billed for.
+
+Every request is signed with an **API key**, a secret password that identifies your account. Keep it out of your code and never share it publicly. You can call an API from Python, JavaScript, or almost any other language; this week's lab uses Python.
+
+### 3.1 What you can build with an LLM
+
+The same model powers very different products, from a single question-and-answer call to a system that works on its own for minutes:
+
+| Use | What it does | Example |
+| --- | --- | --- |
+| Chatbot / Q&A | Answers questions and writes text from a prompt | A support assistant or a writing helper |
+| Knowledge assistant (RAG) | Answers from your own documents | "What's our refund policy?" over company docs |
+| Personal agent | Takes multi-step actions for you | Checks your calendar and books an appointment |
+| Coding agent | Reads, writes, and runs code | Fixes a bug and opens a pull request |
+
+The first two mainly need the model to produce text; the last two also let it take actions, which makes them **agents**.
+
+### 3.2 AI agents and agent engineering
 
 On its own, an LLM only produces text. An **agent** places the LLM inside a system that can also take actions, such as searching the web, reading a calendar, or sending an email, and works step by step toward a goal.
 
@@ -140,9 +153,9 @@ digraph learning_layers {
 }
 ```
 
-The LLM predicts text (section 1). The application calls it and decides what it sees (sections 2–3). The agent combines both to get something done. The course climbs these layers week by week.
+The LLM predicts text; the application calls it and decides what it sees; the agent combines both to get something done. The course climbs these layers week by week.
 
-### Agent categories and examples
+#### Agent categories and examples
 
 "Agent" is a broad term. The categories below describe common designs; a real product often combines more than one.
 
