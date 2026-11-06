@@ -14,7 +14,7 @@ benchmark/
 
 Each lab's own test sets live in its folder, for example the Week 3 RAG questions in [`labs/week3_rag/questions/`](../labs/week3_rag/questions/) and the Week 6 golden dataset in [`labs/week6_agent_eval/data/`](../labs/week6_agent_eval/data/).
 
-For what each benchmark tests and how it's graded, see [Public Benchmarks for Agent Evaluation](../knowledge_base/week-06-evals/concepts-benchmarks.md).
+For what each benchmark tests and how it's graded, see the [Public benchmarks](../knowledge_base/week-06-evals/concepts.md#3-public-benchmarks) section of Agent Evaluation Fundamentals.
 
 ### Committed samples
 

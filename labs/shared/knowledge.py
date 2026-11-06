@@ -3,7 +3,7 @@
 The markdown in knowledge_base/week-NN-*/concepts*.md is the single source of
 truth; this module just discovers those files and shows them in the app. A week
 can have a main `concepts.md` plus extra `concepts-*.md` notes (e.g.
-`concepts-benchmarks.md`), each listed as its own entry.
+`concepts-mcp.md`), each listed as its own entry.
 """
 
 from __future__ import annotations
@@ -36,8 +36,8 @@ def _titleize(text: str) -> str:
 def available_concepts() -> dict[str, Path]:
     """Map a sidebar label to each week's concept files, ordered by week number.
 
-    Folders look like `week-06-evals`; `concepts.md` becomes `Week 6 · Evals` and
-    an extra note like `concepts-benchmarks.md` becomes `Week 6 · Evals · Benchmarks`.
+    Folders look like `week-04-tool-calling`; `concepts.md` becomes `Week 4 · Tool
+    Calling` and an extra note like `concepts-mcp.md` becomes `Week 4 · Tool Calling · MCP`.
     The main concept is listed first. Adding a week or a note needs no code change.
     """
     concepts: dict[str, Path] = {}
