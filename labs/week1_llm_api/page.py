@@ -28,11 +28,10 @@ HOW_IT_WORKS = """
 
 
 def render() -> None:
-    main, panel = page_layout("Week 1 · Your agent can answer")
+    main, panel = page_layout("Week 1 · Your agent can answer",
+                              caption="Ask your agent a question and get a response.")
     settings = model_settings(panel)
-    if mini_muse_part(main, panel, 1,
-                      caption="Ask your agent a question and get a response.",
-                      how_it_works=HOW_IT_WORKS):
+    if mini_muse_part(main, panel, 1, how_it_works=HOW_IT_WORKS):
         return
     with lab_parameters(panel):
         output_format = st.radio("Output format", ["Text", "Structured output"], horizontal=True, key="week1_format")
