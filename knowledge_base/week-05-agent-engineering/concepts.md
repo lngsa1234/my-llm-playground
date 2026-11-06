@@ -4,192 +4,328 @@
 
 | Learn | Build | Key terms | Watch for |
 | --- | --- | --- | --- |
-| How an agent works through a request step by step, and how you keep it safe | Mini Muse's agent loop, with a step cap and approval before email | Goal, task, agent loop, step, turn · workflow, checkpoint, approval | Agents need stop conditions, budgets, and human approval paths |
+| How to engineer the system *around* a model so it can pursue a goal reliably | A stateful agent with a workflow, control loop, router, tools, and guardrails | Agent, harness, state, workflow, control loop, routing, tool, guardrail, trace | The model proposes the next step; the harness decides what is actually allowed to happen |
 
-## 1. One example for the whole page
+Agent engineering is the discipline of building the **harness** around a language model so it can pursue a goal across many steps without losing control of cost, correctness, or safety. The model supplies reasoning. The harness supplies everything that makes that reasoning dependable: state, a defined workflow, a control loop, tool execution, guardrails, and a trace of what happened.
 
-You type this into Mini Muse:
+The hard part of an agent is rarely the prompt. It is the architecture: where state lives, which transitions are legal, who decides the next step, what stops the loop, and how a failure is explained afterward. This knowledge base is organized around three questions: **What is agent engineering? What does an agent look like? How do we implement one?**
 
-> **"Help me get ready for Monday's meeting with Maya: block 30 minutes on Tuesday at 10 to prep, and send her the agenda."**
+## 1. What is Agent Engineering?
 
-The **goal** behind it: *be ready for Monday's meeting with Maya.* It is done when prep time is on your calendar without a clash, **and** Maya has the agenda.
+Agent engineering is the practice of designing and building the software system that lets a model act toward a goal — observing results, choosing the next action, using tools, and stopping according to explicit rules.
 
-Everything on this page is explained with this one request. Follow it through the diagram first, then read what each label means.
+### 1.1 An agent pursues a goal across multiple steps
+
+An agent maintains state, chooses a next action, uses tools when needed, observes the result, updates its state, and stops according to explicit rules.
 
 ```graphviz
-digraph week5_example {
-  rankdir=TB; bgcolor="transparent"; nodesep=.25; ranksep=.28; compound=true;
-  node [fontname="Arial" fontsize=10 fontcolor="#202124" margin=".12,.06"];
-  edge [fontname="Arial" fontsize=9 color="#6B6B6B"];
-
-  subgraph cluster_legend {
-    label="KEY"; labeljust=l; fontname="Arial"; fontsize=9; fontcolor="#5F6368"; style="rounded"; color="#DADCE0";
-    k_llm [label="LLM call\n(the model decides)" shape=box style="rounded,filled" fillcolor="#EDE7FF" color="#7B61FF"];
-    k_tool [label="Tool call\n(code runs a function)" shape=component style="filled" fillcolor="#E8F7F2" color="#1E8E6E"];
-    k_code [label="Code rule\n(no model)" shape=box style="filled" fillcolor="#FFECEE" color="#C74B62"];
-    k_llm -> k_tool -> k_code [style=invis];
-  }
-
-  goal [label="GOAL: be ready for Monday's meeting with Maya\nDone when: prep time is booked (no clash)\nand Maya has the agenda" shape=box style="rounded,filled" fillcolor="#FFF6DE" color="#C68B20" penwidth=1.6];
-  k_code -> goal [style=invis];
-
-  subgraph cluster_workflow {
-    label="WORKFLOW — the path you design in code"; labeljust=l; fontname="Arial"; fontsize=11; fontcolor="#5F6368";
-    style="rounded,dashed"; color="#9AA0A6";
-
-    subgraph cluster_turn1 {
-      label="TURN 1 — user: \"Help me get ready for Monday's meeting with Maya: prep Tue at 10, send her the agenda\""; labeljust=l;
-      fontname="Arial"; fontsize=10; fontcolor="#1A73E8"; style="rounded"; color="#92AFE8";
-
-      subgraph cluster_loop {
-        label="AGENT LOOP — up to max_steps = 6"; labeljust=l;
-        fontname="Arial"; fontsize=10; fontcolor="#7B61FF"; style="rounded,filled"; fillcolor="#FAF9FF"; color="#B9A8FF";
-
-        l1 [label="STEP 1 · LLM call #1\n\"I need Maya's email and Tuesday's calendar\"" shape=box style="rounded,filled" fillcolor="#EDE7FF" color="#7B61FF"];
-        t1a [label="lookup_contact(\"Maya\")\nTASK: find Maya" shape=component style="filled" fillcolor="#E8F7F2" color="#1E8E6E"];
-        t1b [label="check_calendar(\"2026-10-27\")\nTASK: check Tuesday" shape=component style="filled" fillcolor="#E8F7F2" color="#1E8E6E"];
-
-        l2 [label="STEP 2 · LLM call #2\nreads results — CHECKPOINT: is 10:00 free? yes\n→ \"book the prep\"" shape=box style="rounded,filled" fillcolor="#EDE7FF" color="#7B61FF"];
-        t2 [label="create_event(Tue 10:00)\nTASK: book prep" shape=component style="filled" fillcolor="#E8F7F2" color="#1E8E6E"];
-
-        l3 [label="STEP 3 · LLM call #3\n\"send the agenda to Maya\"" shape=box style="rounded,filled" fillcolor="#EDE7FF" color="#7B61FF"];
-        hold [label="APPROVAL rule: send_email is risky\nHELD in pending_actions — not run" shape=box style="filled" fillcolor="#FFECEE" color="#C74B62"];
-
-        l4 [label="STEP 4 · LLM call #4\nno tool requested → answers:\n\"Booked. Here's the draft. Send it?\"" shape=box style="rounded,filled" fillcolor="#EDE7FF" color="#7B61FF"];
-      }
-    }
-
-    subgraph cluster_turn2 {
-      label="TURN 2 — user clicks Approve (no LLM call)"; labeljust=l; fontname="Arial"; fontsize=10; fontcolor="#1A73E8";
-      style="rounded"; color="#92AFE8";
-      t5 [label="send_email(to Maya)\nTASK: email Maya" shape=component style="filled" fillcolor="#E8F7F2" color="#1E8E6E"];
-    }
-  }
-
-  done [label="Goal met ✓\n4 LLM calls · 4 tool calls · 2 turns" shape=box style="rounded,filled" fillcolor="#FFF6DE" color="#C68B20" penwidth=1.6];
-
-  goal -> l1 [lhead=cluster_turn1 label=" the LLM breaks it into tasks, one step at a time"];
-  l1 -> t1a; l1 -> t1b;
-  t1a -> l2 [label=" results"]; t1b -> l2;
-  l2 -> t2;
-  t2 -> l3 [label=" result"];
-  l3 -> hold [label=" asks for send_email"];
-  hold -> l4 [label=" result: \"needs approval\""];
-  l4 -> t5 [label=" loop stops — turn 1 ends"];
-  t5 -> done;
+digraph agent_loop {
+  rankdir=LR; bgcolor="transparent"; nodesep=.35; ranksep=.45;
+  node [shape=box style="rounded,filled" fontname="Arial" fontsize=10 fontcolor="#202124" margin=".14,.08"];
+  state [label="Goal + state" fillcolor="#E8F7F2" color="#86CDB7"];
+  decide [label="Decide next\nstep" fillcolor="#E8F0FF" color="#92AFE8"];
+  act [label="Act with a tool\nor respond" fillcolor="#F3F0FF" color="#7B61FF"];
+  observe [label="Observe result\nand update state" fillcolor="#FFECEE" color="#C74B62"];
+  stop [label="Complete, fail,\nor ask a human" fillcolor="#FFF6DE" color="#C68B20"];
+  state -> decide -> act -> observe -> decide;
+  observe -> stop [label=" goal met / limit" fontname="Arial" fontsize=9];
 }
 ```
 
-The diagram uses three shapes: **purple** boxes are **LLM calls** (the model decides), **green** boxes are **tool calls** (code runs a function), and the **red** box is a **code rule** (no model involved).
+### 1.2 The model is not the agent — the harness is
 
-Read it from the top:
+A common mistake is to treat the model as the agent. In practice the model is one component: a reasoning engine that proposes a next step. The **harness** is the code you engineer around it — the state store, workflow engine, router, control loop, tool executor, guardrails, and tracer. The harness is where reliability, cost control, and safety actually come from.
 
-1. **Goal.** Be ready for Monday's meeting with Maya. It is done when the prep time is booked without a clash, and Maya has the agenda.
-2. **Turn 1.** Your message starts the first turn.
-3. **Agent loop.** Each **step** is one LLM call, plus the tool calls it asks for. The code runs the tools and sends the results back to the next LLM call.
-4. **Step 1.** LLM call #1 asks for two tools at once. The code runs `lookup_contact` and `check_calendar`.
-5. **Step 2.** LLM call #2 reads the results. This is the **checkpoint**: is Tuesday 10:00 free? It is, so the model asks for `create_event`, and the code books the prep.
-6. **Step 3.** LLM call #3 asks for `send_email`. A code rule says email is risky, so the email is **held for approval** instead of sent.
-7. **Step 4.** LLM call #4 asks for no tool, so the loop stops and turn 1 ends: "Booked. Here's the draft. Send it?"
-8. **Turn 2.** You click **Approve**. The code sends the held email directly, with no LLM call. Only now is the goal met.
+```graphviz
+digraph harness {
+  rankdir=LR; bgcolor="transparent"; nodesep=.3; ranksep=.45;
+  node [shape=box style="rounded,filled" fontname="Arial" fontsize=10 fontcolor="#202124" margin=".14,.08"];
+  subgraph cluster_h {
+    label="Harness — the code you engineer"; fontname="Arial"; fontsize=11; color="#7B61FF"; style="rounded";
+    state [label="State\nstore" fillcolor="#FFECEE" color="#C74B62"];
+    loop [label="Control\nloop" fillcolor="#F3F0FF" color="#7B61FF"];
+    router [label="Router" fillcolor="#E8F0FF" color="#92AFE8"];
+    guard [label="Guardrails\n+ tools" fillcolor="#FFF6DE" color="#C68B20"];
+    model [label="LLM\nreasoning" fillcolor="#E8F7F2" color="#86CDB7"];
+    state -> loop; loop -> model [label=" propose" fontsize=9]; model -> loop [label=" result" fontsize=9];
+    loop -> router; router -> guard; guard -> state;
+  }
+}
+```
 
-In total: **4 LLM calls, 4 tool calls, 2 turns.** The model never runs a tool itself; it only asks, and the code decides whether to run it.
+> 🎯 **The core engineering question is:**
+>
+> Given the current state, what should happen next — and which parts of that decision should the model make, versus the code I control?
 
-## 2. The eight terms, on this example
+### 1.3 Do you even need an agent?
 
-| Term | Plain meaning | In the example |
+Not every multi-step feature needs a model-driven agent. Added autonomy adds cost, latency, and failure modes. Choose the least powerful structure that solves the task.
+
+| Structure | Use when | Example |
 | --- | --- | --- |
-| **Goal** | The outcome you want, with a clear "done when" | Be ready for Monday's meeting with Maya. Done when prep time is booked (no clash) **and** Maya has the agenda |
-| **Task** | One piece of work toward the goal | Find Maya · check Tuesday · book prep · email Maya (4 tasks) |
-| **Agent loop** | The engine that repeats decide → act → observe until it stops | The large box in turn 1: it ran 4 times, then stopped |
-| **Step** | One pass through the loop: one LLM call, plus the tool calls it asked for | Steps 1–4 (step 1 ran two tools, so tasks ≠ steps) |
-| **Turn** | One message or action from you, and the reply to it | Turn 1: your request. Turn 2: your Approve click |
-| **Workflow** | The path *you* design in code: what can happen, in what order, and where it must stop | The dashed box: loop → hold risky actions → wait for approval → done |
-| **Checkpoint** | An automatic check before continuing. No human needed | "Is Tue 10:00 free?" before booking (done by LLM call #2) |
-| **Approval** | A checkpoint where a **human** must say yes before a risky action runs | A code rule holds the email until you click Approve |
+| **Single LLM call** | One input, one output; no persistent state | Summarize a document |
+| **Fixed workflow** | The steps and decisions are known in advance | Extract fields → validate → store |
+| **Agent** | The path depends on results discovered at runtime, and judgment is needed to choose the next step | Fix a failing test: investigate, change, re-run, repeat until it passes or the budget is spent |
 
-## 3. Telling them apart, with the same example
+> 💡 If you can draw the whole decision tree before running it, you probably want a fixed workflow, not an agent. Reserve agent autonomy for the points where a runtime result genuinely changes what should happen next.
 
-**Goal vs task.** The goal is *why* you asked; tasks are the work. All 4 tasks can succeed and the goal still fail: if Mini Muse emailed the wrong Maya, or booked prep *after* Monday, every task "worked" but you are not ready for the meeting. Always check the goal's "done when", not just that the tasks ran.
+### 1.4 The vocabulary
 
-**Task vs step.** Tasks are *what* needs doing; steps are *how many passes* the loop took. Here there are 4 tasks and 4 steps, but they don't line up one to one: step 1 did two tasks, and step 4 did no task at all, it just answered.
+These terms form the working vocabulary of agent engineering.
 
-**Step vs turn.** Steps happen *inside* a turn, without you. Turn 1 had 4 steps. Turn 2 had none: clicking Approve runs the held email directly, without the model.
+| Concept | Definition |
+| --- | --- |
+| **Agent** | An application that pursues a goal across multiple steps, maintaining state and choosing actions until a terminal condition. |
+| **Harness** | The code surrounding the model: state, workflow, router, control loop, tools, guardrails, and tracing. |
+| **State** | Structured, machine-readable facts about the current run — the source of truth for progress. |
+| **Workflow** | The set of stages a task can occupy and the transitions that are legal between them. |
+| **Action** | The work done in a stage (an LLM call, a tool call, deterministic code, or a human step). It reports what it observed; it does not change the stage. |
+| **Control loop** | The engine that executes an action, observes the result, updates state, routes, and repeats until a terminal state. |
+| **Routing** | Deciding what happens next, by code, by the model, or by a combination. |
+| **Tool** | A function the agent can call to affect or observe the outside world, with validated inputs and outputs. |
+| **Guardrail** | A boundary that constrains the loop: step limit, budget, timeout, permission, approval. |
+| **Terminal state** | A state the loop cannot leave: `complete`, `failed`, or paused awaiting a human. |
+| **Trace** | The recorded sequence of steps, decisions, and reasons for one run. |
 
-**Agent loop vs workflow.** Inside the loop, the *model* decides the next step. The workflow is the fence *you* build around it: the model can't send email on its own, because the code holds `send_email` no matter what the model says.
+## 2. How does an agent look like?
 
-**Checkpoint vs approval.** Both pause to check something. The calendar check is automatic, because asking you "is Tuesday free?" would be annoying. The email needs your OK, because a sent email can't be unsent.
+An agent's architecture is a small set of components with one strict rule about who is allowed to change what.
 
-## 4. What if…? (change one thing in the example)
+### 2.1 The anatomy of an agent
 
-| Change | What happens | Which concept it shows |
+Five building blocks, each answering one question. Keeping them separate is what makes an agent testable and debuggable.
+
+```graphviz
+digraph anatomy {
+  rankdir=LR; bgcolor="transparent"; nodesep=.3; ranksep=.5;
+  node [shape=box style="rounded,filled" fontname="Arial" fontsize=10 fontcolor="#202124" margin=".14,.08"];
+  state [label="State\nwhat is known" fillcolor="#FFECEE" color="#C74B62"];
+  action [label="Action\ndoes the work" fillcolor="#F5E9FF" color="#C5A5E9"];
+  router [label="Router\nchooses next" fillcolor="#E8F0FF" color="#92AFE8"];
+  workflow [label="Workflow\nlegal transitions" fillcolor="#E8F7F2" color="#86CDB7"];
+  loop [label="Control loop\nexecute · observe · stop" fillcolor="#F3F0FF" color="#7B61FF"];
+  loop -> action; action -> router; router -> workflow; workflow -> loop; loop -> state [dir=both];
+}
+```
+
+| Component | Question it answers | Who may change the stage? |
 | --- | --- | --- |
-| Tuesday at 10 is already taken | The checkpoint says no. Mini Muse doesn't book, names the clash and offers another time. The goal still stands; only the plan changes | **Checkpoint** protects the goal |
-| `max_steps` is 3 instead of 6 | The loop stops after step 3, before it can show you the draft. You get "I couldn't finish that within 3 steps" | A **step** budget that is too small |
-| You never click Approve | Turn 1 ended correctly, but the email is never sent. The goal is **not** met | **Turn** ended ≠ **goal** met |
-| You ask only "Email Maya the agenda" | 1 goal, 2 tasks (find Maya, email her), about 3 steps, still 2 turns | **Approval** always adds a turn |
-| The model "forgets" to check the calendar | It books anyway and may double-book | The calendar check is only a rule in the prompt (see below) |
+| **State** | What does the system know right now? | — |
+| **Action** | What work happens in this stage? | No |
+| **Router** | Given the new state, what should run next? | Proposes only |
+| **Workflow** | Which transitions are legal? | Validates |
+| **Control loop** | Execute, observe, update, route, repeat, stop | Applies the transition |
 
-## 5. Where each control lives in Mini Muse
+> 🔎 **One rule ties them together:** actions do work and report what they observed; they never change the stage. The router proposes the next stage, the workflow confirms it is legal, and the loop applies it. This single constraint is what keeps an agent's behavior controllable.
 
-| Control | Type | Enforced by | Can the model skip it? |
-| --- | --- | --- | --- |
-| Hold `send_email` until you approve | Approval | **Code**: `send_email` is in `RISKY_TOOLS` | No |
-| Stop after `max_steps` | Step budget | **Code**: the loop's `range(1, max_steps + 1)` | No |
-| Stop when the model answers without a tool | Stop condition | **Code**: `if not reply.tool_calls` | No |
-| Check the calendar before booking | Checkpoint | **Prompt**: a line in `RULES` | **Yes** |
+### 2.2 State: what the agent knows
 
-**Practical lesson:** a rule in the prompt is a request; a rule in code is a guarantee. Mini Muse's calendar checkpoint is only in the prompt, so the model can skip it. To make it a real checkpoint, the code could refuse `create_event` unless `check_calendar` ran for that date earlier in the same turn.
-
-## 6. What the code records for the example
-
-Mini Muse keeps progress as structured **state**, not as chat text. After turn 1, the trace from `week5_agent.run()` looks roughly like this:
+State is the source of truth for workflow progress. Keep it explicit and machine-readable; do not rely on a long conversation transcript to determine whether an action already happened.
 
 ```python
-trace = {
-    "status": "done",                     # the loop stopped because the model answered
-    "steps": [                            # one entry per step
-        {"step": 1, "decision": "tools", "calls": ["lookup_contact", "check_calendar"]},
-        {"step": 2, "decision": "tools", "calls": ["create_event"]},
-        {"step": 3, "decision": "tools", "calls": ["send_email"]},   # held, not run
-        {"step": 4, "decision": "answer"},
-    ],
-    "final_state": {"events_created": [...1 event...], "emails_sent": []},
-    "pending_actions": [                  # waiting for approval (turn 2)
-        {"tool": "send_email", "args": {"to": "maya@example.com", "subject": "Monday agenda"}}
-    ],
+state = {
+    "request": "Add a /health endpoint returning status and timestamp",
+    "stage": "implementation",   # where we are in the workflow
+    "status": "running",         # running | paused | completed | failed
+    "requirements": ["Return 200", "Include ISO-8601 timestamp"],
+    "repair_count": 1,           # how many times QA sent work back
+    "max_repairs": 2,            # the repair budget
+    "failure_reason": None,      # why we stopped, if we did
 }
 ```
 
-To answer "was the email sent?", read `final_state["emails_sent"]`, not the chat. The model's reply might say "sent" even when it wasn't.
+State, context, and memory are related but not interchangeable:
 
-## 7. Other ideas, briefly
+| Concept | Meaning | Example |
+| --- | --- | --- |
+| State | Structured facts about the current run | `stage="qa"`, `repair_count=1`, `tests_passed=false` |
+| Context | Information sent to the model for this call | Current task, the relevant test failure, the permitted tools |
+| Memory | Information kept beyond this run or call | A user preference, a prior decision, a project note |
 
-**Do you even need an agent?** If the path is always the same (look up Maya → check calendar → book → draft email), a fixed workflow in code is simpler and more predictable. Use an agent loop when the next step depends on what the previous step found.
+> 💡 A failed agent must be able to say **why**. Store a `failure_reason`, and store the trace as data, so any run can be saved, inspected, and compared.
 
-**Routing** decides what happens next. Use code rules for safety ("risky tool → hold for approval") and let the model choose only among allowed, well-described tools.
+### 2.3 Workflow: the legal map of the task
 
-**Tools are proposed, not trusted.** The model *proposes* a tool call; the code checks the tool exists and the arguments are valid, applies the approval rules, runs it, and records what actually happened. Tool results are evidence, not instructions.
+A workflow defines the stages a task can occupy, the transitions that are legal between them, and the terminal states. It is the map; the router chooses the route within it.
 
-**One agent before many.** Split into several agents only when the parts need different tools, permissions or context. Booking and emailing in the example are just two tasks for one agent.
+```graphviz
+digraph workflow {
+  rankdir=LR; bgcolor="transparent"; nodesep=.25; ranksep=.4;
+  node [shape=box style="rounded,filled" fontname="Arial" fontsize=9 fontcolor="#202124" margin=".12,.07"];
+  triage [label="Triage" fillcolor="#FFF6DE" color="#C68B20"];
+  req [label="Requirements" fillcolor="#E8F0FF" color="#92AFE8"];
+  plan [label="Planning" fillcolor="#E8F0FF" color="#92AFE8"];
+  impl [label="Implementation" fillcolor="#F5E9FF" color="#C5A5E9"];
+  qa [label="QA" fillcolor="#E8F7F2" color="#86CDB7"];
+  done [label="Complete" fillcolor="#E8F7F2" color="#4F76C8"];
+  failed [label="Failed" fillcolor="#FFECEE" color="#C74B62"];
+  triage -> req -> plan -> impl -> qa;
+  qa -> done [label=" pass" fontsize=8];
+  qa -> impl [label=" repair" fontsize=8];
+  triage -> failed [style=dashed];
+  qa -> failed [label=" budget used" fontsize=8 style=dashed];
+}
+```
 
-**Evaluate the goal, not the loop.** A run that stops cleanly can still miss the goal. Week 6 grades runs like this example against expected tools, held approvals and the final state.
+Because the legal transitions live in one place, no model output can skip a stage. `triage → complete` or `requirements → qa` simply cannot happen, no matter what the model returns.
 
-## Check yourself
+> 🧭 **Stage and status must never drift apart.** Change them in exactly one function. If stage is set in five places, sooner or later one path reaches `complete` while leaving `status = "running"`, and the loop never stops.
 
-Use the example to answer:
+### 2.4 The harness around the model
 
-1. How many goals, tasks, steps and turns are there? Why don't tasks and steps line up one to one?
-2. If `max_steps` were 2, which tasks would be done, and what would you see?
-3. Why is the calendar check a checkpoint, but the email an approval?
-4. For your own project, name one checkpoint that should be automatic and one action that needs approval.
+Everything that is not the model is the harness. Seeing it as a named layer — rather than scattered glue code — is the shift from "calling an LLM in a loop" to engineering an agent.
 
-**Core mental model:** the model proposes the next step; the workflow, checkpoints and approvals decide what may actually happen.
+| Harness part | Responsibility | Why it is not the model's job |
+| --- | --- | --- |
+| State store | Hold the source of truth across steps | The model is stateless between calls |
+| Workflow engine | Enforce legal transitions and terminal states | The model must not be able to skip a stage |
+| Router | Decide the next step, deterministically where possible | Known conditions belong in code |
+| Control loop | Drive execute → observe → update → route, and stop | Continuation and termination are safety decisions |
+| Tool executor | Validate and run tools; return observable results | External effects need an owner outside the model |
+| Guardrails | Enforce limits, budgets, timeouts, permissions, approvals | Autonomy must be bounded |
+| Tracer | Record each step and reason | Behavior must be explainable afterward |
+
+## 3. How do we implement an agent?
+
+Implementation is a sequence of architectural decisions. Build the structure first, then let the model fill the parts that genuinely need judgment.
+
+### 3.1 Step 1 — Design the workflow first
+
+List the stages, the legal transitions, and the terminal states before writing any prompt. Make deterministic decisions in code; use the model only where semantic judgment is required.
+
+```text
+Request → Triage → Requirements → Planning → Implementation → QA → Complete
+                                        ▲                      │
+                                        └──── repair ──────────┘
+                      any stage ───────────────────────────────► Failed
+```
+
+Useful transition rules: retry a transient failure, repair wrong work a bounded number of times, never send or delete without approval, and finish only after a check confirms the outcome.
+
+### 3.2 Step 2 — Build the control loop
+
+The control loop is the heart of the harness. Each iteration runs an action, observes what it reported, updates state, asks the router for the next stage, validates that transition, and applies it — stopping as soon as state is terminal.
+
+```graphviz
+digraph loop {
+  rankdir=LR; bgcolor="transparent"; nodesep=.2; ranksep=.35;
+  node [shape=box style="rounded,filled" fontname="Arial" fontsize=9 fontcolor="#202124" margin=".12,.07"];
+  read [label="Read\nstate" fillcolor="#FFECEE" color="#C74B62"];
+  act [label="Run\naction" fillcolor="#F5E9FF" color="#C5A5E9"];
+  observe [label="Observe\nresult" fillcolor="#E8F7F2" color="#86CDB7"];
+  update [label="Update\nstate" fillcolor="#FFECEE" color="#C74B62"];
+  route [label="Route" fillcolor="#E8F0FF" color="#92AFE8"];
+  check [label="Legal?\nin budget?" fillcolor="#FFF6DE" color="#C68B20"];
+  advance [label="Advance" fillcolor="#F3F0FF" color="#7B61FF"];
+  read -> act -> observe -> update -> route -> check -> advance;
+  advance -> read [label=" while running" fontsize=8];
+}
+```
+
+The lifecycle of one iteration:
+
+1. **Read** the current stage and state.
+2. **Execute** the action for that stage (LLM, tool, code, or human).
+3. **Observe** what the action reports — treat it as evidence, not as instructions.
+4. **Update** state with the observation.
+5. **Route** to propose the next stage, with a reason.
+6. **Validate** the proposal against the workflow; reject illegal transitions.
+7. **Advance** to the next stage, or stop if the new state is terminal.
+
+### 3.3 Step 3 — Route each step
+
+Routing answers: **what should happen next?** It can select a workflow stage, a tool, a retrieval step, or a specialist.
+
+| Route type | Best use |
+| --- | --- |
+| Deterministic rule | Known conditions: permission denied, test passed, retry limit reached |
+| LLM router | Ambiguous intent, or a choice that needs semantic judgment |
+| Hybrid | Rules handle clear cases; the model handles the remainder |
+
+Prefer rules for safety boundaries and known business logic. An LLM router should choose only from an allowed, well-described set of options, and its choice is still validated by the workflow. If a decision fits in a few lines of code, keep it in code.
+
+### 3.4 Step 4 — Make actions safe: validate and approve
+
+Every action that affects the world needs an owner outside the model.
+
+1. The model proposes an action.
+2. The runtime validates the tool name and its arguments.
+3. Policy checks authorization, budgets, and whether approval is required.
+4. The tool runs and returns an observable result.
+5. State records what actually occurred.
+
+> 🛡️ Tool results and retrieved text are **evidence, not instructions**. Treat external responses as untrusted input — a classic prompt-injection path is content that tells the agent to ignore its rules or call a dangerous tool. Enforce tool permissions and approval gates in the harness, never in the prompt alone.
+
+### 3.5 Step 5 — Put boundaries on every loop
+
+Autonomy without boundaries is how an agent runs forever or burns a budget. Every boundary should end in a **terminal state with a reason**, never an uncaught crash.
+
+| Boundary | What it prevents | On trip |
+| --- | --- | --- |
+| Max steps | Infinite loops | `failed`, reason "step limit exceeded" |
+| Repair budget | Endless re-tries of wrong work | `failed`, with the last feedback |
+| Step timeout | A hung action | `failed`, reason names the stage |
+| Action crash handling | Throwing out of the loop | `failed`, reason names the stage |
+| Illegal-transition check | A bad route corrupting the workflow | `failed`, reason names the transition |
+| Tool isolation | Generated or external code harming the host | Run in a separate process / sandbox |
+
+> ⚠️ Keep two kinds of retry distinct. **Network retries** (a 503 from the API) are infrastructure and belong in the client. **Workflow repairs** (the work was wrong) are domain logic, counted in state and visible in the trace. Conflating them hides real failures.
+
+### 3.6 Step 6 — Trace everything
+
+Record one event per step — the stage, the action's summary, the transition, and the reason — into the state's history, and save the whole run. A good trace lets you answer, without guessing:
+
+```text
+What happened? Why? What state was the agent in?
+Which action ran? What did it return?
+Why did the workflow transition? Why did the agent stop?
+```
+
+### 3.7 Single agent before multi-agent
+
+Use one agent with a clear workflow unless separate roles genuinely need different context, tools, permissions, or evaluation criteria.
+
+| Add a specialist when | Keep one agent when |
+| --- | --- |
+| It needs isolated credentials, narrow context, a different model, or a dedicated quality gate | It is only a different step in the same workflow |
+| A handoff can be represented with a clear contract | Passing context would add more complexity than value |
+
+Each handoff should define inputs, allowed tools, expected outputs, and exit criteria. "PM agent → engineer agent → QA agent" is useful only when those contracts actually improve reliability — otherwise a single controlled workflow is simpler, cheaper, and easier to debug.
+
+### 3.8 Evaluate the workflow
+
+Measure task success as well as behavior. The trace is what makes behavioral evaluation possible.
+
+| Metric | What it measures | Example signal |
+| --- | --- | --- |
+| Task success | Did the outcome meet the goal? | Passing runs ÷ evaluated runs |
+| Correct routing | Did each decision pick the right next step? | Judged or rule-checked transitions |
+| Valid tool use | Were tools called with valid, authorized arguments? | Schema + policy checks |
+| Approval handling | Were approval gates respected? | No gated action without approval |
+| Repairs | How much rework was needed? | Average repair count per run |
+| Termination | Did it stop in a clean terminal state? | Share of runs ending non-terminally |
+| Cost & latency | Resource use per completed task | LLM calls, tokens, end-to-end seconds |
+
+### 3.9 Common failure modes
+
+| Failure | What happens | Possible mitigation |
+| --- | --- | --- |
+| **Runaway loop** | The agent never terminates | Max-step limit; terminal states with reasons |
+| **State drift** | Stage and status disagree | One function owns all transitions |
+| **Hidden state** | Progress lives only in the transcript | Explicit, machine-readable state |
+| **Over-delegation** | The model makes decisions code should own | Deterministic routing for known conditions |
+| **Unbounded repairs** | Wrong work is retried forever | Repair budget counted in state |
+| **Blind retry** | A "repair" repeats the same request | Feed the failure feedback into the next attempt |
+| **Prompt injection** | Tool output overrides instructions | Treat results as untrusted; enforce permissions |
+| **Silent failure** | A run stops with no explanation | Record `failure_reason`; save the trace |
+
+> 🧠 **Core mental model:** the model proposes the next step; the workflow and runtime control what may happen. Agent engineering is building the harness that makes that control real, observable, and bounded.
 
 ## References
 
 - [OpenAI API — Agents](https://developers.openai.com/api/docs/guides/agents)
 - [OpenAI API — Function calling](https://developers.openai.com/api/docs/guides/function-calling)
 - [OpenAI API — Safety in building agents](https://developers.openai.com/api/docs/guides/agent-builder-safety)
+- [Anthropic — Building effective agents](https://www.anthropic.com/engineering/building-effective-agents)
 - [OWASP — AI Agent Security Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/AI_Agent_Security_Cheat_Sheet.html)
 - [Hugging Face Agents Course](https://huggingface.co/learn/agents-course/en/unit1/introduction)
