@@ -66,9 +66,13 @@ The response contains the generated text plus **usage**: how many tokens went in
 
 Every request is signed with an **API key**, a secret password that identifies your account. Keep it out of your code and never share it publicly. You can call an API from Python, JavaScript, or almost any other language; this week's lab uses Python.
 
-## 3. Does an LLM remember previous API calls?
+## 3. What an LLM cannot do on its own
 
-No. Each API call starts from a blank slate. The model has no memory of anything you sent before.
+An LLM only predicts text from what you send it in a single request. Two limits follow directly, and each has a standard fix you will build later in the course.
+
+### 3.1 It does not remember previous API calls
+
+Each API call starts from a blank slate. The model has no memory of anything you sent before.
 
 Chat apps only *feel* like they remember because the app quietly sends the earlier conversation along with every new message. When you build your own application, that job is yours: store the history and include whatever the model needs on each call.
 
@@ -92,9 +96,9 @@ In the example above, if the second call does not include "I prefer concise answ
 
 Sending history has a cost. More text means more tokens, which means slower and more expensive calls, and every model has a limit on how much it can read at once (its *context window*). Deciding what to include on each call is called **context engineering**, the topic of Week 2.
 
-## 4. Does an LLM know your private information?
+### 3.2 It does not know your private or recent information
 
-No. A model only knows what was in its training data. That data stops at a cutoff date, so the model does not know recent events, and it never included your emails, your notes, or your company's documents.
+A model only knows what was in its training data. That data stops at a cutoff date, so the model does not know recent events, and it never included your emails, your notes, or your company's documents.
 
 Ask a plain LLM "When is my dentist appointment?" and it can only guess or say it does not know. To answer, your application has to **find the relevant information and put it in the request**:
 
@@ -104,7 +108,7 @@ Ask a plain LLM "When is my dentist appointment?" and it can only guess or say i
 
 This approach is called **RAG** (retrieval-augmented generation): retrieve the right information first, then let the model generate an answer from it. You will build one in Week 3.
 
-## 5. AI agents and agent engineering
+## 4. AI agents and agent engineering
 
 On its own, an LLM only produces text. An **agent** places the LLM inside a system that can also take actions, such as searching the web, reading a calendar, or sending an email, and works step by step toward a goal.
 
@@ -124,7 +128,7 @@ digraph learning_layers {
 }
 ```
 
-The LLM predicts text (section 1). The application calls it and decides what it sees (sections 2–4). The agent combines both to get something done. The course climbs these layers week by week.
+The LLM predicts text (section 1). The application calls it and decides what it sees (sections 2–3). The agent combines both to get something done. The course climbs these layers week by week.
 
 ### Agent categories and examples
 
