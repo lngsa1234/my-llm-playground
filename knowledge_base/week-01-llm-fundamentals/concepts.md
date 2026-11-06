@@ -95,7 +95,7 @@ Ask a plain LLM to "book a haircut for Tuesday" and the best it can do is *descr
 
 This is **tool calling**, the foundation of agents. You will add tools in Week 4 and wire them into an agent in Week 5.
 
-## 3. How do we use an LLM?
+## 3. How can we build an agent with an LLM?
 
 Most people first meet an LLM in a chat app such as ChatGPT, Claude, or Gemini. When you build your own application, you use the same models through an **API** (application programming interface): your code sends a request to the model provider over the internet and receives the answer back.
 
@@ -132,7 +132,7 @@ The same model powers very different products, from a single question-and-answer
 
 The first two mainly need the model to produce text; an agent also takes actions. The next section covers the common kinds of agent.
 
-### 3.2 AI agents and agent engineering
+### 3.2 What is an agent?
 
 On its own, an LLM only produces text. An **agent** places the LLM inside a system that can also take actions, such as searching the web, reading a calendar, or sending an email, and works step by step toward a goal.
 
