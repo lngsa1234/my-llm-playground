@@ -95,7 +95,7 @@ def get_model_settings() -> ModelSettings:
     """Return the model configuration saved from Week 1, or the course defaults."""
     values = st.session_state.get(_MODEL_SETTINGS_KEY, {})
     return ModelSettings(
-        model=values.get("model", DEFAULT_MODEL),
+        model=values.get("model") or DEFAULT_MODEL,
         max_output_tokens=values.get("max_output_tokens", DEFAULT_MAX_OUTPUT_TOKENS),
         input_price=values.get("input_price", DEFAULT_INPUT_PRICE),
         output_price=values.get("output_price", DEFAULT_OUTPUT_PRICE),
@@ -123,7 +123,8 @@ def model_settings(panel) -> ModelSettings:
     with panel:
         st.markdown("**Model settings**")
         st.caption("Saved for this session and used by every week.")
-        st.text_input("Model", key=_MODEL_WIDGET_KEYS["model"], on_change=_save_model_settings)
+        st.text_input("Model", key=_MODEL_WIDGET_KEYS["model"], placeholder=DEFAULT_MODEL,
+                      on_change=_save_model_settings)
         with st.expander("Model options"):
             st.number_input("Max output tokens", 100, 8000, step=100,
                             key=_MODEL_WIDGET_KEYS["max_output_tokens"], on_change=_save_model_settings)
