@@ -108,6 +108,18 @@ Ask a plain LLM "When is my dentist appointment?" and it can only guess or say i
 
 This approach is called **RAG** (retrieval-augmented generation): retrieve the right information first, then let the model generate an answer from it. You will build one in Week 3.
 
+### 3.3 It cannot take actions on its own
+
+An LLM only produces text. It cannot send an email, book a calendar event, query a database, or run code by itself, no matter how confidently it says it did.
+
+Ask a plain LLM to "book a haircut for Tuesday" and the best it can do is *describe* booking one. To actually do it, your application gives the model a set of **tools** (functions it is allowed to call) and runs those calls for it:
+
+1. The model replies with a tool request, such as `book_event(date="Tuesday", title="Haircut")`.
+2. Your application runs that function and returns the result.
+3. The model reads the result and continues toward the goal.
+
+This is **tool calling**, the foundation of agents. You will add tools in Week 4 and wire them into an agent in Week 5.
+
 ## 4. AI agents and agent engineering
 
 On its own, an LLM only produces text. An **agent** places the LLM inside a system that can also take actions, such as searching the web, reading a calendar, or sending an email, and works step by step toward a goal.
