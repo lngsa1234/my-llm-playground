@@ -4,21 +4,25 @@
 
 | Learn | Build | Key terms | Watch for |
 | --- | --- | --- | --- |
-| How an agent runs a goal across many steps, and how to keep it in control | An agent: a loop, a harness, and a workflow | Agent loop, harness, workflow | The model proposes the next step; your code decides what is allowed to happen |
+| What an agent is made of, and how to build one that stays in control | An agent: a loop, a harness, and a workflow | Agent loop, harness, workflow | The model proposes the next step; your code decides what is allowed to happen |
 
-An **agent** pursues a goal across many steps instead of answering in one call. Three ideas are enough to understand how one works and why it stays reliable: the **agent loop** that drives it, the **harness** that surrounds the model, and the **workflow** that bounds it. For short definitions of any term, see the **Glossary**.
+An **agent** pursues a goal across many steps instead of answering in one call. This page answers two questions: **what an agent looks like**, and **how you implement one**. For short definitions of any term, see the **Glossary**.
 
-## 1. The agent loop
+## 1. What an agent looks like
+
+An agent is a **harness wrapped around an LLM**, driven by a short **loop**. The model supplies judgment on each turn; the harness holds state, runs actions, and keeps the whole thing bounded.
+
+### 1.1 The agent loop
 
 An agent runs a short cycle over and over: ask the model what to do next, run that action, add the result back into the context, and repeat until the goal is met or a limit is hit.
 
-![The agent loop](agent-loop.svg "420")
+![The agent loop](agent-loop.svg "300")
 
 The key point is that **the model decides the next step on every turn**. That is what makes it an agent rather than a fixed script: the path is not written in advance, it emerges from each result. The loop keeps going while there is more to do and stops when the goal is reached, a step/budget limit is hit, or it needs a human.
 
-## 2. The harness
+### 1.2 The harness
 
-An **agent is a harness wrapped around an LLM**. The model only ever receives a prompt and returns a proposed next action — it is stateless between calls and cannot touch the outside world. Everything that makes the loop dependable lives in the **harness**, the code you control.
+The model only ever receives a prompt and returns a proposed next action — it is stateless between calls and cannot touch the outside world. Everything that makes the loop dependable lives in the **harness**, the code you control.
 
 ![Agent = harness + LLM](agent-architecture.svg "560")
 
@@ -32,7 +36,11 @@ An **agent is a harness wrapped around an LLM**. The model only ever receives a 
 
 > 🎯 Reliability, cost control, and safety come from the **harness**, not the model. The model supplies judgment; the harness decides what that judgment is actually allowed to do.
 
-## 3. The workflow
+## 2. How do we implement an agent
+
+Building an agent is mostly deciding where the model gets freedom and where your code stays in charge. Design the **workflow** first, then let the loop run only inside the stages that genuinely need judgment.
+
+### 2.1 Design the workflow
 
 A loop on its own can wander. A **workflow** gives it a map: the fixed stages a task moves through and the legal transitions between them. The agent loop runs inside the open-ended stage; the stages around it are deterministic steps you control.
 
@@ -41,6 +49,19 @@ A loop on its own can wander. A **workflow** gives it a map: the fixed stages a 
 This hybrid is what keeps an agent bounded. The surrounding stages — intake, planning, checking the result against the goal — are plain code with known transitions. Only **Run next task** hands control to the model-driven loop, and only until that task is done. Every run ends at a defined terminal state (`done`, or `failed` with a reason), so the agent has freedom exactly where judgment is needed and nowhere else.
 
 > 💡 If you can draw the whole decision tree before running it, you want a fixed workflow, not an agent. Reserve the agent loop for the stages where a runtime result genuinely changes what should happen next.
+
+### 2.2 Build it in order
+
+With the workflow drawn, the rest is filling it in — structure first, model last.
+
+1. **Define the workflow** — stages, legal transitions, and terminal states — before writing any prompt.
+2. **Build the control loop** that runs each stage, updates state, and stops as soon as state is terminal.
+3. **Let the model drive only the open-ended stage**; keep known decisions in code.
+4. **Give every tool an owner:** validate its arguments, check permissions, and require approval for risky actions.
+5. **Bound every loop** — max steps, budget, timeout — each ending in a terminal state with a reason, never a crash.
+6. **Trace every step** so any run can be explained, saved, and evaluated.
+
+> 🛡️ Tool results and retrieved text are **evidence, not instructions**. Treat external responses as untrusted input, and enforce tool permissions and approval gates in the harness, never in the prompt alone.
 
 ## References
 
