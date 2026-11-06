@@ -16,11 +16,13 @@ from labs.shared.ui import get_model_settings, page_layout, run_standalone
 
 
 def render() -> None:
-    main, panel = page_layout("Week 5 · Agent Workflow")
+    main, panel = page_layout("Week 5 · Your agent can execute",
+                              caption="Give your agent a goal, such as researching a topic and emailing you a summary. "
+                                      "Watch it plan, use tools, and complete the workflow.")
     from mini_muse.page import render_step  # the project's screens live with its code, in mini_muse/
 
     render_step(5, main, panel, get_model_settings())
 
 
 if __name__ == "__main__":
-    run_standalone(render, "Week 5 · Agent Workflow")
+    run_standalone(render, "Week 5 · Your agent can execute")

@@ -40,7 +40,8 @@ Code: `labs/week7_production/reliability.py`.
 
 
 def render() -> None:
-    main, panel = page_layout("Week 7 · Production Reliability")
+    main, panel = page_layout("Week 7 · Your agent becomes reliable",
+                              caption="Simulate a tool failure and show retry, recovery, and tracing.")
     # Week 7 shows only the Build Mini Muse demo. The naive-vs-hardened concept lab below
     # is kept as code in render_concept(), not shown in the app.
     from mini_muse.page import render_step
@@ -49,7 +50,7 @@ def render() -> None:
 
 
 def render_concept() -> None:
-    main, panel = page_layout("Week 7 · Production Reliability")
+    main, panel = page_layout("Week 7 · Your agent becomes reliable")
     if mini_muse_part(main, panel, 7,
                       caption="Inject failures into an LLM feature, then compare a naive and a hardened policy.",
                       how_it_works=HOW_IT_WORKS):
@@ -130,4 +131,4 @@ def render_concept() -> None:
 
 
 if __name__ == "__main__":
-    run_standalone(render, "Week 7 · Production Reliability")
+    run_standalone(render, "Week 7 · Your agent becomes reliable")

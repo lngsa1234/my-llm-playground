@@ -49,7 +49,8 @@ The same tools also run through **MCP** (a standard way to share tools between a
 
 
 def render() -> None:
-    main, panel = page_layout("Week 4 · Tool calling")
+    main, panel = page_layout("Week 4 · Your agent can act",
+                              caption="Ask your agent to write and send an email after confirmation.")
     # Week 4 shows only the Build Mini Muse demo. The concept lab below is kept as
     # code in render_concept(), not shown in the app.
     from mini_muse.page import render_step
@@ -58,7 +59,7 @@ def render() -> None:
 
 
 def render_concept() -> None:
-    main, panel = page_layout("Week 4 · Tool calling")
+    main, panel = page_layout("Week 4 · Your agent can act")
     if mini_muse_part(main, panel, 4,
                       caption="Let the model ask the app to run a function, here a live weather lookup, and answer from the result.",
                       how_it_works=HOW_IT_WORKS):
@@ -179,4 +180,4 @@ def _args(raw: str) -> str:
 
 
 if __name__ == "__main__":
-    run_standalone(render, "Week 4 · Tool calling")
+    run_standalone(render, "Week 4 · Your agent can act")

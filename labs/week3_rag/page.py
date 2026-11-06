@@ -71,10 +71,9 @@ def _evidence(item: dict) -> set[str]:
 
 
 def render() -> None:
-    main, panel = page_layout("Week 3 · Retrieval-augmented generation")
-    if mini_muse_part(main, panel, 3,
-                      caption="Give the model passages from your own documents, and compare its answer with and without them.",
-                      how_it_works=HOW_IT_WORKS):
+    main, panel = page_layout("Week 3 · Your agent can learn",
+                              caption="Upload your notes and ask your agent to find specific information with citations.")
+    if mini_muse_part(main, panel, 3, how_it_works=HOW_IT_WORKS):
         return
     settings = get_model_settings()
     names = list(ev.DATASETS)
@@ -336,4 +335,4 @@ def _render_benchmark(settings: ModelSettings, dataset: dict, chunk_size: int, o
 
 
 if __name__ == "__main__":
-    run_standalone(render, "Week 3 · Retrieval-augmented generation")
+    run_standalone(render, "Week 3 · Your agent can learn")

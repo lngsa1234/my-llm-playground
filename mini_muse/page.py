@@ -701,7 +701,8 @@ def render_step(week: int, main, panel, settings) -> None:
 
 def render() -> None:
     """The Week 8 Demo Day: the assembled assistant only."""
-    main, panel = page_layout("Week 8 · Demo Day", "Try the assembled personal assistant built throughout the course.")
+    main, panel = page_layout("Week 8 · Your agent is ready to showcase",
+                              "Present your complete agent solving a real-world problem.")
     settings = get_model_settings()
     render_step(8, main, panel, settings)
 

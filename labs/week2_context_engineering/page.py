@@ -44,10 +44,9 @@ def _label(name: str) -> str:
 
 
 def render() -> None:
-    main, panel = page_layout("Week 2 · Context engineering")
-    if mini_muse_part(main, panel, 2,
-                      caption="The model only knows what you put in its context. Choose what goes in, and see what it changes.",
-                      how_it_works=HOW_IT_WORKS):
+    main, panel = page_layout("Week 2 · Your agent can remember",
+                              caption="Tell your agent your favorite hobby, then ask about it several messages later.")
+    if mini_muse_part(main, panel, 2, how_it_works=HOW_IT_WORKS):
         return
     settings = get_model_settings()
     with lab_parameters(panel):
@@ -141,4 +140,4 @@ def _scoreboard(results: list[dict], facts: list[str]) -> None:
 
 
 if __name__ == "__main__":
-    run_standalone(render, "Week 2 · Context engineering")
+    run_standalone(render, "Week 2 · Your agent can remember")
