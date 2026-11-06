@@ -14,21 +14,11 @@ An agent can sound convincing while choosing the wrong tool, using incorrect arg
 2. Did it use the permitted actions correctly and safely?
 3. Did a change make previously working behavior worse?
 
-```graphviz
-digraph evaluation_loop {
-  rankdir=LR; bgcolor="transparent"; nodesep=.35; ranksep=.45;
-  node [shape=box style="rounded,filled" fontname="Arial" fontsize=10 fontcolor="#202124" margin=".14,.08"];
-  cases [label="Golden\ndataset" fillcolor="#E8F7F2" color="#86CDB7"];
-  run [label="Run agent\nand capture trace" fillcolor="#E8F0FF" color="#92AFE8"];
-  checks [label="Outcome + tool\n+ quality checks" fillcolor="#F3F0FF" color="#7B61FF"];
-  compare [label="Compare versions\nand enforce gates" fillcolor="#FFECEE" color="#C74B62"];
-  cases -> run -> checks -> compare;
-}
-```
-
 ## 2. How do we evaluate an agent
 
 Evaluation is a loop: build a dataset, run the agent and capture its trace, grade outcomes and behavior, and compare every meaningful change against a stable baseline.
+
+![Agent evaluation harness](agent_eval_harness_diagram.svg "560")
 
 ### 2.1 Start with a golden dataset
 
