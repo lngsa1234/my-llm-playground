@@ -28,10 +28,10 @@ HOW_IT_WORKS = """
 
 
 def render() -> None:
-    main, panel = page_layout("Week 1 · Single API call")
+    main, panel = page_layout("Week 1 · Your agent can answer")
     settings = model_settings(panel)
     if mini_muse_part(main, panel, 1,
-                      caption="Send one request to a model and see exactly what comes back: the response, tokens, latency and cost.",
+                      caption="Ask your agent a question and get a response.",
                       how_it_works=HOW_IT_WORKS):
         return
     with lab_parameters(panel):
@@ -69,4 +69,4 @@ def render() -> None:
 
 
 if __name__ == "__main__":
-    run_standalone(render, "Week 1 · Single API call")
+    run_standalone(render, "Week 1 · Your agent can answer")
