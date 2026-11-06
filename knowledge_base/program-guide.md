@@ -18,6 +18,28 @@ This course is for anyone looking to systematically learn AI agent concepts, arc
 2. **Build an AI assistant** — connect knowledge, tools, and workflows into one working system.
 3. **Evaluate and improve quality** — use test cases, observable outcomes, and regression checks.
 
+Across the eight weeks your agent grows one capability at a time:
+
+**Weeks 1–2: Your agent can answer and remember**
+
+- **Week 1 demo:** Ask your agent a question and get a response.
+- **Week 2 demo:** Tell your agent your favorite hobby, then ask about it several messages later.
+
+**Weeks 3–4: Your agent can learn and act**
+
+- **Week 3 demo:** Upload your notes and ask your agent to find specific information with citations.
+- **Week 4 demo:** Ask your agent to write and send an email after confirmation.
+
+**Weeks 5–6: Your agent can execute and be tested**
+
+- **Week 5 demo:** Give your agent a goal, such as researching a topic and emailing you a summary. Watch it plan, use tools, and complete the workflow.
+- **Week 6 demo:** Run a set of test cases and measure success rate, tool accuracy, and failures.
+
+**Weeks 7–8: Your agent becomes reliable and ready to showcase**
+
+- **Week 7 demo:** Simulate a tool failure and show retry, recovery, and tracing.
+- **Week 8 demo:** Present your complete agent solving a real-world problem.
+
 **Build stack:** Python, JavaScript, or TypeScript with an LLM API.
 
 **Time commitment:** about 3–4 hours per week.
