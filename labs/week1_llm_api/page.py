@@ -30,6 +30,16 @@ HOW_IT_WORKS = """
 def render() -> None:
     main, panel = page_layout("Week 1 · Your agent can answer",
                               caption="Ask your agent a question and get a response.")
+    # Week 1 shows only the Build Mini Muse demo. The single-API-call lab below is kept
+    # as code in render_concept(), not shown in the app.
+    from mini_muse.page import render_step
+
+    render_step(1, main, panel, model_settings(panel))
+
+
+def render_concept() -> None:
+    main, panel = page_layout("Week 1 · Your agent can answer",
+                              caption="Ask your agent a question and get a response.")
     settings = model_settings(panel)
     if mini_muse_part(main, panel, 1, how_it_works=HOW_IT_WORKS):
         return
