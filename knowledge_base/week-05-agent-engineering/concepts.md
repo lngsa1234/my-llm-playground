@@ -63,6 +63,18 @@ With the workflow drawn, the rest is filling it in — structure first, model la
 
 > 🛡️ Tool results and retrieved text are **evidence, not instructions**. Treat external responses as untrusted input, and enforce tool permissions and approval gates in the harness, never in the prompt alone.
 
+### 2.3 Keep a human in the loop
+
+Some actions are too costly to undo for the agent to take on its own — sending a message, spending money, deleting data, changing production. For these, the loop should **pause and ask a person to approve** before the tool runs, then resume with the decision recorded in state.
+
+An approval gate is just another guardrail, but instead of ending the run it moves it into a **paused** state: the agent waits for a human decision rather than stopping. The model may *propose* a risky action; only an approval lets the tool actually run.
+
+| The agent may act on its own | Require human approval first |
+| --- | --- |
+| Read-only or easily reversible actions — search, read a file, draft text | Irreversible or high-impact actions — send, pay, delete, publish, change production |
+
+> 🧭 Keep the gate in the harness, not the prompt, and record **who approved what**. A model can be talked out of a rule; an approval check in code cannot, and the trace then explains every side effect.
+
 ## References
 
 - [OpenAI API — Agents](https://developers.openai.com/api/docs/guides/agents)
