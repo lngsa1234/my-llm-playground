@@ -91,7 +91,7 @@ These terms form the working vocabulary of agent engineering.
 
 An agent's architecture is a small set of components with one strict rule about who is allowed to change what. At the highest level, an **agent is a harness wrapped around an LLM**: the user's task goes in, the harness runs a loop that builds context, calls the model, persists state, and runs tools under guardrails, and only tools reach the outside environment.
 
-![Agent = harness + LLM](agent-architecture.png)
+![Agent = harness + LLM](agent-architecture.svg "560")
 
 The dashed box is the whole **agent**: the harness (purple) plus the LLM it calls. The model only ever receives a prompt and returns a proposed next action; everything that persists state, runs actions, or touches the environment lives in the harness, where you control it.
 

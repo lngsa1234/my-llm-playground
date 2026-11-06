@@ -256,5 +256,11 @@ def _render_markdown_with_images(content: str, base_dir: Path) -> None:
 def _render_image(alt: str, src: str, opts: str | None, base_dir: Path) -> None:
     """Show one image; a relative ``src`` is resolved against the page's folder."""
     width = int(opts) if opts and opts.isdigit() else "content"
-    source = src if re.match(r"(?:https?:|data:)", src) else str((base_dir / src).resolve())
+    if re.match(r"(?:https?:|data:)", src):
+        source = src
+    else:
+        path = (base_dir / src).resolve()
+        # st.image renders an SVG from its XML string, but not from a .svg file
+        # path, so vector files are read in directly.
+        source = path.read_text(encoding="utf-8") if path.suffix.lower() == ".svg" else str(path)
     st.image(source, caption=alt or None, width=width)
