@@ -128,10 +128,9 @@ The same model powers very different products, from a single question-and-answer
 | --- | --- | --- |
 | Chatbot / Q&A | Answers questions and writes text from a prompt | A support assistant or a writing helper |
 | Knowledge assistant (RAG) | Answers from your own documents | "What's our refund policy?" over company docs |
-| Personal agent | Takes multi-step actions for you | Checks your calendar and books an appointment |
-| Coding agent | Reads, writes, and runs code | Fixes a bug and opens a pull request |
+| Agent | Takes multi-step actions toward a goal | Checks your calendar and books an appointment |
 
-The first two mainly need the model to produce text; the last two also let it take actions, which makes them **agents**.
+The first two mainly need the model to produce text; an agent also takes actions. The next section covers the common kinds of agent.
 
 ### 3.2 AI agents and agent engineering
 
@@ -157,17 +156,23 @@ The LLM predicts text; the application calls it and decides what it sees; the ag
 
 #### Agent categories and examples
 
-"Agent" is a broad term. The categories below describe common designs; a real product often combines more than one.
+"Agent" is a broad term. It helps to classify any agent three ways — a real product is a point on all three axes at once:
 
-| Category | What it does | Notable companies and products |
+![Three ways to classify AI agents](types_of_ai_agents_taxonomy.svg "560")
+
+- **By architecture** — how the system is wired, from a single tool-using loop up to a multi-agent team (the router, orchestrator, and evaluator-optimizer patterns come in Week 5).
+- **By autonomy** — how much it does without you, from a copilot that only suggests, to human-in-the-loop approval, to a fully autonomous or scheduled background run.
+- **By domain** — what it works on. Products usually specialize here:
+
+| Domain | What it does | Notable products |
 | --- | --- | --- |
-| General-purpose or personal agent | Open-ended, multi-step help, often using your connected apps | OpenAI — ChatGPT agent<br>Anthropic — Claude<br>Google — Gemini<br>Meta — Muse<br>xAI — Grok<br>Microsoft — Copilot |
-| Research agent | Gathers sources and writes a report | OpenAI — Deep Research<br>Perplexity — Deep Research<br>Google — Gemini Deep Research |
-| Coding agent | Reads and edits code, runs tests | OpenAI — Codex<br>Anthropic — Claude Code<br>Cognition — Devin<br>Cursor — Cursor |
-| Browser or computer-use agent | Uses websites and apps to finish tasks | OpenAI — ChatGPT agent<br>Anthropic — Claude in Chrome<br>Manus — Manus |
-| Enterprise knowledge and workflow agent | Works with company data and business tools | Microsoft — Copilot Studio<br>Salesforce — Agentforce<br>Glean — Glean Agents<br>ServiceNow — AI Agents |
-| Customer-service agent | Answers and resolves support requests | Intercom — Fin<br>Zendesk — AI agents<br>Ada — Ada |
-| Multi-agent platform | Coordinates several specialist agents | Microsoft — AutoGen<br>Google — Agent Development Kit<br>CrewAI — CrewAI<br>LangChain — LangGraph |
+| Coding | Write, test, and fix code | OpenAI Codex<br>Anthropic Claude Code<br>Cursor<br>Cognition Devin |
+| Computer use | Drive a browser or desktop | OpenAI ChatGPT agent<br>Anthropic Claude in Chrome<br>Manus |
+| Research | Search and synthesize sources | OpenAI Deep Research<br>Perplexity Deep Research<br>Google Gemini Deep Research |
+| Support | Answer and resolve customer requests | Intercom Fin<br>Zendesk AI agents<br>Ada |
+| Voice | Handle real-time speech | OpenAI Advanced Voice<br>Google Gemini Live<br>ElevenLabs |
+
+General-purpose assistants like ChatGPT, Claude, and Gemini span several of these at once.
 
 A good first agent is narrow: a few well-defined tools, clear permissions, a clear point at which it stops, and human approval before anything consequential, such as sending a message or spending money. Add more tools, planning, or multiple agents only when the task genuinely needs them.
 
