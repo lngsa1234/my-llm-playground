@@ -63,9 +63,7 @@ def _progress(week: int) -> None:
 
 
 def _step_header(week: int, try_this: list[str]) -> None:
-    name, module, what = COMPONENTS[week]
-    st.subheader(f"Mini Muse: {name}")
-    st.caption(what)
+    _name, module, _what = COMPONENTS[week]
     with st.expander("How this step works"):
         doc = (importlib.import_module(f"mini_muse.{module}").__doc__ or "").strip()
         st.code(doc, language=None)
