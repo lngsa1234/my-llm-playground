@@ -42,12 +42,6 @@ This course is for anyone looking to systematically learn AI agent concepts, arc
 
 ## How this program is organized
 
-The program is built around three steps: **learn, practice, build**.
-
-- **Learn** — each week covers one topic from the Knowledge Base.
-- **Practice** — a small lab for the week's concept, plus that week's step of the Mini Muse reference project.
-- **Build** — by the end of the program, everyone builds their own agent project.
-
 ### Weekly session (75 minutes)
 
 Lynn shares what she learned that week, then the group practices and discusses together.
