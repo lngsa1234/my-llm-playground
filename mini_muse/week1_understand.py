@@ -1,15 +1,15 @@
 """Week 1 · Understanding: turn a free-text request into structured fields.
 
-    "Book lunch with Maya on Tuesday at noon"
+    "Who wrote Pride and Prejudice?"
         ↓  one API call with structured output
-    {"intent": "schedule", "title": "Lunch", "date": "2026-10-27", "time": "12:00",
-     "people": ["Maya"], ...}
+    {"intent": "question", "summary": "Who wrote Pride and Prejudice?",
+     "answer": "Jane Austen wrote it.", "people": [], ...}
 
 This is the first thing Mini Muse needs: before it can do anything, it has to know
 what is being asked, with the details in a shape code can rely on. Later weeks use
 this as the router and as a hint to the agent.
 
-Try it:  python3 -m mini_muse.week1_understand "Book lunch with Maya Tuesday at noon"
+Try it:  python3 -m mini_muse.week1_understand "Who wrote Pride and Prejudice?"
 """
 
 from __future__ import annotations
