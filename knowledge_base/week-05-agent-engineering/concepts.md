@@ -91,51 +91,7 @@ These terms form the working vocabulary of agent engineering.
 
 An agent's architecture is a small set of components with one strict rule about who is allowed to change what. At the highest level, an **agent is a harness wrapped around an LLM**: the user's task goes in, the harness runs a loop that builds context, calls the model, persists state, and runs tools under guardrails, and only tools reach the outside environment.
 
-```graphviz
-digraph agent_architecture {
-  rankdir=TB; bgcolor="transparent"; fontname="Arial"; compound=true;
-  splines=ortho; nodesep=.6; ranksep=.6;
-  node [shape=box style="rounded,filled" fontname="Arial" fontsize=11 fontcolor="#202124" margin=".2,.12"];
-  edge [color="#8A8A8A" fontname="Arial" fontsize=10 arrowsize=.8];
-
-  usertask    [label="User task" fillcolor="#ECEAE2" color="#B0ADA4"];
-  environment [label="Environment\nFiles, shell, APIs" fillcolor="#ECEAE2" color="#B0ADA4" fontcolor="#3C4043"];
-
-  subgraph cluster_agent {
-    label="Agent = harness + LLM"; labeljust=l; labelloc=t; fontsize=13; fontname="Arial"; style=dashed; color="#3C4043"; margin=16;
-
-    subgraph cluster_harness {
-      label="Harness"; labelloc=t; fontsize=12; fontcolor="#5B4BC4"; style="rounded,filled"; fillcolor="#ECE8FF"; color="#9B86F5"; margin=16;
-
-      loop    [label="Agent loop\nRepeats until done" fillcolor="#FBE3D8" color="#D79C86" fontcolor="#8A3A2A"];
-      context [label="Context\nBuild prompt"         fillcolor="#FCEBE3" color="#E7BBAA" fontcolor="#8A3A2A"];
-      memory  [label="Memory\nPersist state"         fillcolor="#FCEBE3" color="#E7BBAA" fontcolor="#8A3A2A"];
-      tools   [label="Tools\nRun actions"            fillcolor="#FCEBE3" color="#E7BBAA" fontcolor="#8A3A2A"];
-      guard   [label="Guardrails\nSafety checks"     fillcolor="#FCEBE3" color="#E7BBAA" fontcolor="#8A3A2A"];
-
-      {rank=same; context; memory;}
-      {rank=same; tools; guard;}
-
-      loop -> context;
-      loop -> memory;
-      loop -> tools;
-      loop -> guard;
-      context -> tools [style=invis];
-      memory -> guard [style=invis];
-      tools -> loop;
-      context -> loop;
-    }
-
-    llm [label="LLM\nCalled via API" fillcolor="#E4F3EC" color="#6CBBA0" fontcolor="#1E7A5F"];
-    {rank=same; loop; llm;}
-    loop -> llm [label="prompt"];
-    llm -> loop [label="next action"];
-  }
-
-  usertask -> loop [lhead=cluster_harness];
-  tools -> environment [ltail=cluster_harness];
-}
-```
+![Agent = harness + LLM](agent-architecture.png)
 
 The dashed box is the whole **agent**: the harness (purple) plus the LLM it calls. The model only ever receives a prompt and returns a proposed next action; everything that persists state, runs actions, or touches the environment lives in the harness, where you control it.
 

@@ -184,7 +184,7 @@ def render_document(path: Path, caption: str) -> None:
             st.markdown(title)
         if updated:
             st.caption(f"Last updated {updated:%B} {updated.day}, {updated.year}")
-        _render_body(body)
+        _render_body(body, path.parent)
         st.caption(caption)
     with toc:
         _render_toc(content)
@@ -199,12 +199,24 @@ def render_concept(path: Path) -> None:
     )
 
 
-def _render_body(content: str) -> None:
+# A standalone image line, e.g. `![Agent architecture](agent-architecture.png "420")`.
+# The optional quoted number sets the display width in pixels.
+_IMAGE_BLOCK = re.compile(
+    r"^[ \t]*!\[(?P<alt>[^\]]*)\]\((?P<src>[^)\s]+)(?:\s+\"(?P<opts>[^\"]*)\")?\)[ \t]*$",
+    re.MULTILINE,
+)
+
+
+def _render_body(content: str, base_dir: Path) -> None:
     """Render markdown, drawing ``graphviz`` fenced blocks as native diagrams.
 
     A ``graphviz`` fenced block is deliberately rendered as a chart rather than
     as source code.  That keeps the knowledge-base export readable in the app
     without making the markdown depend on a private Notion attachment.
+
+    A standalone image line is rendered with ``st.image`` so a relative path
+    (resolved against ``base_dir``, the markdown file's folder) is served even
+    though Streamlit does not serve arbitrary relative paths from markdown.
     """
     pieces = re.split(r"```graphviz\s*\n(.*?)```", content, flags=re.DOTALL)
     for index, piece in enumerate(pieces):
@@ -222,6 +234,27 @@ def _render_body(content: str) -> None:
             else:
                 st.graphviz_chart(dot, width=width)
         elif piece.strip():
+            _render_markdown_with_images(piece, base_dir)
+
+
+def _render_markdown_with_images(content: str, base_dir: Path) -> None:
+    """Render a markdown block, splitting out standalone image lines for ``st.image``."""
+    pos = 0
+    for match in _IMAGE_BLOCK.finditer(content):
+        before = content[pos:match.start()]
+        if before.strip():
             # The knowledge base is our own trusted markdown; allowing HTML lets a
             # table cell use <br> to put each item on its own line.
-            st.markdown(piece, unsafe_allow_html=True)
+            st.markdown(before, unsafe_allow_html=True)
+        _render_image(match.group("alt"), match.group("src"), match.group("opts"), base_dir)
+        pos = match.end()
+    rest = content[pos:]
+    if rest.strip():
+        st.markdown(rest, unsafe_allow_html=True)
+
+
+def _render_image(alt: str, src: str, opts: str | None, base_dir: Path) -> None:
+    """Show one image; a relative ``src`` is resolved against the page's folder."""
+    width = int(opts) if opts and opts.isdigit() else None
+    source = src if re.match(r"(?:https?:|data:)", src) else str((base_dir / src).resolve())
+    st.image(source, caption=alt or None, width=width)
