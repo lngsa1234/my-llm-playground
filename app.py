@@ -76,10 +76,10 @@ apply_page_style()
 st.markdown(
     """
     <style>
-        /* Week labels can wrap: they now describe what the agent can do, not a short topic. */
+        /* Keep each week's label on a single line; the labels are long, so shrink the font. */
         [data-testid="stSidebar"] [role="radiogroup"] label p {
-            font-size: 0.8rem;
-            line-height: 1.3;
+            font-size: 0.62rem;
+            white-space: nowrap;
         }
         [data-testid="stSidebar"] .stButton > button {
             justify-content: flex-start;
