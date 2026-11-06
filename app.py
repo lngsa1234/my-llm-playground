@@ -39,14 +39,14 @@ from mini_muse.connectors import CONNECTORS  # noqa: E402
 load_dotenv()
 
 PAGES = {
-    "Week 1 · Single API call": week1.render,
-    "Week 2 · Context engineering": week2.render,
-    "Week 3 · RAG": week3.render,
-    "Week 4 · Tool calling": week4.render,
-    "Week 5 · Agent workflow": week5.render,
-    "Week 6 · Evaluation": week6.render,
-    "Week 7 · Reliability": week7.render,
-    "Week 8 · Demo Day": mini_muse.render,
+    "Week 1 · Your agent can answer": week1.render,
+    "Week 2 · Your agent can remember": week2.render,
+    "Week 3 · Your agent can learn": week3.render,
+    "Week 4 · Your agent can act": week4.render,
+    "Week 5 · Your agent can execute": week5.render,
+    "Week 6 · Your agent can be tested": week6.render,
+    "Week 7 · Your agent becomes reliable": week7.render,
+    "Week 8 · Your agent is ready to showcase": mini_muse.render,
 }
 
 st.set_page_config(page_title="Agent Engineering Peer Learning", page_icon="🧭", layout="wide")
@@ -76,10 +76,10 @@ apply_page_style()
 st.markdown(
     """
     <style>
-        /* Keep each week's label on a single line in the sidebar. */
+        /* Week labels can wrap: they now describe what the agent can do, not a short topic. */
         [data-testid="stSidebar"] [role="radiogroup"] label p {
             font-size: 0.8rem;
-            white-space: nowrap;
+            line-height: 1.3;
         }
         [data-testid="stSidebar"] .stButton > button {
             justify-content: flex-start;
