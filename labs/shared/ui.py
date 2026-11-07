@@ -3,8 +3,8 @@
 Page layout used by every week:
 
     Left sidebar     week navigation only (app.py)
-    Main column      title → part switch (Concept demo | Build Mini Muse) →
-                       Concept demo:    caption → "How this lab works" → inputs → results
+    Main column      title → part switch (Concept drill | Build Mini Muse) →
+                       Concept drill:    caption → "How this lab works" → inputs → results
                        Build Mini Muse: the step's own caption → "How this step works" → inputs → results
     Right panel      one box, one column:
                        Model settings   Week 1 only; saved for every lab in this session
@@ -294,7 +294,7 @@ def run_standalone(render: Callable[[], None], title: str) -> None:
     render()
 
 
-CONCEPT_PART = "Concept demo"
+CONCEPT_PART = "Concept drill"
 MINI_MUSE_PART = "Build Mini Muse"
 PARTS = [CONCEPT_PART, MINI_MUSE_PART]
 
@@ -308,7 +308,7 @@ def _keep_part(key: str) -> None:
 
 def mini_muse_part(main, panel, week: int, caption: str | None = None, how_it_works: str | None = None,
                    **settings_options) -> bool:
-    """The switch at the top of each week page: the week's concept demo, or its Mini Muse step.
+    """The switch at the top of each week page: the week's concept drill, or its Mini Muse step.
 
     When the Mini Muse step is chosen, this renders it with the settings saved on Week 1
     and its own Lab parameters, then returns True so the page can stop there:

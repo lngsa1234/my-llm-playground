@@ -22,7 +22,7 @@ Each week's topic becomes one component of Mini Muse. By Week 8 every component 
 
 Every week page in the app has two parts, switched at the top of the page:
 
-- **🔬 Concept demo** — the week's existing lab (the playground, the RAG system, the weather assistant…). Use it to learn the idea.
+- **🔬 Concept drill** — the week's existing lab (the playground, the RAG system, the weather assistant…). Use it to learn the idea.
 - **🧩 Build Mini Muse** — the same idea, applied to Mini Muse.
 
 Week 8, the assembled assistant, has no week page. Open **🧩 Mini Muse · all weeks** in the sidebar to see it, or to see every component in one place.

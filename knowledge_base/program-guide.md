@@ -218,7 +218,7 @@ Do this before or after each weekly session.
 
 If GitHub reports a conflict, you changed a file that the course also changed. Keep your own experiments in new files, or ask the group for help.
 
-**2. Learn the concept.** Read the week's guide in **📚 Knowledge Base** and try the **🔬 Concept demo** on the week's page.
+**2. Learn the concept.** Read the week's guide in **📚 Knowledge Base** and try the **🔬 Concept drill** on the week's page.
 
 **3. Run the week's Mini Muse step.** On the week's page, switch to **🧩 Build Mini Muse**. Work through the week's **Try** list and **Check yourself** questions in the [Mini Muse guide](mini-muse.md).
 

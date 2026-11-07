@@ -46,7 +46,7 @@ The agent loop sits in the middle. It uses what Weeks 1 and 2 give it, works thr
 
 Every week page in the lab app has a switch at the top with two parts:
 
-- **Concept demo:** the week's lab on its own (the API playground, the RAG system, the weather assistant). Use it to learn the idea.
+- **Concept drill:** the week's lab on its own (the API playground, the RAG system, the weather assistant). Use it to learn the idea.
 - **Build Mini Muse:** the same idea, added to Mini Muse. Use it to see where the idea fits in a real agent.
 
 Week 8, the assembled assistant, has no week page. Open **Mini Muse · all weeks** in the sidebar to see it, or any other component.

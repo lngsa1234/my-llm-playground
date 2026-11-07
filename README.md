@@ -66,7 +66,7 @@ pytest
 Every week's page has the same layout:
 
 - **Left sidebar** — choose the week, or **Mini Muse · all weeks** for every Mini Muse component in one place (Week 8, the assembled assistant, lives only there). A note appears here if no API key is set.
-- **Main area** — the week title, then a switch between **Concept demo** and **Build Mini Muse**. Each part has a one-line description and an explainer (**How this lab works** or **How this step works**), then inputs, one primary button, and results in labelled boxes with tokens, latency and cost.
+- **Main area** — the week title, then a switch between **Concept drill** and **Build Mini Muse**. Each part has a one-line description and an explainer (**How this lab works** or **How this step works**), then inputs, one primary button, and results in labelled boxes with tokens, latency and cost.
 - **Right panel** — one box:
   - **Model settings** — the model. Token limit and prices are under **Model options**. The values are shared across weeks, so set them once. The default is `gpt-5.4-mini`, with matching default prices; change both together if you switch models.
   - **Lab parameters** — the settings specific to that week, such as output format (Week 1), the sample conversation (Week 2), chunk strategy, search method, embedding model and Top-K (Week 3), tools offered and max tool-call rounds (Week 4), steps, repair budget and router (Week 5), the evaluation step, agent version, judge and release gates (Week 6), or failure rates and the hardened policy (Week 7).
