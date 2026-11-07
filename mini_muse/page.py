@@ -26,7 +26,7 @@ from labs.shared.ui import (can_run, connectors_panel, example_text_area, get_mo
 from mini_muse import week1_understand, week2_memory, week3_knowledge, week4_tools, week5_agent, week6_eval
 from mini_muse.llm import LLM
 from mini_muse.week7_reliability import FAULTS, Runtime
-from mini_muse.world import TODAY, new_world, today_line
+from mini_muse.world import NOTES_DIR, TODAY, new_world, today_line
 
 COMPONENTS = {
     1: ("Understand", "week1_understand", "Turn a request into structured fields with one API call."),
@@ -289,6 +289,8 @@ def _notes_index(settings, semantic: bool, chunks=None):
 
 def step3(main, panel, settings) -> None:
     with lab_parameters(panel):
+        use_samples = st.checkbox("Use sample notes", value=True, key="muse_w3_use_samples",
+                                  help="Load the bundled fictional notes so you can try this without uploading your own.")
         uploads = st.file_uploader("Upload notes", type=["md", "txt"], accept_multiple_files=True,
                                    key="muse_w3_uploads", help="Text and Markdown files only. They remain in this browser session.")
         pasted_notes = st.text_area("Or paste notes", key="muse_w3_pasted_notes", height=140,
@@ -297,15 +299,16 @@ def step3(main, panel, settings) -> None:
                         help="Keyword is offline and free; semantic and hybrid embed your notes once.")
         settings = _with_embedding(settings, "week3_embedding_model", disabled=mode == "keyword")
         top_k = st.slider("Top-K sections", 1, 6, 3, key="muse_w3_k")
-    notes = [(upload.name, upload.getvalue().decode("utf-8", errors="replace")) for upload in (uploads or [])]
+    notes = [(path.name, path.read_text(encoding="utf-8")) for path in sorted(NOTES_DIR.glob("*.md"))] if use_samples else []
+    notes += [(upload.name, upload.getvalue().decode("utf-8", errors="replace")) for upload in (uploads or [])]
     if pasted_notes.strip():
         notes.append(("Pasted notes.md", pasted_notes.strip()))
     chunks = week3_knowledge.load_chunks_from_texts(notes)
     with main:
-        _step_header(3, ["Upload a text or Markdown note, or paste notes directly into the right panel.",
+        _step_header(3, ["Keep **Use sample notes** on to try the bundled fictional notes, or upload or paste your own.",
                          "**Search only** is free; semantic and hybrid search embed your supplied notes.",
                          "Ask a question that is not in the notes: Mini Muse should say so instead of guessing."])
-        st.info("Only the notes you add for this session are searched. They are not saved to this project.")
+        st.info("Only the notes loaded for this session are searched. Uploaded or pasted notes are not saved to this project.")
         question = st.text_area("Question about your notes", key="muse_w3_user_question", height=60,
                                 placeholder="Ask a question about the notes you uploaded or pasted.")
         search_col, answer_col, _ = st.columns([1, 1, 2])
