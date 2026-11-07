@@ -25,6 +25,7 @@ from pathlib import Path
 from typing import Callable
 
 from mini_muse import week4_tools
+from mini_muse.connectors import _session_store
 from mini_muse.connectors.base import ConnectorStatus, CredentialField, Mode
 
 SCOPES = ["https://www.googleapis.com/auth/calendar.events"]
@@ -74,31 +75,41 @@ def _callback_state(config: dict) -> str:
     return f"{payload}.{signature}"
 
 
-def _valid_callback_state(state: str | None, config: dict) -> bool:
+def _state_failure_reason(state: str | None, config: dict) -> str | None:
+    """Explain why a callback state is invalid, or return None when it is valid.
+
+    The reason is surfaced in the UI so an operator can tell an expired link apart
+    from a signature mismatch (usually a rotated GOOGLE_OAUTH_CLIENT_SECRET).
+    """
     if not state:
-        return False
+        return "missing state"
     try:
         nonce, expires, signature = state.rsplit(".", 2)
-        payload = f"{nonce}.{expires}"
-        expected = hmac.new(config["client_secret"].encode(), payload.encode(), hashlib.sha256).hexdigest()
-        return hmac.compare_digest(signature, expected) and int(expires) >= time.time()
     except (TypeError, ValueError):
-        return False
+        return "malformed state"
+    payload = f"{nonce}.{expires}"
+    expected = hmac.new(config["client_secret"].encode(), payload.encode(), hashlib.sha256).hexdigest()
+    if not hmac.compare_digest(signature, expected):
+        return "signature mismatch"
+    try:
+        if int(expires) < time.time():
+            return "link expired"
+    except ValueError:
+        return "malformed expiry"
+    return None
+
+
+def _valid_callback_state(state: str | None, config: dict) -> bool:
+    return _state_failure_reason(state, config) is None
 
 
 def _session_token() -> str | None:
-    try:
-        import streamlit as st
-
-        return st.session_state.get("google_calendar_token")
-    except Exception:
-        return None
+    # Shared across sessions: the OAuth redirect lands in a fresh session (see _session_store).
+    return _session_store.get_token(CONNECTOR_KEY)
 
 
 def _save_session_token(token: str) -> None:
-    import streamlit as st
-
-    st.session_state["google_calendar_token"] = token
+    _session_store.set_token(CONNECTOR_KEY, token)
 
 
 def _load_credentials(creds: dict):
@@ -185,8 +196,9 @@ def handle_callback() -> ConnectorStatus | None:
         state = st.query_params.get("state")
         if not state or state.split(".")[0] != CONNECTOR_KEY:
             return None  # this redirect belongs to a different connector; let it handle the code.
-        if not _valid_callback_state(state, web_config):
-            return ConnectorStatus(False, "Google sign-in could not be verified. Please try again.")
+        reason = _state_failure_reason(state, web_config)
+        if reason:
+            return ConnectorStatus(False, f"Google sign-in could not be verified ({reason}). Please try again.")
         flow = Flow.from_client_config(
             {"web": {**web_config, "auth_uri": "https://accounts.google.com/o/oauth2/auth",
                       "token_uri": "https://oauth2.googleapis.com/token"}},
