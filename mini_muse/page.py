@@ -427,17 +427,25 @@ def step4(main, panel, settings) -> None:
 # ------------------------------------------------------------------ week 5
 def _steps_view(steps: list[dict]) -> None:
     """One block per loop step: the model call first, then the tools it asked for (if any)."""
+    held_any = False
     for s in steps:
         st.markdown(f"**Step {s['step']}**")
         if s["decision"] == "answer":
-            st.markdown("- 🧠 **Model call** → answered without asking for a tool → **loop stops**")
+            if held_any:
+                st.markdown("- 🧠 **Model call** → shows you the draft and asks for approval → **loop stops**  \n"
+                            "  _The held action runs only when you click **Approve** (outside the loop)._")
+            else:
+                st.markdown("- 🧠 **Model call** → answered without asking for a tool → **loop stops**")
             continue
         names = ", ".join(f"`{c['tool']}`" for c in s["calls"])
         st.markdown(f"- 🧠 **Model call** → asks for {names}" + (f": _{s['text']}_" if s["text"] else ""))
         for c in s["calls"]:
-            held = c["result"].get("status") == "not_sent"
-            st.markdown(f"    - {'⏸️ held for approval' if held else '🛠️ app runs'} "
-                        f"`{c['tool']}({json.dumps(c['args'])})` → `{json.dumps(c['result'])[:200]}`")
+            call = f"`{c['tool']}({json.dumps(c['args'])})`"
+            if c["result"].get("status") == "not_sent":
+                held_any = True
+                st.markdown(f"    - ⏸️ **Tool call held** {call} → not run; the model is told it needs your approval")
+            else:
+                st.markdown(f"    - 🛠️ **Tool call** {call} → `{json.dumps(c['result'])[:200]}`")
         st.markdown("    - ↩️ results go back to the model")
 
 
