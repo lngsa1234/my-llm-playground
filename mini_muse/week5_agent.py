@@ -10,9 +10,10 @@ That loop lets Mini Muse check the calendar *before* booking, look up a contact
 *before* drafting, and chain several steps for one request.
 
 Two rules make it safe to let the loop run:
-  1. Approval before risky actions. `send_email` is never run inside the loop. The
-     agent gets "needs approval" back, shows the draft and asks; the app runs the
-     action only after the user clicks Approve (`approve`).
+  1. Approval before risky actions. A risky tool (`send_email`, a live `create_event`)
+     is never run inside the loop. The loop *pauses* at that step (status
+     "awaiting_approval"): the app shows the held action and asks, and runs it only
+     after the user clicks Approve (`approve`). No extra model call is spent asking.
   2. A step cap, so a confused model can't loop forever.
 
 The trace has the same shape as the simulated Muse in Week 6 (tool_calls, answer,
@@ -38,7 +39,7 @@ DEFAULT_MAX_STEPS = 6
 RULES = """Rules:
 - Use tools for real data. Never invent weather, events, contacts or numbers.
 - Before creating an event, check the calendar for that date. If something is already at that time, do not book; name the conflict and offer another time.
-- To email someone, look up the contact, then write a draft and ask "Should I send it?". Never send without the user's approval.
+- To email someone, look up the contact, then call send_email with the full draft. The app holds it and asks the user to approve, so never claim it was sent.
 - If a contact is not found, say you couldn't find them and ask for their email address.
 - If a tool returns an error, say you don't have that information. Do not guess.
 - Use the calculator for arithmetic and show money with two decimals, like $17.00.
@@ -95,12 +96,30 @@ def run(llm, text: str, *, world: dict | None = None, tools=CORE_TOOLS, max_step
             step_calls.append({"tool": call.name, "args": args, "result": result})
             messages.append({"role": "tool", "tool_call_id": call.id, "content": json.dumps(result)})
         steps.append({"step": step, "decision": "tools", "text": reply.content, "calls": step_calls})
+        if pending:  # a risky action is waiting for the user: pause here instead of calling the model again
+            status, answer = "awaiting_approval", approval_request(pending, reply.content)
+            break
 
     if status == "max_steps":
         answer = f"I couldn't finish that within {max_steps} steps, so I stopped. Could you simplify the request?"
     return {"query": text, "version": version, "tool_calls": tool_calls, "answer": answer,
             "final_state": side_effects(world), "pending_actions": pending, "steps": steps,
             "status": status, "messages": messages, "world": world}
+
+
+def approval_request(pending: list[dict], model_text: str = "") -> str:
+    """The message shown when the loop pauses: what is held back, and the question to the user."""
+    lines = [model_text.strip()] if model_text and model_text.strip() else []
+    for action in pending:
+        a = action["args"]
+        if action["tool"] == "send_email":
+            lines.append(f"Draft email to {a.get('to', '?')}\nSubject: {a.get('subject', '')}\n\n{a.get('body', '')}")
+        elif action["tool"] == "create_event":
+            lines.append(f"Ready to book {a.get('title', 'the event')} on {a.get('date', '?')} at {a.get('time', '?')}.")
+        else:
+            lines.append(f"Ready to run {action['tool']} with {json.dumps(a)}.")
+    question = "Should I send it?" if all(x["tool"] == "send_email" for x in pending) else "Should I go ahead?"
+    return "\n\n".join(lines + [question])
 
 
 def approve(world: dict, action: dict, runtime: Runtime | None = None, registry=None) -> dict:

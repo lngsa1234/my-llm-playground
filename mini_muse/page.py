@@ -427,26 +427,23 @@ def step4(main, panel, settings) -> None:
 # ------------------------------------------------------------------ week 5
 def _steps_view(steps: list[dict]) -> None:
     """One block per loop step: the model call first, then the tools it asked for (if any)."""
-    held_any = False
     for s in steps:
         st.markdown(f"**Step {s['step']}**")
         if s["decision"] == "answer":
-            if held_any:
-                st.markdown("- 🧠 **Model call** → shows you the draft and asks for approval → **loop stops**  \n"
-                            "  _The held action runs only when you click **Approve** (outside the loop)._")
-            else:
-                st.markdown("- 🧠 **Model call** → answered without asking for a tool → **loop stops**")
+            st.markdown("- 🧠 **Model call** → answered without asking for a tool → **loop stops**")
             continue
         names = ", ".join(f"`{c['tool']}`" for c in s["calls"])
         st.markdown(f"- 🧠 **Model call** → asks for {names}" + (f": _{s['text']}_" if s["text"] else ""))
         for c in s["calls"]:
             call = f"`{c['tool']}({json.dumps(c['args'])})`"
             if c["result"].get("status") == "not_sent":
-                held_any = True
-                st.markdown(f"    - ⏸️ **Tool call held** {call} → not run; the model is told it needs your approval")
+                st.markdown(f"    - ⏸️ **Tool call held** {call} → not run yet")
             else:
                 st.markdown(f"    - 🛠️ **Tool call** {call} → `{json.dumps(c['result'])[:200]}`")
-        st.markdown("    - ↩️ results go back to the model")
+        if any(c["result"].get("status") == "not_sent" for c in s["calls"]):
+            st.markdown("    - ✋ **loop pauses for your approval**: the action runs only when you click **Approve**")
+        else:
+            st.markdown("    - ↩️ results go back to the model")
 
 
 def step5(main, panel, settings) -> None:
@@ -484,7 +481,10 @@ def step5(main, panel, settings) -> None:
             with right:
                 st.markdown("**Answer**")
                 st.info(trace["answer"] or "(no text)")
-                st.caption(f"Stopped because: {'the model answered' if trace['status'] == 'done' else 'max steps reached'}")
+                stopped = {"done": "the model answered",
+                           "awaiting_approval": "paused for your approval",
+                           "max_steps": "max steps reached"}
+                st.caption(f"Stopped because: {stopped.get(trace['status'], trace['status'])}")
                 for i, action in enumerate(trace["pending_actions"]):
                     with st.container(border=True):
                         st.markdown(f"**⏸️ Waiting for approval: `{action['tool']}`**")

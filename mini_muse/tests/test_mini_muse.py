@@ -226,6 +226,18 @@ def test_agent_holds_email_for_approval_then_approve_sends():
     assert len(trace["world"]["emails_sent"]) == 1
 
 
+def test_agent_pauses_at_the_step_that_needs_approval():
+    llm = FakeLLM([
+        tools_reply(call("lookup_contact", name="maya")),
+        tools_reply(call("send_email", to="maya@example.com", subject="Agenda", body="Hi Maya")),
+        "this reply must never be requested",
+    ])
+    trace = week5_agent.run(llm, "Email Maya about the agenda")
+    assert trace["status"] == "awaiting_approval" and len(trace["steps"]) == 2
+    assert "maya@example.com" in trace["answer"] and "Hi Maya" in trace["answer"]
+    assert trace["answer"].endswith("Should I send it?")
+
+
 def test_agent_stops_at_max_steps():
     llm = FakeLLM([tools_reply(call("check_calendar", n=i, date="2026-10-28")) for i in range(3)])
     trace = week5_agent.run(llm, "loop forever", max_steps=3)
