@@ -4,7 +4,7 @@
 
 | Learn | Build | Key terms | Watch for |
 | --- | --- | --- | --- |
-| What an agent is made of, how to build one that stays in control, when one agent isn't enough, and how agents remember | An agent: a loop, a harness, and a workflow | Agent loop, harness, workflow, router, orchestrator–workers, handoff, compaction, memory tool | The model proposes the next step; your code decides what is allowed to happen |
+| What an agent is made of, how to build one that stays in control, when one agent isn't enough, and how agents remember | An agent: a loop, a harness, and a workflow | Agent loop, harness, workflow, router, orchestrator–workers, handoff, short-term memory, long-term memory, compaction, memory tool | The model proposes the next step; your code decides what is allowed to happen |
 
 An **agent** pursues a goal across many steps instead of answering in one call. This page answers four questions: **what an agent looks like**, **how you implement one**, **when to use more than one agent**, and **how an agent remembers**. For short definitions of any term, see the **Glossary**.
 
@@ -143,55 +143,48 @@ For Mini Muse, the verdict is: stay a single agent, and try a **router** first i
 
 > 💡 Every extra agent adds a prompt to maintain, a context to keep in sync, and a place for errors to compound. Add one only when you can name what it gets that the single loop can't: different tools, a different model, its own context window, or parallel speed.
 
-## 4. How agents remember: Anthropic's memory components
+## 4. How agents remember
 
-An agent's context window is its **working memory**, and it is finite. Every tool result stays in it, so a long task fills it up: the model slows, costs climb, and older details get less attention. Anthropic treats context as a budget to spend carefully, and splits agent memory into four components, by **how long the memory has to last**.
+An agent needs two kinds of memory. **Short-term memory** is what it can see right now, inside one session. **Long-term memory** is what it keeps between sessions. Anthropic's techniques in 4.2 and 4.3 manage each kind.
+
+### 4.1 Short-term and long-term memory
+
+![Sessions, tasks, short-term memory, transcripts, and long-term memory](agent-memory-layers.svg "560")
+
+- **Session:** one conversation thread with its own lifetime. When it ends, its short-term memory is gone.
+- **Task:** a goal worked on inside a session. One session can run several tasks, one after another or handed to subagents.
+- **State:** everything the session tracks right now. It has two parts:
+  - *Short-term memory:* everything in the context window on this call. That includes the system prompt and tool definitions, user and assistant messages, tool calls and results, the agent's own plans and summaries, and anything retrieved into it. Tasks in the same session share it, so Task 2 can see what Task 1 did.
+  - *Control state:* the step, retry count, and status of each task. Your code reads it, and the model may never see it.
+- **Session transcript:** the full saved log of one session, including tool calls and results. It lets you resume or debug *that* session. Saving it is storage, not memory.
+- **Long-term memory:** the only thing that crosses sessions. You *extract* it on purpose, as facts ("prefers morning meetings"), searchable past episodes, or learned procedures. A new session retrieves it into short-term memory.
+
+> 💡 Rule of thumb: if the model can see it on this call, it's short-term memory. If it must be fetched from another session, it's long-term memory. A transcript records what happened. Memory is what you choose to keep.
+
+### 4.2 Keeping short-term memory small
+
+The context window is finite. Every tool result stays in it, so long tasks slow down, cost more, and lose focus on older details. Anthropic's techniques run from lightest to heaviest:
 
 ![Anthropic's agent memory components](agent-memory.svg "560")
 
-### 4.1 Context editing: clear what you can fetch again
+- **Context editing:** past a threshold, the API replaces the oldest tool results with a placeholder (`clear_tool_uses`). The record of the call stays, so the agent can fetch the data again. On Anthropic's long search tasks, this alone improved performance by **29%**.
+- **Compaction:** near the limit, the model summarizes the history and continues from the summary. Claude Code keeps decisions and open bugs plus the five most recently used files. It is lossy, so on its own it isn't enough for work that spans many windows.
+- **Subagents:** a subagent reads tens of thousands of tokens in its own window and returns a summary of about **1,000–2,000 tokens**, so the main agent keeps only the conclusion.
 
-The lightest fix works *inside* the window. When the conversation grows past a threshold you set, the API replaces the **oldest tool results** with a short placeholder saying the result was removed. By default the record of each tool call stays, so the model still knows what it did and can call the tool again if it needs the data back. In Anthropic's API this is the `clear_tool_uses` strategy.
+### 4.3 Long-term memory in Claude's products
 
-- *Why it works:* tool results are usually the biggest and least reusable part of the context: file contents, search results, API responses.
-- *In Mini Muse:* after 10 steps, a calendar result from Step 2 is cleared, but the agent can still see that it checked the calendar and can check again.
+- **Memory tool (Claude API):** the agent writes notes to a `/memories` directory outside the window and checks it before each task. It uses six file commands: `view`, `create`, `str_replace`, `insert`, `delete`, `rename`. Your app runs these commands against storage you control, and it must reject any path outside `/memories`. Combined with context editing, it improved performance by **39%**.
+- **Claude Code:** saves every session's transcript, which you reopen with `/resume`. It carries knowledge across sessions with two kinds of files loaded at startup: **CLAUDE.md**, rules you write, and **auto memory**, notes Claude writes from your corrections.
+- **Claude chat:** saves every chat, keeps memory as topics it updates while you talk (you can view and edit them in Settings), and can search past chats when asked. Each project has its own memory.
 
-### 4.2 Compaction: summarize and start fresh
+All three follow the 4.1 pattern: transcripts for resuming, plus a smaller store of chosen facts for every new session.
 
-When the window is nearly full, the model summarizes the conversation so far, and the agent continues from that summary instead of the full history. Claude Code keeps architectural decisions, unresolved bugs, and implementation details, drops repeated tool output, and continues with the summary plus the **five most recently accessed files**.
+### 4.4 What this means for Mini Muse
 
-- *How to tune it:* Anthropic's advice is to first make the summary capture everything that might matter (recall), then cut what turns out to be unneeded (precision).
-- *The catch:* compaction is lossy. Anthropic found it was not enough on its own for work spanning several context windows, because a summary doesn't always tell the next window clearly what to do. That gap is what notes fill.
+Mini Muse's short-term memory is its `messages` list: every step adds the model's reply and the tool results. Its runs are short, so it doesn't need any of this yet. Here's where each piece would come in:
 
-### 4.3 Notes outside the window: the memory tool
-
-Here the agent writes notes to storage **outside** the context window, and reads them back when it needs them. Notes survive compaction and context resets, because they never lived in the window.
-
-- *Examples from Anthropic:* Claude Code keeps a to-do list, and custom agents keep a `NOTES.md` file. In Anthropic's Pokémon experiment, Claude kept precise notes across thousands of game steps (objectives, explored areas, battle strategies), and after each context reset it read its notes and picked up where it left off.
-- *The memory tool* is Anthropic's API version of this. Claude gets a `/memories` directory and six file commands: `view`, `create`, `str_replace`, `insert`, `delete`, and `rename`. When it's enabled, Claude checks its memory directory before starting a task.
-- *It runs on your side:* Claude only *asks* for memory operations. Your application carries them out against storage you control, such as files, a database, or encrypted storage. That also makes security your job: Anthropic's docs say your handler must reject any path outside `/memories`, so the model can't read or write other files.
-
-The measured effect: on Anthropic's evaluation of long agentic search tasks, context editing alone improved performance by **29%**, and the memory tool combined with context editing by **39%**.
-
-### 4.4 Memory files across sessions: Claude Code's two kinds
-
-Every new session starts with an empty context window. Claude Code carries knowledge over with two kinds of files, both loaded at the start of every session:
-
-- **CLAUDE.md, which you write:** instructions and rules, like "use conventional commits" or "run the tests before pushing." It can sit at several levels: organization-wide, your user account, the project (committed to git for the whole team), and a local file just for you.
-- **Auto memory, which Claude writes:** notes Claude keeps based on your corrections and preferences, stored per project as a `MEMORY.md` index plus topic files. Only the start of `MEMORY.md` loads each session, so the index stays short and points to the topic files.
-
-The split matters: rules you write are authoritative, while lessons the agent writes for itself are its own notes, which you can read and correct.
-
-### 4.5 Subagents as memory isolation
-
-The subagents from §3 are also a memory technique. A subagent can read tens of thousands of tokens in its own context window and return a summary of about **1,000–2,000 tokens**. The main agent keeps the conclusion without the raw material.
-
-### 4.6 What this means for Mini Muse
-
-Mini Muse's working memory is its `messages` list: every step adds the model's reply and the tool results. Its runs are short, so it doesn't need any of this yet. Here's where each piece would come in:
-
-- **Long multi-step runs:** clear old tool results first (4.1). It's the cheapest fix and loses nothing that can't be fetched again.
-- **Remembering you across sessions:** a small memory file of stable facts, like "vegetarian" or "prefers morning meetings," loaded at the start of each run (4.4). Week 2's saved facts are the start of this.
+- **Long multi-step runs:** clear old tool results first (4.2). It's the cheapest fix and loses nothing that can't be fetched again.
+- **Remembering you across sessions:** a small memory file of stable facts, like "vegetarian" or "prefers morning meetings," loaded at the start of each run (4.3). Week 2's saved facts are the start of this.
 - **Long tasks that span many windows:** a progress file the agent updates as it goes (4.3), not just a summary.
 
 > ⚠️ Treat memory as untrusted input. If a web page or email tricks the agent into saving an instruction, that instruction comes back in every future session. Save only what the user said or confirmed, and keep memory readable so you can check it.
@@ -207,5 +200,6 @@ Mini Muse's working memory is its `messages` list: every step adds the model's r
 - [Claude API docs — Memory tool](https://platform.claude.com/docs/en/agents-and-tools/tool-use/memory-tool)
 - [Claude API docs — Context editing](https://platform.claude.com/docs/en/build-with-claude/context-editing)
 - [Claude Code docs — Memory](https://code.claude.com/docs/en/memory)
+- [Claude Help Center — Chat search and memory](https://support.claude.com/en/articles/11817273-manage-memory)
 - [OWASP — AI Agent Security Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/AI_Agent_Security_Cheat_Sheet.html)
 - [Hugging Face Agents Course](https://huggingface.co/learn/agents-course/en/unit1/introduction)
