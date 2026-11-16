@@ -139,7 +139,7 @@ Answer these about your own agent. Split only where the answer is clearly yes. T
 5. **Is the result worth about 15× the tokens?** If yes, multi-agent can pay off.
    - *Mini Muse:* no. Requests are quick and personal.
 
-For Mini Muse, the verdict is: stay a single agent, and try a **router** first if cost matters. The Week 5 lab's **Part XII — Agent Orchestration** and the take-home **Multi-Agent Version** challenge ask you to make this call for your own workflow and to back it up with traces.
+For Mini Muse, the verdict is: stay a single agent, and try a **router** first if cost matters.
 
 > 💡 Every extra agent adds a prompt to maintain, a context to keep in sync, and a place for errors to compound. Add one only when you can name what it gets that the single loop can't: different tools, a different model, its own context window, or parallel speed.
 
