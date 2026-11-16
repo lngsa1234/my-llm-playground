@@ -30,3 +30,23 @@ def get_token(key: str) -> str | None:
 def set_token(key: str, token: str) -> None:
     """Cache an OAuth token for `key`, shared across sessions in this process."""
     _TOKENS[key] = token
+
+
+def clear_token(key: str) -> None:
+    """Forget the cached token for `key`, so the connector asks the user to sign in again."""
+    _TOKENS.pop(key, None)
+
+
+def is_auth_error(exc: Exception) -> bool:
+    """True when Google rejected the token itself (expired, revoked or missing a scope).
+
+    Because the store outlives sessions, a dead token would otherwise keep the connector
+    showing "Connected" while every call fails, and "Connect" would never reach Google.
+    """
+    if type(exc).__name__ == "RefreshError":  # google.auth: refresh token expired or revoked
+        return True
+    status = getattr(getattr(exc, "resp", None), "status", None)  # googleapiclient HttpError
+    text = str(exc).lower()
+    if status == 401 or "invalid_grant" in text:
+        return True
+    return status == 403 and "insufficient" in text  # consent given without this scope

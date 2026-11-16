@@ -319,3 +319,45 @@ def test_calendar_live_create_event_never_raises(monkeypatch):
 def test_calendar_create_event_is_risky():
     conn = google_calendar.GoogleCalendarConnector()
     assert conn.risky_tools("live") == {"create_event"}
+
+
+def test_calendar_auth_failure_clears_cached_token_so_connect_reaches_google(monkeypatch):
+    from mini_muse.connectors import _session_store
+
+    class RefreshError(Exception):  # same name as google.auth.exceptions.RefreshError
+        pass
+
+    def expired(creds):
+        raise RefreshError("invalid_grant: Token has been expired or revoked.")
+
+    _session_store.set_token("calendar", '{"token": "old"}')
+    monkeypatch.setattr(google_calendar, "_service", expired)
+    result = google_calendar._live_check_calendar({})(new_world(), "2026-10-27")
+    assert "sign in again" in result["error"]
+    assert _session_store.get_token("calendar") is None
+
+
+def test_calendar_non_auth_failure_keeps_cached_token(monkeypatch):
+    from mini_muse.connectors import _session_store
+
+    def offline(creds):
+        raise ConnectionError("network down")
+
+    _session_store.set_token("calendar", '{"token": "ok"}')
+    monkeypatch.setattr(google_calendar, "_service", offline)
+    result = google_calendar._live_check_calendar({})(new_world(), "2026-10-27")
+    assert result["error"] == "Calendar unavailable: network down"
+    assert _session_store.get_token("calendar") == '{"token": "ok"}'
+    _session_store.clear_token("calendar")
+
+
+def test_disconnect_forgets_cached_google_tokens():
+    from mini_muse.connectors import _session_store
+    from mini_muse.connectors.gmail import GmailConnector
+    from mini_muse.connectors.google_calendar import GoogleCalendarConnector
+
+    _session_store.set_token("calendar", "x")
+    _session_store.set_token("gmail", "y")
+    GoogleCalendarConnector().disconnect({})
+    GmailConnector().disconnect({})
+    assert _session_store.get_token("calendar") is None and _session_store.get_token("gmail") is None

@@ -213,6 +213,20 @@ def handle_callback() -> ConnectorStatus | None:
     return ConnectorStatus(True, "Connected to Google Calendar for this session.")
 
 
+def _failure(prefix: str, exc: Exception) -> str:
+    """Error text for the model. On an auth failure, drop the dead token so Connect works again."""
+    if _session_store.is_auth_error(exc):
+        _session_store.clear_token(CONNECTOR_KEY)
+        return (f"{prefix}: Google Calendar authorization expired or was revoked ({exc}). "
+                "Tell the user to click 'Connect Google Calendar' and sign in again.")
+    return f"{prefix}: {exc}"
+
+
+def disconnect() -> None:
+    """Sign out: forget the cached hosted token so the next Connect goes to Google."""
+    _session_store.clear_token(CONNECTOR_KEY)
+
+
 def _live_check_calendar(creds: dict) -> Callable:
     def check_calendar(world, date):
         try:
@@ -222,7 +236,7 @@ def _live_check_calendar(creds: dict) -> Callable:
                 timeMin=f"{date}T00:00:00Z", timeMax=f"{date}T23:59:59Z",
                 singleEvents=True, orderBy="startTime").execute()
         except Exception as exc:  # noqa: BLE001 - never crash the agent loop
-            return {"error": f"Calendar unavailable: {exc}"}
+            return {"error": _failure("Calendar unavailable", exc)}
         events = []
         for item in response.get("items", []):
             start = item.get("start", {})
@@ -249,7 +263,7 @@ def _live_create_event(creds: dict) -> Callable:
                     "end": {"dateTime": f"{date}T{end_hour}:00", "timeZone": tz}}
             service.events().insert(calendarId=calendar_id, body=body).execute()
         except Exception as exc:  # noqa: BLE001
-            return {"error": f"Could not create event: {exc}"}
+            return {"error": _failure("Could not create event", exc)}
         event = {"title": title, "date": date, "time": time}
         world.setdefault("calendar", {}).setdefault(date, []).append({"title": title, "time": time})
         world.setdefault("events_created", []).append(event)
@@ -267,6 +281,10 @@ class GoogleCalendarConnector:
 
     def run_action(self, creds: dict) -> ConnectorStatus:
         return connect(creds)
+
+    def disconnect(self, creds: dict) -> None:
+        del creds
+        disconnect()
 
     def schemas(self) -> list[dict]:
         return [week4_tools.SCHEMAS[n] for n in self.tool_names]

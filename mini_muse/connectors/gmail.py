@@ -186,6 +186,10 @@ def _live_send_email(creds: dict) -> Callable:
             raw = base64.urlsafe_b64encode(message.as_bytes()).decode()
             service.users().messages().send(userId="me", body={"raw": raw}).execute()
         except Exception as exc:  # noqa: BLE001 - a live tool must never crash the agent loop
+            if _session_store.is_auth_error(exc):
+                _session_store.clear_token(CONNECTOR_KEY)  # dead token: let Connect reach Google again
+                return {"error": f"Could not send email: Gmail authorization expired or was revoked ({exc}). "
+                                 "Tell the user to click 'Connect Gmail' and sign in again."}
             return {"error": f"Could not send email: {exc}"}
         world.setdefault("emails_sent", []).append({"to": to, "subject": subject, "body": body})
         return {"status": "sent", "to": to}
@@ -202,6 +206,11 @@ class GmailConnector:
 
     def run_action(self, creds: dict) -> ConnectorStatus:
         return connect(creds)
+
+    def disconnect(self, creds: dict) -> None:
+        """Sign out: forget the cached token so the next Connect goes to Google."""
+        del creds
+        _session_store.clear_token(CONNECTOR_KEY)
 
     def schemas(self) -> list[dict]:
         return [week4_tools.SCHEMAS[n] for n in self.tool_names]

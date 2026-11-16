@@ -188,6 +188,8 @@ def connectors_panel(panel, connectors, *, key_prefix: str = "connectors") -> di
                 if connected:
                     st.success(status.detail)
                     if st.button("Disable", key=f"{key_prefix}_{conn.name}_disable"):
+                        if hasattr(conn, "disconnect"):
+                            conn.disconnect(creds)  # also forget a cached sign-in, so Connect re-authorizes
                         st.session_state[enabled_key] = False
                         st.session_state.pop(status_key, None)
                         st.rerun()
