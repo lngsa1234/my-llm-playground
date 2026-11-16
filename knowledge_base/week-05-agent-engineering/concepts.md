@@ -83,12 +83,21 @@ Mini Muse is a **single agent**: one loop, one system prompt, one context window
 
 ![Four ways to arrange agents](agent-patterns.svg "560")
 
-| Pattern | How it works | In Mini Muse | In a real product |
-| --- | --- | --- | --- |
-| **Router** | One cheap classification call picks which prompt, model, or tool set handles the request. Exactly one path runs. | "What's the weather in Detroit?" goes to a small model with only `get_weather`; "Plan Friday and email Maya" goes to the full agent. | Customer support triage: refund questions, technical issues, and general questions each get their own prompt and tools. Anthropic's agent guide gives another: easy questions to a small, cheap model and hard ones to a stronger model. |
-| **Orchestrator–workers** (also called a supervisor or "super agent") | A lead agent decides the subtasks *at runtime*, sends each to a worker agent with its own context, then combines the short results. | "Plan the team offsite": one worker finds a free day on the calendar, one pulls the budget from your notes, and one drafts the invite. The lead combines them and holds the email for approval. | Claude's Research feature: a lead agent plans the research and runs 3–5 search subagents in parallel (see 3.3). |
-| **Evaluator–optimizer** | One call drafts, a second call critiques against explicit criteria, and the draft is revised until it passes or hits a round cap. | Before the email to Maya is held for approval, a critic checks it against your notes ("Is the agenda item correct? Is the tone right?") and asks for at most two revisions. | Code agents that write a change, run the tests, and fix what fails. Writing tools that check a draft against a style guide. |
-| **Handoffs** | A specialist agent takes over the conversation and owns the next reply, instead of reporting back to a manager. | Not needed today. If Mini Muse grew a separate "travel booking" agent, the main agent would hand the conversation to it. | Support flows: triage agent → billing agent → escalation agent. |
+**Router.** One cheap classification call picks which prompt, model, or tool set handles the request. Exactly one path runs.
+- *In Mini Muse:* "What's the weather in Detroit?" goes to a small model with only `get_weather`. "Plan Friday and email Maya" goes to the full agent.
+- *In a real product:* customer support triage, where refund questions, technical issues, and general questions each get their own prompt and tools. Anthropic's agent guide gives another: easy questions to a small, cheap model and hard ones to a stronger model.
+
+**Orchestrator–workers** (also called a supervisor or "super agent"). A lead agent decides the subtasks *at runtime*, sends each to a worker agent with its own context, then combines the short results.
+- *In Mini Muse:* "Plan the team offsite." One worker finds a free day on the calendar, one pulls the budget from your notes, and one drafts the invite. The lead combines them and holds the email for approval.
+- *In a real product:* Claude's Research feature, where a lead agent runs 3–5 search agents in parallel (see 3.3).
+
+**Evaluator–optimizer.** One call drafts, a second call critiques against explicit criteria, and the draft is revised until it passes or hits a round cap.
+- *In Mini Muse:* before the email to Maya is held for approval, a critic checks it against your notes ("Is the agenda item correct? Is the tone right?") and asks for at most two revisions.
+- *In a real product:* code agents that write a change, run the tests, and fix what fails; writing tools that check a draft against a style guide.
+
+**Handoffs.** A specialist agent takes over the conversation and owns the next reply, instead of reporting back to a manager.
+- *In Mini Muse:* not needed today. If Mini Muse grew a separate travel-booking agent, the main agent would hand the conversation to it.
+- *In a real product:* support flows that go triage agent → billing agent → escalation agent.
 
 These patterns combine: the orchestrator's workers can be routers, and a worker can run its own evaluator–optimizer loop. Start with one.
 
@@ -96,13 +105,9 @@ These patterns combine: the orchestrator's workers can be routers, and a worker 
 
 When agents work together, one design choice shapes everything else: does the first agent **stay in charge**, or does it **give the conversation away**? The OpenAI Agents SDK names these two options explicitly.
 
-| | Agents as tools (manager) | Handoffs |
-| --- | --- | --- |
-| **Control** | The manager calls a specialist like a function, gets its result back, and decides what to do next. | The specialist takes over and talks to the user directly. |
-| **Who answers the user** | Always the manager | Whichever agent the conversation was handed to |
-| **Parallel work** | Yes: the manager can call several specialists at once | No: one agent at a time |
-| **Debugging** | Every decision is in one trace, at the manager | You must follow the chain to see why the conversation landed where it did |
-| **Use it when** | You need fan-out and fan-in: research, plans built from several sources | The domains are clearly separate and each needs its own instructions and permissions: billing vs. tech support |
+**Agents as tools (a manager).** The manager calls a specialist like a function, gets its result back, and decides what to do next. The manager always writes the reply to the user. It can call several specialists at once, and every decision sits in one trace, so it is easy to debug. Use it for fan-out and fan-in work: research, or a plan built from several sources.
+
+**Handoffs.** The specialist takes over and talks to the user directly. Only one agent works at a time, and to see why a conversation ended up somewhere, you follow the chain of handoffs. Use it when the domains are clearly separate and each needs its own instructions and permissions, such as billing vs. tech support.
 
 In Mini Muse terms, the approval gate is easier to keep with a manager: one agent owns every risky action, so one place holds them all for approval.
 
@@ -123,13 +128,16 @@ Anthropic published how they built Claude's Research feature, a multi-agent syst
 
 Answer these about your own agent. Split only where the answer is clearly yes. The Mini Muse answers are filled in as an example.
 
-| Question | If yes | Mini Muse |
-| --- | --- | --- |
-| Do subtasks run **independently**, without needing each other's results? | Orchestrator–workers can run them in parallel | Mostly no. Booking depends on checking the calendar first. |
-| Do parts need **different tools or permissions**? | Separate agents, so a read-only agent can't send email | Partly. Reading notes is safe; sending email is risky. The approval gate already handles that. |
-| Would a **cheaper model** handle most requests? | Router | Yes. Weather and single calendar checks don't need the full agent. This is the first split worth trying. |
-| Does the context **overflow one window**? | Workers with their own context, returning summaries | No. Requests are short. |
-| Is the result worth **about 15× the tokens**? | Multi-agent can pay off | No. Requests are quick and personal. |
+1. **Do subtasks run independently, without needing each other's results?** If yes, orchestrator–workers can run them in parallel.
+   - *Mini Muse:* mostly no. Booking depends on checking the calendar first.
+2. **Do parts need different tools or permissions?** If yes, separate agents can keep a read-only agent away from sending email.
+   - *Mini Muse:* partly. Reading notes is safe and sending email is risky, but the approval gate already handles that.
+3. **Would a cheaper model handle most requests?** If yes, add a router.
+   - *Mini Muse:* yes. Weather and single calendar checks don't need the full agent. This is the first split worth trying.
+4. **Does the context overflow one window?** If yes, workers with their own context can return summaries.
+   - *Mini Muse:* no. Requests are short.
+5. **Is the result worth about 15× the tokens?** If yes, multi-agent can pay off.
+   - *Mini Muse:* no. Requests are quick and personal.
 
 For Mini Muse, the verdict is: stay a single agent, and try a **router** first if cost matters. The Week 5 lab's **Part XII — Agent Orchestration** and the take-home **Multi-Agent Version** challenge ask you to make this call for your own workflow and to back it up with traces.
 
