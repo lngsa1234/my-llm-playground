@@ -429,6 +429,11 @@ def _steps_view(steps: list[dict]) -> None:
     """One block per loop step: the model call first, then the tools it asked for (if any)."""
     for s in steps:
         st.markdown(f"**Step {s['step']}**")
+        if s["decision"] == "unverified":
+            missing = ", ".join(f"`{t}`" for t in s["missing"])
+            st.markdown(f"- 🧠 **Model call** → claimed it was done, but never called {missing}  \n"
+                        "  ⚠️ _App check: nothing happened, so the model is sent back to call the tool or correct itself._")
+            continue
         if s["decision"] == "answer":
             st.markdown("- 🧠 **Model call** → answered without asking for a tool → **loop stops**")
             continue

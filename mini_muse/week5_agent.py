@@ -25,6 +25,7 @@ Try it:  python3 -m mini_muse.week5_agent "Book a haircut on 2026-10-27 at 14:00
 from __future__ import annotations
 
 import json
+import re
 import sys
 
 from mini_muse.llm import parse_arguments
@@ -39,6 +40,7 @@ DEFAULT_MAX_STEPS = 6
 RULES = """Rules:
 - Use tools for real data. Never invent weather, events, contacts or numbers.
 - Before creating an event, check the calendar for that date. If something is already at that time, do not book; name the conflict and offer another time.
+- If the time is free and the user asked to book, call create_event. Saying "Booked" without calling create_event books nothing. Never say an event was booked or an email was sent unless you called that tool in this conversation.
 - To email someone, look up the contact, then call send_email with the full draft. The app holds it and asks the user to approve, so never claim it was sent.
 - If a contact is not found, say you couldn't find them and ask for their email address.
 - If a tool returns an error, say you don't have that information. Do not guess.
@@ -71,12 +73,24 @@ def run(llm, text: str, *, world: dict | None = None, tools=CORE_TOOLS, max_step
     messages = [{"role": "system", "content": system_prompt(system_extra)}, *(context or []),
                 {"role": "user", "content": text}]
     tool_calls, pending, steps = [], [], []
-    status, answer = "max_steps", ""
+    status, answer, nudged = "max_steps", "", False
 
     for step in range(1, max_steps + 1):
         reply = runtime.call_llm(llm, messages, tools=tool_schemas)
-        if not reply.tool_calls:  # the model answered: the goal is done
+        if not reply.tool_calls:  # the model answered: the goal is done ...
+            called = {c["tool"] for c in tool_calls} | {a["tool"] for a in pending}
+            missing = [t for t in unverified_claims(reply.content, called) if t in tools]
+            if missing and not nudged:  # ... unless it claims an action it never took: send it back once
+                nudged = True
+                steps.append({"step": step, "decision": "unverified", "text": reply.content, "missing": missing})
+                messages.append({"role": "assistant", "content": reply.content or ""})
+                messages.append({"role": "user", "content": (
+                    f"Check: your answer says it was done, but you did not call {', '.join(missing)}, so nothing "
+                    "happened. If the user asked for it and it is allowed, call the tool now. Otherwise correct your answer.")})
+                continue
             status, answer = "done", reply.content
+            if missing:  # still claiming it after the nudge: never let a false confirmation reach the user
+                answer = (answer or "") + (f"\n\n(Note: nothing was done. {', '.join(missing)} was never called.)")
             steps.append({"step": step, "decision": "answer", "text": reply.content})
             break
         messages.append(reply.as_message())
@@ -105,6 +119,25 @@ def run(llm, text: str, *, world: dict | None = None, tools=CORE_TOOLS, max_step
     return {"query": text, "version": version, "tool_calls": tool_calls, "answer": answer,
             "final_state": side_effects(world), "pending_actions": pending, "steps": steps,
             "status": status, "messages": messages, "world": world}
+
+
+# Words that claim an action happened, mapped to the tool that does it. A negation just
+# before ("not booked", "haven't sent") does not count.
+_CLAIMS = {"create_event": r"\bbooked\b", "send_email": r"\b(sent|emailed)\b"}
+_NEGATION = re.compile(r"(\bnot|n't|\bnever|\bno)\s+(yet\s+)?(been\s+)?$", re.I)
+
+
+def unverified_claims(text: str | None, called: set[str]) -> list[str]:
+    """Tools the answer says it used ("Booked yoga…", "Email sent") but that were never called."""
+    missing = []
+    for tool, pattern in _CLAIMS.items():
+        if tool in called:
+            continue
+        for m in re.finditer(pattern, text or "", re.I):
+            if not _NEGATION.search((text or "")[:m.start()][-30:]):
+                missing.append(tool)
+                break
+    return missing
 
 
 def approval_request(pending: list[dict], model_text: str = "") -> str:

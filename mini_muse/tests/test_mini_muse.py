@@ -433,3 +433,27 @@ def test_llm_keeps_a_copy_of_the_exact_request_body(monkeypatch):
     assert sent["text"]["format"]["name"] == "UnderstoodRequest" and sent["text"]["format"]["strict"] is True
     assert "test-key" not in json.dumps(sent)
     assert llm.last_output == body
+
+
+def test_agent_is_sent_back_when_it_claims_a_booking_it_never_made():
+    llm = FakeLLM([
+        tools_reply(call("check_calendar", date="2026-10-28")),
+        "You're free. Booked Yoga on 2026-10-28 at 18:00.",
+        tools_reply(call("create_event", title="Yoga", date="2026-10-28", time="18:00")),
+        "Booked Yoga on 2026-10-28 at 18:00.",
+    ])
+    trace = week5_agent.run(llm, "If I'm free on 2026-10-28 at 18:00, book yoga")
+    assert [s["decision"] for s in trace["steps"]] == ["tools", "unverified", "tools", "answer"]
+    assert len(trace["final_state"]["events_created"]) == 1
+
+
+def test_a_repeated_false_claim_is_flagged_in_the_answer():
+    llm = FakeLLM(["Booked yoga.", "Booked yoga."])
+    trace = week5_agent.run(llm, "Book yoga on 2026-10-28 at 18:00")
+    assert "nothing was done" in trace["answer"] and trace["final_state"]["events_created"] == []
+
+
+def test_negated_or_question_answers_are_not_claims():
+    assert week5_agent.unverified_claims("That slot is not booked. Should I book it?", set()) == []
+    assert week5_agent.unverified_claims("I haven't sent anything yet.", set()) == []
+    assert week5_agent.unverified_claims("Booked Yoga.", {"create_event"}) == []
