@@ -34,7 +34,7 @@ from labs.week5_agent_workflow import page as week5  # noqa: E402
 from labs.week6_agent_eval import page as week6  # noqa: E402
 from labs.week7_production import page as week7  # noqa: E402
 from mini_muse import page as mini_muse  # noqa: E402
-from mini_muse.connectors import CONNECTORS  # noqa: E402
+from mini_muse.connectors import CONNECTORS, _session_store  # noqa: E402
 
 load_dotenv()
 
@@ -69,6 +69,10 @@ if _oauth_code and st.session_state.get("_google_oauth_code") != _oauth_code:
         st.session_state[f"connectors_{_conn.name}_status"] = _oauth_status
         if _oauth_status.ready:
             st.session_state[f"connectors_{_conn.name}_enabled"] = True
+            _session_store.enable(_conn.name)
+        _return_page = _session_store.pop_return_page()
+        if _return_page in PAGES:  # land back on the week where the user clicked Connect
+            st.session_state["nav_week"] = _return_page
         st.toast(_oauth_status.detail, icon="✅" if _oauth_status.ready else "⚠️")
         break
 

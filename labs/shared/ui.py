@@ -30,6 +30,8 @@ from typing import Callable
 
 import streamlit as st
 
+from mini_muse.connectors import _session_store
+
 from labs.shared.settings import (
     DEFAULT_EMBEDDING_MODEL,
     DEFAULT_INPUT_PRICE,
@@ -166,7 +168,8 @@ def connectors_panel(panel, connectors, *, key_prefix: str = "connectors") -> di
             with st.expander(conn.title):
                 enabled_key = f"{key_prefix}_{conn.name}_enabled"
                 status_key = f"{key_prefix}_{conn.name}_status"
-                enabled = bool(st.session_state.get(enabled_key, False))
+                # Also check the process-wide store: Google's redirect lands in a fresh session.
+                enabled = bool(st.session_state.get(enabled_key, False)) or _session_store.is_enabled(conn.name)
 
                 # Current credential values (defaults applied), used to judge readiness.
                 creds = {field.key: st.session_state.get(f"{key_prefix}_{conn.name}_{field.key}", field.default)
@@ -180,6 +183,7 @@ def connectors_panel(panel, connectors, *, key_prefix: str = "connectors") -> di
                         st.session_state[status_key] = callback_status
                         if callback_status.ready:
                             st.session_state[enabled_key] = True
+                            _session_store.enable(conn.name)
                             enabled = True
 
                 status = conn.readiness("live", creds)
@@ -191,6 +195,7 @@ def connectors_panel(panel, connectors, *, key_prefix: str = "connectors") -> di
                         if hasattr(conn, "disconnect"):
                             conn.disconnect(creds)  # also forget a cached sign-in, so Connect re-authorizes
                         st.session_state[enabled_key] = False
+                        _session_store.disable(conn.name)
                         st.session_state.pop(status_key, None)
                         st.rerun()
                 else:
@@ -207,6 +212,8 @@ def connectors_panel(panel, connectors, *, key_prefix: str = "connectors") -> di
                     action_label = getattr(conn, "action_label", None) or "Connect"
                     if st.button(action_label, key=f"{key_prefix}_{conn.name}_action"):
                         st.session_state[enabled_key] = True
+                        _session_store.enable(conn.name)
+                        _session_store.set_return_page(st.session_state.get("nav_week"))
                         if hasattr(conn, "run_action"):
                             st.session_state[status_key] = conn.run_action(creds)
                         st.rerun()
@@ -216,9 +223,9 @@ def connectors_panel(panel, connectors, *, key_prefix: str = "connectors") -> di
                         st.error(saved.detail)
                         if saved.authorization_url:
                             st.markdown(
-                                f'<a href="{escape(saved.authorization_url, quote=True)}" target="_blank"'
+                                f'<a href="{escape(saved.authorization_url, quote=True)}" target="_self"'
                                 ' rel="noopener noreferrer" referrerpolicy="no-referrer">'
-                                "Continue to Google (opens a new tab)</a>",
+                                "Continue to Google</a>",
                                 unsafe_allow_html=True,
                             )
                     elif not status.ready:

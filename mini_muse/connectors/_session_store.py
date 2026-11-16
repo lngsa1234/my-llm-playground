@@ -20,6 +20,8 @@ their own instance; do not reuse it as-is for a public multi-tenant app.
 from __future__ import annotations
 
 _TOKENS: dict[str, str] = {}
+_ENABLED: set[str] = set()          # connectors the user turned on (survives the OAuth redirect)
+_RETURN_PAGE: dict[str, str] = {}   # the page to land on after Google sends the browser back
 
 
 def get_token(key: str) -> str | None:
@@ -50,3 +52,26 @@ def is_auth_error(exc: Exception) -> bool:
     if status == 401 or "invalid_grant" in text:
         return True
     return status == 403 and "insufficient" in text  # consent given without this scope
+
+
+def enable(name: str) -> None:
+    """Remember that the user turned connector `name` on, across the OAuth redirect."""
+    _ENABLED.add(name)
+
+
+def disable(name: str) -> None:
+    _ENABLED.discard(name)
+
+
+def is_enabled(name: str) -> bool:
+    return name in _ENABLED
+
+
+def set_return_page(page: str | None) -> None:
+    """Remember where the user clicked Connect, so the redirect can bring them back there."""
+    if page:
+        _RETURN_PAGE["page"] = page
+
+
+def pop_return_page() -> str | None:
+    return _RETURN_PAGE.pop("page", None)

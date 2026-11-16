@@ -361,3 +361,15 @@ def test_disconnect_forgets_cached_google_tokens():
     GoogleCalendarConnector().disconnect({})
     GmailConnector().disconnect({})
     assert _session_store.get_token("calendar") is None and _session_store.get_token("gmail") is None
+
+
+def test_enabled_connectors_and_return_page_survive_a_fresh_session():
+    from mini_muse.connectors import _session_store
+
+    _session_store.enable("weather")
+    _session_store.set_return_page("Week 5 · Your agent can execute")
+    assert _session_store.is_enabled("weather")
+    assert _session_store.pop_return_page() == "Week 5 · Your agent can execute"
+    assert _session_store.pop_return_page() is None  # used once, then forgotten
+    _session_store.disable("weather")
+    assert not _session_store.is_enabled("weather")
