@@ -742,6 +742,8 @@ Triage → Requirements → Planning → Implementation → QA
 
 Otherwise, a single controlled workflow is simpler, cheaper and easier to debug.
 
+For the patterns (router, orchestrator–workers, evaluator–optimizer, handoffs), a real multi-agent system with its token costs, and a five-question checklist, see **Concepts §3 — When one agent isn't enough**.
+
 ---
 
 # 18. Experiment C — Inject Failures (10 min)
@@ -975,6 +977,8 @@ Redesign as:
 ```
 
 For each agent define: responsibility, input, output, tools, permissions, model, context, exit criteria.
+
+Before you build it, run your workflow through the five questions in **Concepts §3.4**, and decide between a manager that calls agents as tools and handoffs (**Concepts §3.2**).
 
 Then answer the most important question:
 

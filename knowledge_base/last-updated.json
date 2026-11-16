@@ -1,6 +1,6 @@
 {
   "README.md": "2026-11-06",
-  "glossary.md": "2026-11-04",
+  "glossary.md": "2026-11-16",
   "interview-questions.md": "2026-10-24",
   "mini-muse.md": "2026-11-07",
   "program-guide.md": "2026-11-07",
@@ -15,8 +15,8 @@
   "week-03-rag/lab.md": "2026-10-24",
   "week-04-tool-calling/concepts.md": "2026-11-06",
   "week-04-tool-calling/lab.md": "2026-11-02",
-  "week-05-agent-engineering/concepts.md": "2026-11-06",
-  "week-05-agent-engineering/lab.md": "2026-10-25",
+  "week-05-agent-engineering/concepts.md": "2026-11-16",
+  "week-05-agent-engineering/lab.md": "2026-11-16",
   "week-06-evals/concepts.md": "2026-11-06",
   "week-06-evals/lab.md": "2026-11-06",
   "week-07-production/concepts.md": "2026-11-01"

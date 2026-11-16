@@ -162,6 +162,12 @@ Combining the LLM with tools, state, and an execution process.
 | Orchestration | Coordinating execution, model calls, tools, and possibly multiple agents. |
 | Workflow | A defined sequence or graph of steps used to accomplish a task. |
 | Multi-agent System | A system containing multiple agents that cooperate, delegate, or coordinate tasks. |
+| Router | A pattern where one cheap classification call sends each request to exactly one specialized prompt, model, or tool set. |
+| Orchestrator–Workers | A pattern where a lead agent (orchestrator, supervisor) splits a goal into subtasks at runtime, runs worker agents, and combines their results. |
+| Subagent | A worker agent started by another agent for one subtask, usually with its own context window, returning a short result. |
+| Evaluator–Optimizer | A pattern where one call drafts and another critiques against explicit criteria, repeating until the draft passes or a round cap is hit. |
+| Handoff | Passing the conversation from one agent to a specialist agent, which then owns the next reply. |
+| Agents as Tools | A manager agent calls specialist agents like functions, gets their results back, and keeps ownership of the reply. |
 | Human-in-the-Loop | A design in which a person reviews, approves, or corrects parts of an automated process. |
 | Guardrails | Constraints and checks that limit unsafe, unauthorized, or invalid system behavior. |
 | Evaluation (Evals) | Systematic testing of model or agent performance against defined criteria. |
