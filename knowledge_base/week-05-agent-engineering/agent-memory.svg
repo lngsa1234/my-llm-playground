@@ -1,0 +1,50 @@
+<svg width="100%" viewBox="0 0 680 400" role="img" xmlns="http://www.w3.org/2000/svg" font-family="ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif">
+<title>Anthropic's agent memory components, by how long memory must last</title>
+<desc>Four layers, from shortest to longest lived. Within one task: context editing clears old tool results. When the window fills: compaction summarizes the history. Across context resets: the agent writes notes to files outside the window, such as with the memory tool. Across sessions: memory files like CLAUDE.md and auto memory load at the start of every session.</desc>
+<defs>
+  <style>
+    .band { fill: #f1efe8; stroke: #5f5e5a; stroke-width: 0.5; }
+    .ctx { fill: #e6eef7; stroke: #4a6a8a; stroke-width: 0.8; }
+    .lbl { fill: #6b6a66; font-size: 11.5px; font-weight: 600; letter-spacing: 0.04em; }
+    .h { fill: #0b0b0b; font-size: 14px; font-weight: 600; }
+    .s { fill: #444441; font-size: 12.5px; }
+    .ln { stroke: #898781; stroke-width: 1.5; fill: none; }
+  </style>
+  <marker id="m" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+    <path d="M2 1L8 5L2 9" fill="none" stroke="#898781" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+  </marker>
+</defs>
+
+<!-- time axis -->
+<line class="ln" x1="22" y1="30" x2="22" y2="380" marker-end="url(#m)"/>
+<text class="lbl" x="34" y="24">SHORT-LIVED</text>
+<text class="lbl" x="34" y="394">LONG-LIVED</text>
+
+<!-- 1 -->
+<rect class="ctx" x="40" y="36" width="620" height="76" rx="10"/>
+<text class="h" x="58" y="62">1 · Context editing</text>
+<text class="lbl" x="520" y="62">INSIDE THE WINDOW</text>
+<text class="s" x="58" y="84">Old tool results are swapped for a placeholder; the record of the call stays.</text>
+<text class="s" x="58" y="102">The lightest fix: nothing is summarized, and anything cleared can be fetched again.</text>
+
+<!-- 2 -->
+<rect class="ctx" x="40" y="122" width="620" height="76" rx="10"/>
+<text class="h" x="58" y="148">2 · Compaction</text>
+<text class="lbl" x="520" y="148">INSIDE THE WINDOW</text>
+<text class="s" x="58" y="170">Near the limit, the model summarizes the history and starts over from the summary.</text>
+<text class="s" x="58" y="188">Keeps decisions and open problems, drops repeated tool output. Lossy.</text>
+
+<!-- 3 -->
+<rect class="band" x="40" y="208" width="620" height="76" rx="10"/>
+<text class="h" x="58" y="234">3 · Notes outside the window (memory tool)</text>
+<text class="lbl" x="508" y="234">OUTSIDE THE WINDOW</text>
+<text class="s" x="58" y="256">The agent writes progress and findings to files, and reads them back later.</text>
+<text class="s" x="58" y="274">Survives compaction and context resets: a to-do list, NOTES.md, /memories.</text>
+
+<!-- 4 -->
+<rect class="band" x="40" y="294" width="620" height="76" rx="10"/>
+<text class="h" x="58" y="320">4 · Memory files across sessions</text>
+<text class="lbl" x="508" y="320">OUTSIDE THE WINDOW</text>
+<text class="s" x="58" y="342">Loaded at the start of every session: rules you write (CLAUDE.md) and</text>
+<text class="s" x="58" y="360">lessons the agent writes for itself (auto memory).</text>
+</svg>

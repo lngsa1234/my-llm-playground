@@ -168,6 +168,10 @@ Combining the LLM with tools, state, and an execution process.
 | Evaluator–Optimizer | A pattern where one call drafts and another critiques against explicit criteria, repeating until the draft passes or a round cap is hit. |
 | Handoff | Passing the conversation from one agent to a specialist agent, which then owns the next reply. |
 | Agents as Tools | A manager agent calls specialist agents like functions, gets their results back, and keeps ownership of the reply. |
+| Context Editing | Automatically removing stale content, such as old tool results, from an agent's context window while keeping a record that the tool was called. |
+| Compaction | Summarizing an agent's conversation history when the context window nears its limit, then continuing from the summary. |
+| Structured Note-Taking | An agent writing notes, such as a to-do list or progress file, to storage outside its context window and reading them back later. |
+| Memory Tool | Anthropic's API tool that gives Claude a `/memories` directory of files it can view, create, edit, and delete across conversations, with storage handled by your application. |
 | Human-in-the-Loop | A design in which a person reviews, approves, or corrects parts of an automated process. |
 | Guardrails | Constraints and checks that limit unsafe, unauthorized, or invalid system behavior. |
 | Evaluation (Evals) | Systematic testing of model or agent performance against defined criteria. |
