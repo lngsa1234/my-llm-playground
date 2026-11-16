@@ -223,11 +223,17 @@ def connectors_panel(panel, connectors, *, key_prefix: str = "connectors") -> di
                         st.error(saved.detail)
                         if saved.authorization_url:
                             st.markdown(
-                                f'<a href="{escape(saved.authorization_url, quote=True)}" target="_self"'
+                                f'<a href="{escape(saved.authorization_url, quote=True)}" target="_blank"'
                                 ' rel="noopener noreferrer" referrerpolicy="no-referrer">'
-                                "Continue to Google</a>",
+                                "Continue to Google (opens a new tab)</a>",
                                 unsafe_allow_html=True,
                             )
+                            # Must be a new tab: Streamlit Cloud shows the app in an iframe and
+                            # Google refuses to sign in inside one (a 403). Google's redirect then
+                            # lands in a fresh session; enabled connectors and the current week are
+                            # kept in _session_store so nothing has to be reconnected.
+                            st.caption("After signing in, keep working in the new tab. "
+                                       "Your other connectors stay connected.")
                     elif not status.ready:
                         st.caption(status.detail)
 
