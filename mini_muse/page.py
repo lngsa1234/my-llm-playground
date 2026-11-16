@@ -441,11 +441,15 @@ def _steps_view(steps: list[dict]) -> None:
         st.markdown(f"- 🧠 **Model call** → asks for {names}" + (f": _{s['text']}_" if s["text"] else ""))
         for c in s["calls"]:
             call = f"`{c['tool']}({json.dumps(c['args'])})`"
-            if c["result"].get("status") == "not_sent":
+            if c.get("decision") == "approved":
+                st.markdown(f"    - ✅ **You approved** → **Tool call** {call} → `{json.dumps(c['outcome'])[:200]}`")
+            elif c.get("decision") == "declined":
+                st.markdown(f"    - 🚫 **You declined** {call} → not run")
+            elif c["result"].get("status") == "not_sent":
                 st.markdown(f"    - ⏸️ **Tool call held** {call} → not run yet")
             else:
                 st.markdown(f"    - 🛠️ **Tool call** {call} → `{json.dumps(c['result'])[:200]}`")
-        if any(c["result"].get("status") == "not_sent" for c in s["calls"]):
+        if any(c["result"].get("status") == "not_sent" and "decision" not in c for c in s["calls"]):
             st.markdown("    - ✋ **loop pauses for your approval**: the action runs only when you click **Approve**")
         else:
             st.markdown("    - ↩️ results go back to the model")
@@ -473,7 +477,7 @@ def step5(main, panel, settings) -> None:
                 started = time.perf_counter()
                 trace = week5_agent.run(llm, text, max_steps=max_steps, registry=registry)
                 st.session_state.muse_w5_result = {"trace": trace, "llm": llm, "seconds": time.perf_counter() - started,
-                                                   "approved": []}
+                                                   "decisions": {}}
             except Exception as exc:  # noqa: BLE001
                 show_error("Agent", exc)
         result = st.session_state.get("muse_w5_result")
@@ -490,16 +494,29 @@ def step5(main, panel, settings) -> None:
                            "awaiting_approval": "paused for your approval",
                            "max_steps": "max steps reached"}
                 st.caption(f"Stopped because: {stopped.get(trace['status'], trace['status'])}")
+                decisions = result.setdefault("decisions", {})
                 for i, action in enumerate(trace["pending_actions"]):
                     with st.container(border=True):
                         st.markdown(f"**⏸️ Waiting for approval: `{action['tool']}`**")
                         st.json(action["args"])
-                        if i in result["approved"]:
-                            st.success("Approved and sent.")
-                        elif st.button("Approve", key=f"muse_w5_approve_{i}", type="primary"):
-                            week5_agent.approve(trace["world"], action, registry=registry)
-                            result["approved"].append(i)
-                            st.rerun()
+                        if i in decisions:
+                            st.caption("Approved." if decisions[i] else "Declined.")
+                            continue
+                        approve_col, decline_col = st.columns(2)
+                        if approve_col.button("Approve", key=f"muse_w5_approve_{i}", type="primary"):
+                            decisions[i] = True
+                        elif decline_col.button("Decline", key=f"muse_w5_decline_{i}"):
+                            decisions[i] = False
+                        else:
+                            continue
+                        if len(decisions) == len(trace["pending_actions"]):  # all decided: the loop carries on
+                            try:
+                                with st.spinner("Running the approved action and continuing the loop…"):
+                                    result["trace"] = week5_agent.resume(result["llm"], trace, decisions)
+                                result["decisions"] = {}
+                            except Exception as exc:  # noqa: BLE001
+                                show_error("Agent", exc)
+                        st.rerun()
                 _side_effects({"events_created": trace["world"]["events_created"],
                                "emails_sent": trace["world"]["emails_sent"]})
             _usage(result["llm"], result["seconds"])

@@ -12,8 +12,9 @@ That loop lets Mini Muse check the calendar *before* booking, look up a contact
 Two rules make it safe to let the loop run:
   1. Approval before risky actions. A risky tool (`send_email`, a live `create_event`)
      is never run inside the loop. The loop *pauses* at that step (status
-     "awaiting_approval"): the app shows the held action and asks, and runs it only
-     after the user clicks Approve (`approve`). No extra model call is spent asking.
+     "awaiting_approval"): the app shows the held action and asks. When the user
+     approves (or declines), `resume` runs it and the loop carries on, so the next
+     model call sees the real result and confirms it.
   2. A step cap, so a confused model can't loop forever.
 
 The trace has the same shape as the simulated Muse in Week 6 (tool_calls, answer,
@@ -67,21 +68,34 @@ def run(llm, text: str, *, world: dict | None = None, tools=CORE_TOOLS, max_step
     """
     world = world if world is not None else new_world()
     runtime = runtime or Runtime()
+    messages = [{"role": "system", "content": system_prompt(system_extra)}, *(context or []),
+                {"role": "user", "content": text}]
+    trace = {"query": text, "version": version, "tool_calls": [], "answer": "", "pending_actions": [],
+             "steps": [], "status": "max_steps", "messages": messages, "world": world,
+             # what the loop needs to carry on after the user approves (see `resume`)
+             "_loop": {"runtime": runtime, "tools": tools, "registry": registry, "max_steps": max_steps,
+                       "tool_options": tool_options or {}, "nudged": False}}
+    return _loop(llm, trace, first_step=1)
+
+
+def _loop(llm, trace: dict, first_step: int) -> dict:
+    """The agent loop itself, from `first_step` up to the step cap. Updates and returns `trace`."""
+    ctx = trace["_loop"]
+    runtime, tools, registry, max_steps = ctx["runtime"], ctx["tools"], ctx["registry"], ctx["max_steps"]
     runner = registry.execute if registry else execute
     tool_schemas = registry.schemas_for(tools) if registry else schemas(tools)
     risky = RISKY_TOOLS | (registry.risky if registry else set())
-    messages = [{"role": "system", "content": system_prompt(system_extra)}, *(context or []),
-                {"role": "user", "content": text}]
-    tool_calls, pending, steps = [], [], []
-    status, answer, nudged = "max_steps", "", False
+    messages, world, steps = trace["messages"], trace["world"], trace["steps"]
+    tool_calls, pending = trace["tool_calls"], trace["pending_actions"]
+    status, answer = "max_steps", ""
 
-    for step in range(1, max_steps + 1):
+    for step in range(first_step, max_steps + 1):
         reply = runtime.call_llm(llm, messages, tools=tool_schemas)
         if not reply.tool_calls:  # the model answered: the goal is done ...
             called = {c["tool"] for c in tool_calls} | {a["tool"] for a in pending}
             missing = [t for t in unverified_claims(reply.content, called) if t in tools]
-            if missing and not nudged:  # ... unless it claims an action it never took: send it back once
-                nudged = True
+            if missing and not ctx["nudged"]:  # ... unless it claims an action it never took: send it back once
+                ctx["nudged"] = True
                 steps.append({"step": step, "decision": "unverified", "text": reply.content, "missing": missing})
                 messages.append({"role": "assistant", "content": reply.content or ""})
                 messages.append({"role": "user", "content": (
@@ -102,10 +116,10 @@ def run(llm, text: str, *, world: dict | None = None, tools=CORE_TOOLS, max_step
             elif call.name not in tools:
                 result = {"error": f"Tool {call.name!r} is not available."}
             elif call.name in risky:
-                pending.append({"tool": call.name, "args": args})
+                pending.append({"tool": call.name, "args": args, "call_id": call.id, "step": step})
                 result = {"status": "not_sent", "reason": "Needs the user's approval. Show the draft and ask."}
             else:
-                result = runtime.call_tool(runner, world, call.name, args, **(tool_options or {}))
+                result = runtime.call_tool(runner, world, call.name, args, **ctx["tool_options"])
                 tool_calls.append({"tool": call.name, "args": args, "result": result, "step": step})
             step_calls.append({"tool": call.name, "args": args, "result": result})
             messages.append({"role": "tool", "tool_call_id": call.id, "content": json.dumps(result)})
@@ -116,9 +130,37 @@ def run(llm, text: str, *, world: dict | None = None, tools=CORE_TOOLS, max_step
 
     if status == "max_steps":
         answer = f"I couldn't finish that within {max_steps} steps, so I stopped. Could you simplify the request?"
-    return {"query": text, "version": version, "tool_calls": tool_calls, "answer": answer,
-            "final_state": side_effects(world), "pending_actions": pending, "steps": steps,
-            "status": status, "messages": messages, "world": world}
+    trace.update(answer=answer, status=status, final_state=side_effects(world))
+    return trace
+
+
+def resume(llm, trace: dict, decisions: dict[int, bool]) -> dict:
+    """The user decided on every held action: run the approved ones, then let the loop carry on.
+
+    decisions maps the index in `trace["pending_actions"]` to True (approve) or False (decline).
+    Each held call's placeholder result is replaced with the real outcome, so the next model
+    call sees what actually happened and can confirm it ("Booked yoga ...").
+    """
+    ctx = trace["_loop"]
+    runner = ctx["registry"].execute if ctx["registry"] else execute
+    step_by_number = {s["step"]: s for s in trace["steps"]}
+    for i, action in enumerate(trace["pending_actions"]):
+        if decisions.get(i):
+            result = ctx["runtime"].call_tool(runner, trace["world"], action["tool"], action["args"])
+            trace["tool_calls"].append({"tool": action["tool"], "args": action["args"], "result": result,
+                                        "step": action["step"]})
+            outcome = {"approved_by_user": True, **result}
+        else:
+            outcome = {"status": "declined", "reason": "The user declined. Do not run it; say it was not done."}
+        for msg in trace["messages"]:  # swap the "needs approval" placeholder for the real outcome
+            if msg.get("role") == "tool" and msg.get("tool_call_id") == action["call_id"]:
+                msg["content"] = json.dumps(outcome)
+        for c in step_by_number[action["step"]]["calls"]:  # and show the decision in that step of the loop
+            if c["tool"] == action["tool"] and c["args"] == action["args"] and "decision" not in c:
+                c.update(decision="approved" if decisions.get(i) else "declined", outcome=outcome)
+                break
+    trace["pending_actions"] = []
+    return _loop(llm, trace, first_step=trace["steps"][-1]["step"] + 1)
 
 
 # Words that claim an action happened, mapped to the tool that does it. A negation just

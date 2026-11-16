@@ -219,8 +219,8 @@ def test_agent_holds_email_for_approval_then_approve_sends():
     ])
     trace = week5_agent.run(llm, "Email Maya about the agenda")
     assert trace["final_state"]["emails_sent"] == []
-    assert trace["pending_actions"] == [{"tool": "send_email", "args": {"to": "maya@example.com",
-                                                                        "subject": "Agenda", "body": "Hi Maya"}}]
+    assert [{k: a[k] for k in ("tool", "args")} for a in trace["pending_actions"]] == [
+        {"tool": "send_email", "args": {"to": "maya@example.com", "subject": "Agenda", "body": "Hi Maya"}}]
     assert "send_email" not in [c["tool"] for c in trace["tool_calls"]]
     week5_agent.approve(trace["world"], trace["pending_actions"][0])
     assert len(trace["world"]["emails_sent"]) == 1
@@ -457,3 +457,36 @@ def test_negated_or_question_answers_are_not_claims():
     assert week5_agent.unverified_claims("That slot is not booked. Should I book it?", set()) == []
     assert week5_agent.unverified_claims("I haven't sent anything yet.", set()) == []
     assert week5_agent.unverified_claims("Booked Yoga.", {"create_event"}) == []
+
+
+def test_after_approval_the_loop_continues_and_the_model_confirms():
+    from mini_muse.connectors.registry import ToolRegistry  # live-like: create_event needs approval
+
+    world = new_world()
+    registry = ToolRegistry({n: week4_tools.SCHEMAS[n] for n in ("check_calendar", "create_event")},
+                            {"check_calendar": week4_tools.check_calendar, "create_event": week4_tools.create_event},
+                            {"create_event"}, ["check_calendar", "create_event"])
+    seen = []
+    llm = FakeLLM([
+        tools_reply(call("check_calendar", date="2026-10-28")),
+        tools_reply(call("create_event", title="Yoga", date="2026-10-28", time="18:00")),
+        lambda messages: seen.append(messages[-1]["content"]) or "Booked Yoga on 2026-10-28 at 18:00.",
+    ])
+    trace = week5_agent.run(llm, "Book yoga on 2026-10-28 at 18:00", world=world, registry=registry,
+                            tools=["check_calendar", "create_event"])
+    assert trace["status"] == "awaiting_approval" and world["events_created"] == []
+    trace = week5_agent.resume(llm, trace, {0: True})
+    assert [s["decision"] for s in trace["steps"]] == ["tools", "tools", "answer"]
+    assert trace["steps"][1]["calls"][0]["decision"] == "approved"
+    assert '"status": "created"' in seen[0]  # step 3's model call saw the real result
+    assert trace["status"] == "done" and len(world["events_created"]) == 1
+
+
+def test_declining_runs_nothing_and_the_model_is_told():
+    seen = []
+    llm = FakeLLM([
+        tools_reply(call("send_email", to="maya@example.com", subject="Hi", body="Hi")),
+        lambda messages: seen.append(messages[-1]["content"]) or "OK, I didn't send it.",
+    ])
+    trace = week5_agent.resume(llm, week5_agent.run(llm, "Email Maya"), {0: False})
+    assert trace["world"]["emails_sent"] == [] and "declined" in seen[0] and trace["status"] == "done"
